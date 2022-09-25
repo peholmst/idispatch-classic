@@ -1,0 +1,4 @@
+node_modules/
+webpack.generated.js
+vite.generated.ts
+frontend/generated

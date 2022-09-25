@@ -1,25 +1,20 @@
 
 package net.pkhapps.idispatch.aspsms.ws.client.generated;
 
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlRootElement;
-import jakarta.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 
 
 /**
- * <p>Java class for anonymous complex type.
- *
- * <p>The following schema fragment specifies the expected content contained within this class.
- *
- * <pre>
- * &lt;complexType&gt;
- *   &lt;complexContent&gt;
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
- *     &lt;/restriction&gt;
- *   &lt;/complexContent&gt;
- * &lt;/complexType&gt;
- * </pre>
+ * &lt;p&gt;Java class for anonymous complex type.
+ * <p>
+ * &lt;p&gt;The following schema fragment specifies the expected content contained within this class.
+ * <p>
+ * &lt;pre&gt; &amp;lt;complexType&amp;gt; &amp;lt;complexContent&amp;gt; &amp;lt;restriction
+ * base="{http://www.w3.org/2001/XMLSchema}anyType"&amp;gt; &amp;lt;/restriction&amp;gt; &amp;lt;/complexContent&amp;gt;
+ * &amp;lt;/complexType&amp;gt; &lt;/pre&gt;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "")

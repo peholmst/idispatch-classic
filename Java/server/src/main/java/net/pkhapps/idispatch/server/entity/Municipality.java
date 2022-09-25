@@ -1,10 +1,9 @@
 package net.pkhapps.idispatch.server.entity;
 
-import org.hibernate.validator.constraints.NotBlank;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.validation.constraints.NotBlank;
 
 import static com.google.common.base.Strings.nullToEmpty;
 

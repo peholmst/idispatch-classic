@@ -30,6 +30,10 @@ public abstract class AbstractEntity implements Persistable<Long>, Serializable,
         return id;
     }
 
+    public Optional<Long> getIdOptional() {
+        return Optional.ofNullable(id);
+    }
+
     protected void setId(Long id) {
         this.id = id;
     }

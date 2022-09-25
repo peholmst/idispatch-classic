@@ -9,19 +9,22 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>aspsms-integration</artifactId>
+    <artifactId>idispatch-aspsms-integration</artifactId>
     <name>iDispatch ASPSMS.COM Integration</name>
 
     <dependencies>
         <dependency>
             <groupId>jakarta.xml.ws</groupId>
             <artifactId>jakarta.xml.ws-api</artifactId>
-            <version>4.0.0</version>
         </dependency>
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
-            <version>3.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.jws</groupId>
+            <artifactId>jakarta.jws-api</artifactId>
+            <version>2.1.0</version>
         </dependency>
     </dependencies>
 
@@ -30,7 +33,7 @@
             <plugin>
                 <groupId>com.sun.xml.ws</groupId>
                 <artifactId>jaxws-maven-plugin</artifactId>
-                <version>4.0.0</version>
+                <version>${jakarta-xml-ws.version}</version>
                 <configuration>
                     <wsdlUrls>
                         <wsdlUrl>https://soap.aspsms.com/aspsmsx2.asmx?WSDL</wsdlUrl>

@@ -1,40 +1,33 @@
 
 package net.pkhapps.idispatch.aspsms.ws.client.generated;
 
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlElement;
-import jakarta.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlType;
 
 
 /**
- * <p>Java class for vouchers complex type.
- *
- * <p>The following schema fragment specifies the expected content contained within this class.
- *
- * <pre>
- * &lt;complexType name="vouchers"&gt;
- *   &lt;complexContent&gt;
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
- *       &lt;sequence&gt;
- *         &lt;element name="VoucherCode" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
- *         &lt;element name="Remark" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
- *         &lt;element name="Credits" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
- *         &lt;element name="Created" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
- *         &lt;element name="Redeemed" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
- *       &lt;/sequence&gt;
- *     &lt;/restriction&gt;
- *   &lt;/complexContent&gt;
- * &lt;/complexType&gt;
- * </pre>
+ * &lt;p&gt;Java class for vouchers complex type.
+ * <p>
+ * &lt;p&gt;The following schema fragment specifies the expected content contained within this class.
+ * <p>
+ * &lt;pre&gt; &amp;lt;complexType name="vouchers"&amp;gt; &amp;lt;complexContent&amp;gt; &amp;lt;restriction
+ * base="{http://www.w3.org/2001/XMLSchema}anyType"&amp;gt; &amp;lt;sequence&amp;gt; &amp;lt;element name="VoucherCode"
+ * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Remark"
+ * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Credits"
+ * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Created"
+ * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Redeemed"
+ * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;/sequence&amp;gt;
+ * &amp;lt;/restriction&amp;gt; &amp;lt;/complexContent&amp;gt; &amp;lt;/complexType&amp;gt; &lt;/pre&gt;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "vouchers", propOrder = {
-        "voucherCode",
-        "remark",
-        "credits",
-        "created",
-        "redeemed"
+    "voucherCode",
+    "remark",
+    "credits",
+    "created",
+    "redeemed"
 })
 public class Vouchers {
 
@@ -51,8 +44,11 @@ public class Vouchers {
 
     /**
      * Gets the value of the voucherCode property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
      *
-     * @return possible object is {@link String }
      */
     public String getVoucherCode() {
         return voucherCode;
@@ -60,8 +56,11 @@ public class Vouchers {
 
     /**
      * Sets the value of the voucherCode property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
      *
-     * @param value allowed object is {@link String }
      */
     public void setVoucherCode(String value) {
         this.voucherCode = value;
@@ -69,8 +68,11 @@ public class Vouchers {
 
     /**
      * Gets the value of the remark property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
      *
-     * @return possible object is {@link String }
      */
     public String getRemark() {
         return remark;
@@ -78,8 +80,11 @@ public class Vouchers {
 
     /**
      * Sets the value of the remark property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
      *
-     * @param value allowed object is {@link String }
      */
     public void setRemark(String value) {
         this.remark = value;
@@ -87,8 +92,11 @@ public class Vouchers {
 
     /**
      * Gets the value of the credits property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
      *
-     * @return possible object is {@link String }
      */
     public String getCredits() {
         return credits;
@@ -96,8 +104,11 @@ public class Vouchers {
 
     /**
      * Sets the value of the credits property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
      *
-     * @param value allowed object is {@link String }
      */
     public void setCredits(String value) {
         this.credits = value;
@@ -105,8 +116,11 @@ public class Vouchers {
 
     /**
      * Gets the value of the created property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
      *
-     * @return possible object is {@link String }
      */
     public String getCreated() {
         return created;
@@ -114,8 +128,11 @@ public class Vouchers {
 
     /**
      * Sets the value of the created property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
      *
-     * @param value allowed object is {@link String }
      */
     public void setCreated(String value) {
         this.created = value;
@@ -123,8 +140,11 @@ public class Vouchers {
 
     /**
      * Gets the value of the redeemed property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
      *
-     * @return possible object is {@link String }
      */
     public String getRedeemed() {
         return redeemed;
@@ -132,8 +152,11 @@ public class Vouchers {
 
     /**
      * Sets the value of the redeemed property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
      *
-     * @param value allowed object is {@link String }
      */
     public void setRedeemed(String value) {
         this.redeemed = value;
