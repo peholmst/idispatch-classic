@@ -1,25 +1,28 @@
 package net.pkhapps.idispatch.server.boundary;
 
-import net.pkhapps.idispatch.server.entity.Resource;
-import net.pkhapps.idispatch.server.entity.ResourceState;
-import net.pkhapps.idispatch.server.entity.ResourceStatus;
-import net.pkhapps.idispatch.server.entity.ValidationFailedException;
+import net.pkhapps.idispatch.server.entity.*;
 import net.pkhapps.idispatch.server.entity.repository.ResourceRepository;
 import net.pkhapps.idispatch.server.entity.repository.ResourceStatusRepository;
+import net.pkhapps.idispatch.server.entity.repository.ResourceTypeRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.Validator;
+import java.util.List;
 
 @Service
 class ResourceManagementServiceBean extends AbstractSoftDeletableManagementServiceBean<Resource, ResourceRepository> implements ResourceManagementService {
 
     private final ResourceRepository repository;
     private final ResourceStatusRepository resourceStatusRepository;
+    private final ResourceTypeRepository resourceTypeRepository;
 
-    ResourceManagementServiceBean(Validator validator, ResourceRepository repository, ResourceStatusRepository resourceStatusRepository) {
+    ResourceManagementServiceBean(Validator validator, ResourceRepository repository, ResourceStatusRepository resourceStatusRepository, ResourceTypeRepository resourceTypeRepository) {
         super(validator);
         this.repository = repository;
         this.resourceStatusRepository = resourceStatusRepository;
+        this.resourceTypeRepository = resourceTypeRepository;
     }
 
     @Override
@@ -28,6 +31,7 @@ class ResourceManagementServiceBean extends AbstractSoftDeletableManagementServi
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Resource save(Resource entity) throws ValidationFailedException {
         if (entity.isNew()) {
             final Resource saved = super.save(entity);
@@ -38,5 +42,11 @@ class ResourceManagementServiceBean extends AbstractSoftDeletableManagementServi
         } else {
             return super.save(entity);
         }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public List<ResourceType> findApplicableTypes() {
+        return resourceTypeRepository.findByActiveTrueOrderByCodeAsc();
     }
 }

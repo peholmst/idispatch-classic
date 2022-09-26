@@ -43,6 +43,10 @@ public class ResourceType extends AbstractLockableEntity implements Deactivatabl
         this.description = nullToEmpty(description);
     }
 
+    public String getFormattedDescription() {
+        return String.format("%s - %s", code, description);
+    }
+
     @Override
     public String toString() {
         return toStringHelper(this)
