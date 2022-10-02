@@ -2,8 +2,10 @@ package net.pkhapps.idispatch.server.ui.management;
 
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
 import net.pkhapps.idispatch.server.boundary.ResourceTypeManagementService;
 import net.pkhapps.idispatch.server.entity.ResourceType;
+import org.springframework.lang.Nullable;
 
 public class ResourceTypeManagementDialog extends AbstractManagementDialog<ResourceType> {
 
@@ -12,21 +14,28 @@ public class ResourceTypeManagementDialog extends AbstractManagementDialog<Resou
     }
 
     @Override
-    protected String getTitle(ResourceType entity) {
-        return entity.isNew() ? "Add ResourceType" : "Edit Resource Type";
+    protected String getTitle(@Nullable ResourceType entity) {
+        return entity == null ? "Add ResourceType" : "Edit Resource Type";
     }
 
     @Override
-    protected void configureForm(FormLayout form) {
-        var code = new TextField("Code");
-        form.add(code);
+    protected Form configureForm(@Nullable ResourceType entity) {
+        return new SingleEntityForm() {
+            @Override
+            protected void initForm(Binder<ResourceType> binder, FormLayout formLayout) {
+                binder.setBean(entity == null ? new ResourceType() : entity);
 
-        var description = new TextField("Description");
-        form.add(description);
+                var code = new TextField("Code");
+                formLayout.add(code);
 
-        getBinder().bind(code, ResourceType::getCode, ResourceType::setCode);
-        getBinder().bind(description, ResourceType::getDescription, ResourceType::setDescription);
+                var description = new TextField("Description");
+                formLayout.add(description);
 
-        code.focus();
+                binder.bind(code, ResourceType::getCode, ResourceType::setCode);
+                binder.bind(description, ResourceType::getDescription, ResourceType::setDescription);
+
+                code.focus();
+            }
+        };
     }
 }

@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.ui.management;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -16,6 +17,7 @@ import net.pkhapps.idispatch.server.boundary.ManagementService;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
 import net.pkhapps.idispatch.server.entity.ValidationFailedException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.lang.Nullable;
 
 import java.util.Locale;
 
@@ -25,17 +27,12 @@ import static java.util.Objects.requireNonNull;
 public abstract class AbstractManagementDialog<E extends AbstractEntity> extends Dialog {
 
     private final ManagementService<E> service;
-    private final Binder<E> binder;
     private final UnorderedList validationErrors;
     private SerializableRunnable onClose;
+    private Form form;
 
     protected AbstractManagementDialog(ManagementService<E> service) {
         this.service = requireNonNull(service);
-        binder = new Binder<>();
-
-        var formLayout = new FormLayout();
-        configureForm(formLayout);
-        add(formLayout);
 
         validationErrors = new UnorderedList();
         validationErrors.addClassName("validation-errors"); // TODO Make styles for this
@@ -65,7 +62,7 @@ public abstract class AbstractManagementDialog<E extends AbstractEntity> extends
 
     private void saveAndClose() {
         try {
-            service.save(binder.getBean());
+            form.save();
             close();
         } catch (ValidationFailedException ex) {
             validationErrors.setVisible(true);
@@ -79,20 +76,61 @@ public abstract class AbstractManagementDialog<E extends AbstractEntity> extends
         }
     }
 
-    public void open(E entity, SerializableRunnable onClose) {
+    public void openNew(@Nullable SerializableRunnable onClose) {
+        open(null, onClose);
+    }
+
+    public void open(@Nullable E entity, @Nullable SerializableRunnable onClose) {
         this.onClose = onClose;
-        setHeaderTitle(getTitle(entity));
-        validationErrors.setVisible(false);
-        validationErrors.removeAll();
-        binder.setBean(entity);
+        setEntity(entity);
         open();
     }
 
-    protected abstract String getTitle(E entity);
+    protected void setEntity(@Nullable E entity) {
+        setHeaderTitle(getTitle(entity));
+        validationErrors.setVisible(false);
+        validationErrors.removeAll();
+        if (form != null) {
+            remove(form.getLayout());
+        }
+        form = configureForm(entity);
+        addComponentAsFirst(form.getLayout());
+    }
 
-    protected abstract void configureForm(FormLayout form);
+    protected abstract String getTitle(@Nullable E entity);
 
-    protected Binder<E> getBinder() {
-        return binder;
+    protected abstract Form configureForm(@Nullable E entity);
+
+    public ManagementService<E> service() {
+        return service;
+    }
+
+    public interface Form {
+        Component getLayout();
+
+        void save() throws ValidationFailedException;
+    }
+
+    public abstract class SingleEntityForm implements Form {
+        private final FormLayout formLayout;
+        private final Binder<E> binder;
+
+        public SingleEntityForm() {
+            binder = new Binder<>();
+            formLayout = new FormLayout();
+            initForm(binder, formLayout);
+        }
+
+        protected abstract void initForm(Binder<E> binder, FormLayout formLayout);
+
+        @Override
+        public final Component getLayout() {
+            return formLayout;
+        }
+
+        @Override
+        public void save() throws ValidationFailedException {
+            service().save(binder.getBean());
+        }
     }
 }

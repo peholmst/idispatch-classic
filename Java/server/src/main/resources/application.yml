@@ -1,2 +1,6 @@
 vaadin:
   whitelisted-packages: net.pkhapps, com.vaadin
+
+spring:
+  jpa:
+    open-in-view: false

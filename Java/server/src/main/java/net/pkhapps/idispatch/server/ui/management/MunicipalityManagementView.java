@@ -13,7 +13,7 @@ import net.pkhapps.idispatch.server.entity.Municipality;
 public class MunicipalityManagementView extends AbstractManagementView<Municipality, MunicipalityManagementService> {
 
     public MunicipalityManagementView(MunicipalityManagementService service) {
-        super(service, Municipality.class);
+        super(service);
     }
 
     @Override

@@ -7,9 +7,6 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 import java.util.UUID;
 
-/**
- * TODO Document me!
- */
 @Entity
 @Table(name = "runboard_destinations")
 public class RunboardDestination extends Destination {
@@ -24,5 +21,10 @@ public class RunboardDestination extends Destination {
 
     public void setRunboardKey(String runboardKey) {
         this.runboardKey = runboardKey;
+    }
+
+    @Override
+    public String getType() {
+        return "Runboard";
     }
 }

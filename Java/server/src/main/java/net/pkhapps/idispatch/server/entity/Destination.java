@@ -52,4 +52,6 @@ public abstract class Destination extends AbstractLockableEntity implements Deac
         clone.resources = new HashSet<>(resources);
         return clone;
     }
+
+    public abstract String getType();
 }

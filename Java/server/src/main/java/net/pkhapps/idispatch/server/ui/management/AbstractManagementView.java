@@ -25,13 +25,11 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
     private final Button edit;
     private final Button delete;
     private final Button restore;
-    private final Class<E> entityClass;
 
-    public AbstractManagementView(S service, Class<E> entityClass) {
+    public AbstractManagementView(S service) {
         this.service = requireNonNull(service);
-        this.entityClass = requireNonNull(entityClass);
 
-        grid = new Grid<E>();
+        grid = new Grid<>();
         configureGrid(grid);
         grid.setSizeFull();
         grid.setSelectionMode(Grid.SelectionMode.SINGLE);
@@ -84,7 +82,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
     }
 
     private void add() {
-        newDialog().open(newEntity(), this::refresh);
+        newDialog().openNew(this::refresh);
     }
 
     private void edit() {
@@ -152,18 +150,6 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
             return !((Deactivatable) entity).isActive();
         } else {
             return false;
-        }
-    }
-
-    protected Class<E> getEntityClass() {
-        return entityClass;
-    }
-
-    protected E newEntity() {
-        try {
-            return getEntityClass().getConstructor().newInstance();
-        } catch (Exception ex) {
-            throw new IllegalStateException("Cannot create new entity instances", ex);
         }
     }
 

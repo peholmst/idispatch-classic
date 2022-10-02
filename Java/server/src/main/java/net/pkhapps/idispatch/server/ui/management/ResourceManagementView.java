@@ -12,7 +12,7 @@ import net.pkhapps.idispatch.server.entity.Resource;
 public class ResourceManagementView extends AbstractManagementView<Resource, ResourceManagementService> {
 
     public ResourceManagementView(ResourceManagementService service) {
-        super(service, Resource.class);
+        super(service);
     }
 
     @Override
@@ -24,6 +24,6 @@ public class ResourceManagementView extends AbstractManagementView<Resource, Res
 
     @Override
     protected AbstractManagementDialog<Resource> newDialog() {
-        return new ResourceManagementDialog(getService(), getService()::findApplicableTypes);
+        return new ResourceManagementDialog(getService());
     }
 }

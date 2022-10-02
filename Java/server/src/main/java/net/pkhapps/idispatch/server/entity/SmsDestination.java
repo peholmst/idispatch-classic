@@ -5,9 +5,6 @@ import javax.validation.constraints.NotEmpty;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * TODO Document me!
- */
 @Entity
 @Table(name = "sms_destinations")
 public class SmsDestination extends Destination {
@@ -30,5 +27,10 @@ public class SmsDestination extends Destination {
         final SmsDestination clone = (SmsDestination) super.clone();
         clone.phoneNumbers = new HashSet<>(phoneNumbers);
         return clone;
+    }
+
+    @Override
+    public String getType() {
+        return "SMS Destination";
     }
 }

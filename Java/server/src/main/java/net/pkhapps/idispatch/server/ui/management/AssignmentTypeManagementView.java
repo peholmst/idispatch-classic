@@ -12,7 +12,7 @@ import net.pkhapps.idispatch.server.entity.AssignmentType;
 public class AssignmentTypeManagementView extends AbstractManagementView<AssignmentType, AssignmentTypeManagementService> {
 
     public AssignmentTypeManagementView(AssignmentTypeManagementService service) {
-        super(service, AssignmentType.class);
+        super(service);
     }
 
     @Override

@@ -12,7 +12,7 @@ import net.pkhapps.idispatch.server.entity.ResourceType;
 public class ResourceTypeManagementView extends AbstractManagementView<ResourceType, ResourceTypeManagementService> {
 
     public ResourceTypeManagementView(ResourceTypeManagementService service) {
-        super(service, ResourceType.class);
+        super(service);
     }
 
     @Override

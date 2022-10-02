@@ -27,7 +27,8 @@ public class ManagementLayout extends AppLayout implements RouterLayout {
                 createTab(VaadinIcon.BUILDING, "Municipalities", MunicipalityManagementView.class),
                 createTab(VaadinIcon.FIRE, "Assignment Types", AssignmentTypeManagementView.class),
                 createTab(VaadinIcon.AMBULANCE, "Resources", ResourceManagementView.class),
-                createTab(VaadinIcon.SWORD, "Resource Types", ResourceTypeManagementView.class)
+                createTab(VaadinIcon.SWORD, "Resource Types", ResourceTypeManagementView.class),
+                createTab(VaadinIcon.BOLT, "Destinations", DestinationManagementView.class)
         );
 
         addToDrawer(tabs);
