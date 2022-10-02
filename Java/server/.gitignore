@@ -3,4 +3,3 @@ webpack.generated.js
 vite.generated.ts
 frontend/generated
 application-prod.yml
-runboard.properties
