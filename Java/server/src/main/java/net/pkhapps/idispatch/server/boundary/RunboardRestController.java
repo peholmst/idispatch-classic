@@ -35,7 +35,7 @@ public class RunboardRestController {
     private Map<String, Object> notificationToMap(DispatchNotification notification) {
         final Map<String, Object> map = new HashMap<>();
         map.put("id", notification.getId());
-        map.put("timestamp", notification.getTimestamp());
+        map.put("timestamp", notification.getTimestamp().toEpochMilli());
         map.put("assignment_id", notification.getAssignment().getId());
         map.put("assignment_type_code", notification.getAssignmentType().getCode());
         map.put("assignment_type_descr", notification.getAssignmentType().getDescription());

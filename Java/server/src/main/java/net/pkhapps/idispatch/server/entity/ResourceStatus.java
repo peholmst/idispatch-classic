@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.server.entity;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -69,7 +69,7 @@ public class ResourceStatus extends AbstractResourceStateChange {
     @Override
     public void setState(ResourceState state) {
         super.setState(state);
-        setTimestamp(new Date());
+        setTimestamp(Instant.now());
         updateBooleanFlags();
     }
 
@@ -108,7 +108,7 @@ public class ResourceStatus extends AbstractResourceStateChange {
     @Override
     public void setAssignment(Assignment lastAssignment) {
         super.setAssignment(lastAssignment);
-        setTimestamp(new Date());
+        setTimestamp(Instant.now());
         updateBooleanFlags();
     }
 

@@ -1,6 +1,18 @@
+server:
+  servlet:
+    context-path: /idispatch
+
 vaadin:
   whitelisted-packages: net.pkhapps, com.vaadin
 
 spring:
   jpa:
     open-in-view: false
+
+management:
+  server:
+    port: 8081
+
+logging:
+  level:
+    net.pkhapps: debug

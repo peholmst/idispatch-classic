@@ -7,8 +7,8 @@ import net.pkhapps.idispatch.server.entity.repository.ArchivedResourceStatusRepo
 import net.pkhapps.idispatch.server.entity.repository.AssignmentRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 class ReportServiceBean implements ReportService {
@@ -35,12 +35,12 @@ class ReportServiceBean implements ReportService {
 
     @FunctionalInterface
     interface DateSetter {
-        void set(ReportResourceDTO.Builder owner, Date date);
+        void set(ReportResourceDTO.Builder owner, Instant date);
     }
 
     @FunctionalInterface
     interface DateGetter {
-        Date get(ReportResourceDTO.Builder owner);
+        Instant get(ReportResourceDTO.Builder owner);
     }
 
     private class ReportResourceGenerator {
@@ -57,7 +57,7 @@ class ReportServiceBean implements ReportService {
 
         private void process() {
             archivedResourceStatusRepository.findByAssignment(assignment).forEach(this::process);
-            dtoList.addAll(builderMap.values().stream().map(ReportResourceDTO.Builder::build).collect(Collectors.toList()));
+            dtoList.addAll(builderMap.values().stream().map(ReportResourceDTO.Builder::build).toList());
         }
 
         public List<ReportResourceDTO> getReportResources() {

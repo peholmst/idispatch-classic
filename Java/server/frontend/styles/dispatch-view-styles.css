@@ -1,0 +1,61 @@
+.dispatch-view {
+    background-color: var(--lumo-shade-10pct);
+}
+
+.dispatch-view .toolbar {
+    padding-left: var(--lumo-space-s);
+}
+
+.dispatch-view .assignment-panel,
+.dispatch-view .resource-list,
+.dispatch-view .assignment-list {
+    padding: var(--lumo-space-s);
+}
+
+.dispatch-view .resource-list vaadin-grid,
+.dispatch-view .assignment-list vaadin-grid {
+    box-shadow: var(--lumo-box-shadow-xs);
+    border-radius: var(--lumo-border-radius-s);
+    overflow: clip;
+}
+
+.dispatch-view .assignment-panel .content {
+    background-color: var(--lumo-base-color);
+    box-shadow: var(--lumo-box-shadow-xs);
+    border-radius: var(--lumo-border-radius-s);
+}
+
+.resource-state-at_station {
+    background-color: darkgreen;
+    color: white;
+}
+
+.resource-state-available {
+    background-color: greenyellow;
+    color: black;
+}
+
+.resource-state-out_of_service {
+    background-color: orange;
+    color: black;
+}
+
+.resource-state-reserved {
+    background-color: deeppink;
+    color: black;
+}
+
+.resource-state-dispatched {
+    background-color: orangered;
+    color: white;
+}
+
+.resource-state-en_route {
+    background-color: yellow;
+    color: black;
+}
+
+.resource-state-on_scene {
+    background-color: dodgerblue;
+    color: white;
+}

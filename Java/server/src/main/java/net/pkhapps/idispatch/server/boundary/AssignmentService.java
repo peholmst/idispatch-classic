@@ -1,6 +1,9 @@
 package net.pkhapps.idispatch.server.boundary;
 
 import net.pkhapps.idispatch.server.entity.Assignment;
+import net.pkhapps.idispatch.server.entity.AssignmentType;
+import net.pkhapps.idispatch.server.entity.AssignmentUrgency;
+import net.pkhapps.idispatch.server.entity.Municipality;
 import net.pkhapps.idispatch.server.events.AssignmentClosed;
 import net.pkhapps.idispatch.server.events.AssignmentOpened;
 import net.pkhapps.idispatch.server.events.AssignmentUpdated;
@@ -51,4 +54,10 @@ public interface AssignmentService {
      * Finds all closed assignments.
      */
     List<Assignment> findClosedAssignments(Optional<Pageable> pageable);
+
+    List<Municipality> findApplicableMunicipalities();
+
+    List<AssignmentType> findApplicableAssignmentTypes();
+
+    List<AssignmentUrgency> findApplicableUrgencies();
 }

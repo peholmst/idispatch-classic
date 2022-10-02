@@ -3,7 +3,7 @@ package net.pkhapps.idispatch.server.boundary;
 import net.pkhapps.idispatch.server.entity.Resource;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.Instant;
 
 public class ReportResourceDTO implements Serializable {
 
@@ -15,13 +15,13 @@ public class ReportResourceDTO implements Serializable {
     public static final String PROP_AT_STATION = "atStation";
 
     private final Resource resource;
-    private final Date dispatched;
-    private final Date enRoute;
-    private final Date onScene;
-    private final Date available;
-    private final Date atStation;
+    private final Instant dispatched;
+    private final Instant enRoute;
+    private final Instant onScene;
+    private final Instant available;
+    private final Instant atStation;
 
-    public ReportResourceDTO(Resource resource, Date dispatched, Date enRoute, Date onScene, Date available, Date atStation) {
+    public ReportResourceDTO(Resource resource, Instant dispatched, Instant enRoute, Instant onScene, Instant available, Instant atStation) {
         this.resource = resource;
         this.dispatched = dispatched;
         this.enRoute = enRoute;
@@ -38,80 +38,80 @@ public class ReportResourceDTO implements Serializable {
         return resource.getCallSign();
     }
 
-    public Date getDispatched() {
+    public Instant getDispatched() {
         return dispatched;
     }
 
-    public Date getEnRoute() {
+    public Instant getEnRoute() {
         return enRoute;
     }
 
-    public Date getOnScene() {
+    public Instant getOnScene() {
         return onScene;
     }
 
-    public Date getAvailable() {
+    public Instant getAvailable() {
         return available;
     }
 
-    public Date getAtStation() {
+    public Instant getAtStation() {
         return atStation;
     }
 
     public static class Builder {
 
         private Resource resource;
-        private Date dispatched;
-        private Date enRoute;
-        private Date onScene;
-        private Date available;
-        private Date atStation;
+        private Instant dispatched;
+        private Instant enRoute;
+        private Instant onScene;
+        private Instant available;
+        private Instant atStation;
 
         public Builder(Resource resource) {
             this.resource = resource;
         }
 
-        public Date getDispatched() {
+        public Instant getDispatched() {
             return dispatched;
         }
 
-        public Builder setDispatched(Date dispatched) {
+        public Builder setDispatched(Instant dispatched) {
             this.dispatched = dispatched;
             return this;
         }
 
-        public Date getEnRoute() {
+        public Instant getEnRoute() {
             return enRoute;
         }
 
-        public Builder setEnRoute(Date enRoute) {
+        public Builder setEnRoute(Instant enRoute) {
             this.enRoute = enRoute;
             return this;
         }
 
-        public Date getOnScene() {
+        public Instant getOnScene() {
             return onScene;
         }
 
-        public Builder setOnScene(Date onScene) {
+        public Builder setOnScene(Instant onScene) {
             this.onScene = onScene;
             return this;
         }
 
-        public Date getAvailable() {
+        public Instant getAvailable() {
             return available;
         }
 
-        public Builder setAvailable(Date available) {
+        public Builder setAvailable(Instant available) {
             this.available = available;
             return this;
         }
 
-        public Date getAtStation() {
+        public Instant getAtStation() {
             return atStation;
         }
 
-        public Builder setAtStation(Date atStation) {
+        public Builder setAtStation(Instant atStation) {
             this.atStation = atStation;
             return this;
         }

@@ -1,0 +1,20 @@
+.urgency-a {
+    background-color: orangered;
+    color: white;
+}
+
+.urgency-b {
+    background-color: pink;
+}
+
+.urgency-c {
+    background-color: yellow;
+}
+
+.urgency-d {
+    background-color: lightgreen;
+}
+
+:host [part="row"] [part ~= "header-cell"] ::slotted(vaadin-grid-cell-content) {
+    font-weight: bold;
+}

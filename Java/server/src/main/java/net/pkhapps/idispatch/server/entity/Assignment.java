@@ -3,7 +3,7 @@ package net.pkhapps.idispatch.server.entity;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.util.Date;
+import java.time.Instant;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -25,15 +25,13 @@ public class Assignment extends AbstractLockableEntity {
     public static final String PROP_MUNICIPALITY = "municipality";
     public static final String PROP_ADDRESS = "address";
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "opened", nullable = false)
-    private Date opened;
-    @Temporal(TemporalType.TIMESTAMP)
+    private Instant opened;
     @Column(name = "closed")
-    private Date closed;
+    private Instant closed;
     @Enumerated(EnumType.STRING)
     @Column(name = "urgency", nullable = false)
-    private AssignmentUrgency urgency = AssignmentUrgency.UNKNOWN;
+    private AssignmentUrgency urgency = AssignmentUrgency.N;
     @ManyToOne
     @JoinColumn(name = "type_id")
     @NotNull(message = "Please select an assignment type", groups = DispatchValidationGroup.class)
@@ -49,14 +47,14 @@ public class Assignment extends AbstractLockableEntity {
     private String address = "";
 
     public Assignment() {
-        opened = new Date();
+        opened = Instant.now();
     }
 
-    public Date getOpened() {
+    public Instant getOpened() {
         return opened;
     }
 
-    public Date getClosed() {
+    public Instant getClosed() {
         return closed;
     }
 
@@ -68,7 +66,7 @@ public class Assignment extends AbstractLockableEntity {
         return closed != null;
     }
 
-    public void setClosed(Date closed) {
+    public void setClosed(Instant closed) {
         this.closed = checkNotNull(closed);
     }
 
@@ -77,7 +75,7 @@ public class Assignment extends AbstractLockableEntity {
     }
 
     public void setUrgency(AssignmentUrgency urgency) {
-        this.urgency = firstNonNull(urgency, AssignmentUrgency.UNKNOWN);
+        this.urgency = firstNonNull(urgency, AssignmentUrgency.N);
     }
 
     public AssignmentType getType() {

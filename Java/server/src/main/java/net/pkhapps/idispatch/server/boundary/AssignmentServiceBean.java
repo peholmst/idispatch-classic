@@ -2,7 +2,12 @@ package net.pkhapps.idispatch.server.boundary;
 
 
 import net.pkhapps.idispatch.server.entity.Assignment;
+import net.pkhapps.idispatch.server.entity.AssignmentType;
+import net.pkhapps.idispatch.server.entity.AssignmentUrgency;
+import net.pkhapps.idispatch.server.entity.Municipality;
 import net.pkhapps.idispatch.server.entity.repository.AssignmentRepository;
+import net.pkhapps.idispatch.server.entity.repository.AssignmentTypeRepository;
+import net.pkhapps.idispatch.server.entity.repository.MunicipalityRepository;
 import net.pkhapps.idispatch.server.events.AssignmentClosed;
 import net.pkhapps.idispatch.server.events.AssignmentOpened;
 import net.pkhapps.idispatch.server.events.AssignmentUpdated;
@@ -13,7 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,11 +27,15 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
 
     private final AssignmentRepository assignmentRepository;
     private final ResourceStatusService resourceStatusService;
+    private final MunicipalityRepository municipalityRepository;
+    private final AssignmentTypeRepository assignmentTypeRepository;
 
-    AssignmentServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentRepository assignmentRepository, ResourceStatusService resourceStatusService) {
+    AssignmentServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentRepository assignmentRepository, ResourceStatusService resourceStatusService, MunicipalityRepository municipalityRepository, AssignmentTypeRepository assignmentTypeRepository) {
         super(applicationContext, txManager);
         this.assignmentRepository = assignmentRepository;
         this.resourceStatusService = resourceStatusService;
+        this.municipalityRepository = municipalityRepository;
+        this.assignmentTypeRepository = assignmentTypeRepository;
     }
 
     @Override
@@ -85,7 +94,7 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
             logger.debug("Resources are still assigned to assignment {}, ignoring", assignment);
             return false;
         }
-        assignment.setClosed(new Date());
+        assignment.setClosed(Instant.now());
         final Assignment closedAssignment = getTxTemplate().execute(status -> assignmentRepository.saveAndFlush(assignment));
         resourceStatusService.clearAssignmentFromAllResources(closedAssignment);
         getApplicationContext().publishEvent(new AssignmentClosed(this, closedAssignment));
@@ -106,5 +115,20 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
         } else {
             return assignmentRepository.findByClosedIsNotNull();
         }
+    }
+
+    @Override
+    public List<Municipality> findApplicableMunicipalities() {
+        return municipalityRepository.findByActiveTrueOrderByNameAsc();
+    }
+
+    @Override
+    public List<AssignmentType> findApplicableAssignmentTypes() {
+        return assignmentTypeRepository.findByActiveTrueOrderByCodeAsc();
+    }
+
+    @Override
+    public List<AssignmentUrgency> findApplicableUrgencies() {
+        return List.of(AssignmentUrgency.values());
     }
 }

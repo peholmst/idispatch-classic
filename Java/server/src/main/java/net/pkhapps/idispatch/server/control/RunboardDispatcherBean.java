@@ -114,7 +114,7 @@ class RunboardDispatcherBean extends AbstractDispatcher implements RunboardDispa
     }
 
     private boolean isExpired(DispatchNotification notification) {
-        return notification.getTimestamp().getTime() < System.currentTimeMillis() - 120000;
+        return notification.getTimestamp().toEpochMilli() < System.currentTimeMillis() - 120000;
     }
 
 }

@@ -20,7 +20,7 @@ public class DestinationManagementView extends AbstractManagementView<Destinatio
     @Override
     protected void configureGrid(Grid<Destination> grid) {
         grid.addColumn(Destination::getType).setHeader("Type");
-        grid.addColumn(destination -> destination.getResources().stream().map(Resource::getCallSign).collect(Collectors.joining(", "))).setHeader("Resources");
+        grid.addColumn(destination -> destination.getResources().stream().map(Resource::getCallSign).sorted().collect(Collectors.joining(", "))).setHeader("Resources");
     }
 
     @Override

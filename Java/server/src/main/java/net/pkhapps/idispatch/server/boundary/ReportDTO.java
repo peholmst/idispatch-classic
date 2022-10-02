@@ -6,8 +6,8 @@ import net.pkhapps.idispatch.server.entity.AssignmentUrgency;
 import net.pkhapps.idispatch.server.entity.Municipality;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 public class ReportDTO implements Serializable {
@@ -25,11 +25,11 @@ public class ReportDTO implements Serializable {
         return assignment;
     }
 
-    public Date getOpened() {
+    public Instant getOpened() {
         return assignment.getOpened();
     }
 
-    public Date getClosed() {
+    public Instant getClosed() {
         return assignment.getClosed();
     }
 
