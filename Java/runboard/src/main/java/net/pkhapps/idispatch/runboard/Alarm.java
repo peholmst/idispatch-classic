@@ -1,7 +1,7 @@
-package net.pkhsolutions.idispatch.runboard;
+package net.pkhapps.idispatch.runboard;
 
 
-import net.pkhsolutions.idispatch.runboard.client.Notification;
+import net.pkhapps.idispatch.runboard.client.Notification;
 
 import javax.sound.sampled.*;
 import java.io.IOException;

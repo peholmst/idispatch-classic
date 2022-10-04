@@ -1,7 +1,7 @@
-package net.pkhsolutions.idispatch.runboard;
+package net.pkhapps.idispatch.runboard;
 
 
-import net.pkhsolutions.idispatch.runboard.client.ServerPoller;
+import net.pkhapps.idispatch.runboard.client.ServerPoller;
 
 import javax.swing.*;
 

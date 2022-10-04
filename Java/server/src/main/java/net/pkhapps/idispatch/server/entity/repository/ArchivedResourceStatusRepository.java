@@ -13,10 +13,7 @@ import java.util.List;
  */
 public interface ArchivedResourceStatusRepository extends JpaRepository<ArchivedResourceStatus, Long> {
 
-    List<ArchivedResourceStatus> findByAssignment(Assignment assignment, Pageable pageable);
-
     List<ArchivedResourceStatus> findByAssignment(Assignment assignment);
 
     List<ArchivedResourceStatus> findByResource(Resource resource, Pageable pageable);
-
 }

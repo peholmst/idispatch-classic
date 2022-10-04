@@ -1,12 +1,12 @@
-package net.pkhsolutions.idispatch.runboard;
+package net.pkhapps.idispatch.runboard;
 
-import net.pkhsolutions.idispatch.runboard.client.DispatcherClientException;
-import net.pkhsolutions.idispatch.runboard.client.Notification;
+import net.pkhapps.idispatch.runboard.client.DispatcherClientException;
+import net.pkhapps.idispatch.runboard.client.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
 import javax.swing.Timer;
+import javax.swing.*;
 import java.awt.*;
 import java.util.*;
 

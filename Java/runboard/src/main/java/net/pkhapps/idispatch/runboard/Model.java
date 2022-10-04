@@ -1,8 +1,8 @@
-package net.pkhsolutions.idispatch.runboard;
+package net.pkhapps.idispatch.runboard;
 
-import net.pkhsolutions.idispatch.runboard.client.DispatcherClientException;
-import net.pkhsolutions.idispatch.runboard.client.Notification;
-import net.pkhsolutions.idispatch.runboard.client.ServerPoller;
+import net.pkhapps.idispatch.runboard.client.DispatcherClientException;
+import net.pkhapps.idispatch.runboard.client.Notification;
+import net.pkhapps.idispatch.runboard.client.ServerPoller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

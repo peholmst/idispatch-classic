@@ -4,11 +4,15 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import net.pkhapps.idispatch.server.Roles;
 import net.pkhapps.idispatch.server.boundary.MunicipalityManagementService;
 import net.pkhapps.idispatch.server.entity.Municipality;
 
+import javax.annotation.security.RolesAllowed;
+
 
 @Route(value = "management/municipality", layout = ManagementLayout.class)
+@RolesAllowed(Roles.ROLE_ADMIN)
 @PageTitle("iDispatch | Municipalities")
 public class MunicipalityManagementView extends AbstractManagementView<Municipality, MunicipalityManagementService> {
 

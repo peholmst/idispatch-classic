@@ -1,4 +1,4 @@
-package net.pkhsolutions.idispatch.runboard.client;
+package net.pkhapps.idispatch.runboard.client;
 
 public class DispatcherClientException extends Exception {
 

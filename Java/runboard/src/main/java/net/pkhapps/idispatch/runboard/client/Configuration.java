@@ -1,4 +1,4 @@
-package net.pkhsolutions.idispatch.runboard.client;
+package net.pkhapps.idispatch.runboard.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,6 +1,6 @@
-package net.pkhsolutions.idispatch.runboard;
+package net.pkhapps.idispatch.runboard;
 
-import net.pkhsolutions.idispatch.runboard.client.Notification;
+import net.pkhapps.idispatch.runboard.client.Notification;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import javax.swing.*;

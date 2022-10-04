@@ -66,12 +66,4 @@ public abstract class AbstractEntity implements Persistable<Long>, Serializable,
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }
-
-    public Optional<Object> safeClone() {
-        try {
-            return Optional.of(clone());
-        } catch (CloneNotSupportedException ex) {
-            return Optional.empty();
-        }
-    }
 }

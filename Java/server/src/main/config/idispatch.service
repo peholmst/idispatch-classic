@@ -1,0 +1,14 @@
+[Unit]
+Description=iDispatch Classic Server
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/iDispatchServer
+ExecStart=/home/ubuntu/iDispatchServer/idispatch-server.sh
+
+TimeoutStopSec=15
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

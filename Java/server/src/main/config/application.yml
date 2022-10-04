@@ -1,0 +1,17 @@
+server:
+  servlet:
+    context-path: /
+spring:
+  datasource:
+    url: jdbc:h2:file:/home/ubuntu/idispatch.db
+    username: sa
+    password: sa
+  jpa:
+    hibernate:
+      ddl-auto: update
+aspsms:
+  userKey: CHANGEME
+  password: CHANGEME
+  originator: iDispatch
+security:
+  users: file:/home/ubuntu/users.properties

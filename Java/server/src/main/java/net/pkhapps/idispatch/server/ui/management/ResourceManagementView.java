@@ -4,10 +4,14 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import net.pkhapps.idispatch.server.Roles;
 import net.pkhapps.idispatch.server.boundary.ResourceManagementService;
 import net.pkhapps.idispatch.server.entity.Resource;
 
+import javax.annotation.security.RolesAllowed;
+
 @Route(value = "management/resource", layout = ManagementLayout.class)
+@RolesAllowed(Roles.ROLE_ADMIN)
 @PageTitle("iDispatch | Resources")
 public class ResourceManagementView extends AbstractManagementView<Resource, ResourceManagementService> {
 
