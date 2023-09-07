@@ -4,11 +4,10 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.Roles;
 import net.pkhapps.idispatch.server.boundary.ResourceManagementService;
 import net.pkhapps.idispatch.server.entity.Resource;
-
-import javax.annotation.security.RolesAllowed;
 
 @Route(value = "management/resource", layout = ManagementLayout.class)
 @RolesAllowed(Roles.ROLE_ADMIN)

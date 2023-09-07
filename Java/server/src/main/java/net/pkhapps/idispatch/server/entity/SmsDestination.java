@@ -1,7 +1,8 @@
 package net.pkhapps.idispatch.server.entity;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotEmpty;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
+
 import java.util.HashSet;
 import java.util.Set;
 

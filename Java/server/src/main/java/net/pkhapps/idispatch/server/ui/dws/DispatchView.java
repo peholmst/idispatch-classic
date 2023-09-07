@@ -11,13 +11,12 @@ import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.Roles;
 import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.boundary.DispatchService;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
 import org.springframework.context.event.ApplicationEventMulticaster;
-
-import javax.annotation.security.RolesAllowed;
 
 @Route(value = "dws")
 @RolesAllowed(Roles.ROLE_DISPATCHER)

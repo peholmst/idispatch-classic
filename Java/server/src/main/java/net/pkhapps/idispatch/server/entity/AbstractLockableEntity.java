@@ -1,8 +1,8 @@
 package net.pkhapps.idispatch.server.entity;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Version;
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Version;
 
 /**
  * Base class for persistable entities that use optimistic locking to prevent accidental overwrites.

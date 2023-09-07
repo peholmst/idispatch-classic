@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.control;
 
+import jakarta.annotation.PostConstruct;
 import net.pkhapps.idispatch.aspsms.ws.client.generated.ASPSMSX2;
 import net.pkhapps.idispatch.aspsms.ws.client.generated.ASPSMSX2Soap;
 import net.pkhapps.idispatch.server.entity.DispatchNotification;
@@ -11,7 +12,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;

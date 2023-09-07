@@ -1,10 +1,9 @@
 package net.pkhapps.idispatch.server.boundary;
 
+import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.AssignmentType;
 import net.pkhapps.idispatch.server.entity.repository.AssignmentTypeRepository;
 import org.springframework.stereotype.Service;
-
-import javax.validation.Validator;
 
 @Service
 class AssignmentTypeManagementServiceBean extends AbstractSoftDeletableManagementServiceBean<AssignmentType, AssignmentTypeRepository> implements AssignmentTypeManagementService {

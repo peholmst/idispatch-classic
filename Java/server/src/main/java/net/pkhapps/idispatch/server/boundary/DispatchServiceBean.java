@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.boundary;
 
+import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.*;
 import net.pkhapps.idispatch.server.entity.repository.DestinationRepository;
 import net.pkhapps.idispatch.server.entity.repository.DispatchNotificationRepository;
@@ -9,7 +10,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.validation.Validator;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;

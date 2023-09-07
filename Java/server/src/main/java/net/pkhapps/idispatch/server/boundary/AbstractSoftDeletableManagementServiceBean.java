@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.boundary;
 
+import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
 import net.pkhapps.idispatch.server.entity.Deactivatable;
 import org.slf4j.Logger;
@@ -7,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
-import javax.validation.Validator;
 
 abstract class AbstractSoftDeletableManagementServiceBean<E extends AbstractEntity & Deactivatable, R extends JpaRepository<E, Long>> extends AbstractManagementServiceBean<E, R> implements ManagementService.SoftDeletable<E> {
 

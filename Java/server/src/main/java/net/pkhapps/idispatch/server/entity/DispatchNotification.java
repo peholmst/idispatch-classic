@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.server.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;

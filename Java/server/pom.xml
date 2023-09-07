@@ -111,7 +111,9 @@
                         </executions>
                     </plugin>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.6.0</version>
                         <configuration>
                             <appendAssemblyId>false</appendAssemblyId>
                             <attach>false</attach>
@@ -134,19 +136,6 @@
                     </plugin>
                 </plugins>
             </build>
-            <dependencies>
-                <dependency>
-                    <groupId>com.vaadin</groupId>
-                    <artifactId>vaadin</artifactId>
-                    <version>${vaadin.version}</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>com.vaadin</groupId>
-                            <artifactId>vaadin-dev-server</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
 

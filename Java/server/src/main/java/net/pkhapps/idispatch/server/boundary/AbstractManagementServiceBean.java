@@ -1,5 +1,7 @@
 package net.pkhapps.idispatch.server.boundary;
 
+import jakarta.validation.Validator;
+import jakarta.validation.groups.Default;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
 import net.pkhapps.idispatch.server.entity.ValidationFailedException;
 import org.slf4j.Logger;
@@ -8,8 +10,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.validation.Validator;
-import javax.validation.groups.Default;
 import java.util.List;
 
 abstract class AbstractManagementServiceBean<E extends AbstractEntity, R extends JpaRepository<E, Long>> implements ManagementService<E> {

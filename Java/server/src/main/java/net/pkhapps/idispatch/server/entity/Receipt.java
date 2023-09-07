@@ -1,6 +1,6 @@
 package net.pkhapps.idispatch.server.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * TODO Document me!

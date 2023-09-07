@@ -1,4 +1,4 @@
-package net.pkhapps.idispatch.server.boundary;
+package net.pkhapps.idispatch.server.rest;
 
 import net.pkhapps.idispatch.server.control.RunboardDispatcher;
 import net.pkhapps.idispatch.server.entity.DispatchNotification;

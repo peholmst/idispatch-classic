@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.io.IOException;
 import java.net.URL;
@@ -22,13 +23,13 @@ public class SecurityConfig extends VaadinWebSecurity {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         super.configure(http);
-        http.formLogin();
+        // TODO Implement login form
     }
 
     @Override
     protected void configure(WebSecurity web) throws Exception {
         super.configure(web);
-        web.ignoring().antMatchers("/rest/**");
+        web.ignoring().requestMatchers(new AntPathRequestMatcher("/rest/**"));
     }
 
     @Bean
