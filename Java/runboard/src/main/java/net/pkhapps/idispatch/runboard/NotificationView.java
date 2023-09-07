@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.runboard;
 
 import net.pkhapps.idispatch.runboard.client.Notification;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import javax.swing.*;
 import javax.swing.text.html.HTMLEditorKit;
@@ -65,28 +65,28 @@ class NotificationView extends JPanel {
         sb.append("<html><body>");
 
         sb.append("<div class=\"assignmentTypeCode\">");
-        sb.append(StringEscapeUtils.escapeHtml(notification.getAssignmentTypeCode()));
+        sb.append(StringEscapeUtils.escapeHtml3(notification.getAssignmentTypeCode()));
         sb.append(notification.getUrgency());
         sb.append("</div>");
 
         sb.append("<div class=\"assignmentTypeDescription\">");
-        sb.append(StringEscapeUtils.escapeHtml(notification.getAssignmentTypeDescription()));
+        sb.append(StringEscapeUtils.escapeHtml3(notification.getAssignmentTypeDescription()));
         sb.append("</div>");
 
         sb.append("<div class=\"municipality\">");
-        sb.append(StringEscapeUtils.escapeHtml(notification.getMunicipality()));
+        sb.append(StringEscapeUtils.escapeHtml3(notification.getMunicipality()));
         sb.append("</div>");
 
         sb.append("<div class=\"address\">");
-        sb.append(StringEscapeUtils.escapeHtml(notification.getAddress()));
+        sb.append(StringEscapeUtils.escapeHtml3(notification.getAddress()));
         sb.append("</div>");
 
         sb.append("<div class=\"description\">");
-        sb.append(StringEscapeUtils.escapeHtml(notification.getDescription()));
+        sb.append(StringEscapeUtils.escapeHtml3(notification.getDescription()));
         sb.append("</div>");
 
         sb.append("<div class=\"resources\">");
-        sb.append(StringEscapeUtils.escapeHtml(String.join(", ", notification.getResources())));
+        sb.append(StringEscapeUtils.escapeHtml3(String.join(", ", notification.getResources())));
         sb.append("</div>");
 
         sb.append("<div class=\"timestamp\">");
