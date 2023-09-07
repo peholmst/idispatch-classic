@@ -1,32 +1,40 @@
 
 package net.pkhapps.idispatch.aspsms.ws.client.generated;
 
-import javax.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.*;
 
 
 /**
- * &lt;p&gt;Java class for anonymous complex type.
- * <p>
- * &lt;p&gt;The following schema fragment specifies the expected content contained within this class.
- * <p>
- * &lt;pre&gt; &amp;lt;complexType&amp;gt; &amp;lt;complexContent&amp;gt; &amp;lt;restriction
- * base="{http://www.w3.org/2001/XMLSchema}anyType"&amp;gt; &amp;lt;sequence&amp;gt; &amp;lt;element name="UserKey"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Password"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Originator"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Recipients"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="MessageData"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="TokenReference"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="TokenValidity"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="TokenMask"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="VerificationCode"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="TokenCaseSensitive"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element
- * name="URLBufferedMessageNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt;
- * &amp;lt;element name="URLDeliveryNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt;
- * &amp;lt;element name="URLNonDeliveryNotification" type="{http://www.w3.org/2001/XMLSchema}string"
- * minOccurs="0"/&amp;gt; &amp;lt;element name="AffiliateId" type="{http://www.w3.org/2001/XMLSchema}string"
- * minOccurs="0"/&amp;gt; &amp;lt;/sequence&amp;gt; &amp;lt;/restriction&amp;gt; &amp;lt;/complexContent&amp;gt;
- * &amp;lt;/complexType&amp;gt; &lt;/pre&gt;
+ * <p>Java class for anonymous complex type.
+ *
+ * <p>The following schema fragment specifies the expected content contained within this class.
+ *
+ * <pre>
+ * &lt;complexType&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="UserKey" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="Password" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="Originator" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="Recipients" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="MessageData" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="TokenReference" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="TokenValidity" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="TokenMask" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="VerificationCode" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="TokenCaseSensitive" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="URLBufferedMessageNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="URLDeliveryNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="URLNonDeliveryNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="AffiliateId" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
+ * </pre>
+ *
+ * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "", propOrder = {
@@ -91,7 +99,7 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the userKey property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
@@ -103,7 +111,7 @@ public class SendTokenSMS {
 
     /**
      * Gets the value of the password property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link String }
@@ -115,7 +123,7 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the password property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
@@ -127,7 +135,7 @@ public class SendTokenSMS {
 
     /**
      * Gets the value of the originator property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link String }
@@ -139,7 +147,7 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the originator property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
@@ -151,7 +159,7 @@ public class SendTokenSMS {
 
     /**
      * Gets the value of the recipients property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link String }
@@ -163,7 +171,7 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the recipients property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
@@ -175,7 +183,7 @@ public class SendTokenSMS {
 
     /**
      * Gets the value of the messageData property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link String }
@@ -187,11 +195,11 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the messageData property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setMessageData(String value) {
         this.messageData = value;
@@ -211,11 +219,11 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the tokenReference property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setTokenReference(String value) {
         this.tokenReference = value;
@@ -235,11 +243,11 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the tokenValidity property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setTokenValidity(String value) {
         this.tokenValidity = value;
@@ -259,7 +267,7 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the tokenMask property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
@@ -271,11 +279,11 @@ public class SendTokenSMS {
 
     /**
      * Gets the value of the verificationCode property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getVerificationCode() {
         return verificationCode;
@@ -283,11 +291,11 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the verificationCode property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setVerificationCode(String value) {
         this.verificationCode = value;
@@ -299,7 +307,7 @@ public class SendTokenSMS {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getTokenCaseSensitive() {
         return tokenCaseSensitive;
@@ -311,7 +319,7 @@ public class SendTokenSMS {
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setTokenCaseSensitive(String value) {
         this.tokenCaseSensitive = value;
@@ -323,7 +331,7 @@ public class SendTokenSMS {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getURLBufferedMessageNotification() {
         return urlBufferedMessageNotification;
@@ -335,7 +343,7 @@ public class SendTokenSMS {
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setURLBufferedMessageNotification(String value) {
         this.urlBufferedMessageNotification = value;
@@ -347,7 +355,7 @@ public class SendTokenSMS {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getURLDeliveryNotification() {
         return urlDeliveryNotification;
@@ -359,7 +367,7 @@ public class SendTokenSMS {
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setURLDeliveryNotification(String value) {
         this.urlDeliveryNotification = value;
@@ -371,7 +379,7 @@ public class SendTokenSMS {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getURLNonDeliveryNotification() {
         return urlNonDeliveryNotification;
@@ -383,7 +391,7 @@ public class SendTokenSMS {
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setURLNonDeliveryNotification(String value) {
         this.urlNonDeliveryNotification = value;
@@ -403,11 +411,11 @@ public class SendTokenSMS {
 
     /**
      * Sets the value of the affiliateId property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setAffiliateId(String value) {
         this.affiliateId = value;

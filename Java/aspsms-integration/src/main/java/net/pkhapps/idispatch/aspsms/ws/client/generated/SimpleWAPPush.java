@@ -1,31 +1,39 @@
 
 package net.pkhapps.idispatch.aspsms.ws.client.generated;
 
-import javax.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.*;
 
 
 /**
- * &lt;p&gt;Java class for anonymous complex type.
- * <p>
- * &lt;p&gt;The following schema fragment specifies the expected content contained within this class.
- * <p>
- * &lt;pre&gt; &amp;lt;complexType&amp;gt; &amp;lt;complexContent&amp;gt; &amp;lt;restriction
- * base="{http://www.w3.org/2001/XMLSchema}anyType"&amp;gt; &amp;lt;sequence&amp;gt; &amp;lt;element name="UserKey"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Password"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Recipients"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="Originator"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="WapDescription"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="WapURL"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="DeferredDeliveryTime"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="FlashingSMS"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element name="TimeZone"
- * type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt; &amp;lt;element
- * name="URLBufferedMessageNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt;
- * &amp;lt;element name="URLDeliveryNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&amp;gt;
- * &amp;lt;element name="URLNonDeliveryNotification" type="{http://www.w3.org/2001/XMLSchema}string"
- * minOccurs="0"/&amp;gt; &amp;lt;element name="AffiliateId" type="{http://www.w3.org/2001/XMLSchema}string"
- * minOccurs="0"/&amp;gt; &amp;lt;/sequence&amp;gt; &amp;lt;/restriction&amp;gt; &amp;lt;/complexContent&amp;gt;
- * &amp;lt;/complexType&amp;gt; &lt;/pre&gt;
+ * <p>Java class for anonymous complex type.
+ *
+ * <p>The following schema fragment specifies the expected content contained within this class.
+ *
+ * <pre>
+ * &lt;complexType&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="UserKey" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="Password" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="Recipients" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="Originator" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="WapDescription" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="WapURL" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="DeferredDeliveryTime" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="FlashingSMS" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="TimeZone" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="URLBufferedMessageNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="URLDeliveryNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="URLNonDeliveryNotification" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *         &lt;element name="AffiliateId" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
+ * </pre>
+ *
+ * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "", propOrder = {
@@ -79,7 +87,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getUserKey() {
         return userKey;
@@ -87,11 +95,11 @@ public class SimpleWAPPush {
 
     /**
      * Sets the value of the userKey property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setUserKey(String value) {
         this.userKey = value;
@@ -99,11 +107,11 @@ public class SimpleWAPPush {
 
     /**
      * Gets the value of the password property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getPassword() {
         return password;
@@ -111,11 +119,11 @@ public class SimpleWAPPush {
 
     /**
      * Sets the value of the password property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setPassword(String value) {
         this.password = value;
@@ -123,11 +131,11 @@ public class SimpleWAPPush {
 
     /**
      * Gets the value of the recipients property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getRecipients() {
         return recipients;
@@ -135,11 +143,11 @@ public class SimpleWAPPush {
 
     /**
      * Sets the value of the recipients property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setRecipients(String value) {
         this.recipients = value;
@@ -151,7 +159,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getOriginator() {
         return originator;
@@ -159,11 +167,11 @@ public class SimpleWAPPush {
 
     /**
      * Sets the value of the originator property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setOriginator(String value) {
         this.originator = value;
@@ -175,7 +183,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getWapDescription() {
         return wapDescription;
@@ -183,11 +191,11 @@ public class SimpleWAPPush {
 
     /**
      * Sets the value of the wapDescription property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setWapDescription(String value) {
         this.wapDescription = value;
@@ -207,11 +215,11 @@ public class SimpleWAPPush {
 
     /**
      * Sets the value of the wapURL property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setWapURL(String value) {
         this.wapURL = value;
@@ -223,7 +231,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getDeferredDeliveryTime() {
         return deferredDeliveryTime;
@@ -235,7 +243,7 @@ public class SimpleWAPPush {
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setDeferredDeliveryTime(String value) {
         this.deferredDeliveryTime = value;
@@ -247,7 +255,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getFlashingSMS() {
         return flashingSMS;
@@ -255,11 +263,11 @@ public class SimpleWAPPush {
 
     /**
      * Sets the value of the flashingSMS property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setFlashingSMS(String value) {
         this.flashingSMS = value;
@@ -271,7 +279,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getTimeZone() {
         return timeZone;
@@ -279,11 +287,11 @@ public class SimpleWAPPush {
 
     /**
      * Sets the value of the timeZone property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setTimeZone(String value) {
         this.timeZone = value;
@@ -295,7 +303,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getURLBufferedMessageNotification() {
         return urlBufferedMessageNotification;
@@ -307,7 +315,7 @@ public class SimpleWAPPush {
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setURLBufferedMessageNotification(String value) {
         this.urlBufferedMessageNotification = value;
@@ -319,7 +327,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getURLDeliveryNotification() {
         return urlDeliveryNotification;
@@ -331,7 +339,7 @@ public class SimpleWAPPush {
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setURLDeliveryNotification(String value) {
         this.urlDeliveryNotification = value;
@@ -343,7 +351,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getURLNonDeliveryNotification() {
         return urlNonDeliveryNotification;
@@ -355,7 +363,7 @@ public class SimpleWAPPush {
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setURLNonDeliveryNotification(String value) {
         this.urlNonDeliveryNotification = value;
@@ -367,7 +375,7 @@ public class SimpleWAPPush {
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getAffiliateId() {
         return affiliateId;
@@ -375,11 +383,11 @@ public class SimpleWAPPush {
 
     /**
      * Sets the value of the affiliateId property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setAffiliateId(String value) {
         this.affiliateId = value;
