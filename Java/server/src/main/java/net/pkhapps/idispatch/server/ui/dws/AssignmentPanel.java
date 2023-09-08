@@ -68,7 +68,7 @@ public class AssignmentPanel extends VerticalLayout {
         setSizeFull();
         setMargin(false);
         setSpacing(false);
-        setPadding(true);
+        setPadding(false);
 
         noAssignmentSelected = createNoAssignmentSelectedComponent();
 

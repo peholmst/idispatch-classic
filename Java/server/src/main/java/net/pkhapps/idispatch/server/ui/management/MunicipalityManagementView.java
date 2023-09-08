@@ -5,9 +5,9 @@ import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-import net.pkhapps.idispatch.server.Roles;
 import net.pkhapps.idispatch.server.boundary.MunicipalityManagementService;
 import net.pkhapps.idispatch.server.entity.Municipality;
+import net.pkhapps.idispatch.server.security.Roles;
 
 
 @Route(value = "management/municipality", layout = ManagementLayout.class)

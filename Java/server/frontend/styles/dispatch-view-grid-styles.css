@@ -4,15 +4,18 @@
 }
 
 .urgency-b {
-    background-color: pink;
+    background-color: salmon;
+    color: black;
 }
 
 .urgency-c {
     background-color: yellow;
+    color: black;
 }
 
 .urgency-d {
     background-color: lightgreen;
+    color: black;
 }
 
 :host [part="row"] [part ~= "header-cell"] ::slotted(vaadin-grid-cell-content) {

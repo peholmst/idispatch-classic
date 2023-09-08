@@ -39,6 +39,7 @@ public class AssignmentListPanel extends VerticalLayout {
                 GridVariant.LUMO_COMPACT,
                 GridVariant.LUMO_ROW_STRIPES
         );
+        grid.getStyle().set("background", "none");
         grid.setSizeFull();
 
         grid.addColumn(Assignment::getId).setHeader("ID");

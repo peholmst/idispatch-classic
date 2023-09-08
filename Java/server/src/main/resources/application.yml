@@ -4,6 +4,9 @@ server:
 
 vaadin:
   whitelisted-packages: net.pkhapps, com.vaadin
+  exclude-urls: /rest/**
+  frontend:
+    hotdeploy: false
 
 spring:
   jpa:
@@ -16,3 +19,5 @@ management:
 logging:
   level:
     net.pkhapps: debug
+    org.springframework.security: debug
+

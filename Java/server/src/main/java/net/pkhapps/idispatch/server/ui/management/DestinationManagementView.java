@@ -4,10 +4,10 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-import net.pkhapps.idispatch.server.Roles;
 import net.pkhapps.idispatch.server.boundary.DestinationManagementService;
 import net.pkhapps.idispatch.server.entity.Destination;
 import net.pkhapps.idispatch.server.entity.Resource;
+import net.pkhapps.idispatch.server.security.Roles;
 
 import java.util.stream.Collectors;
 

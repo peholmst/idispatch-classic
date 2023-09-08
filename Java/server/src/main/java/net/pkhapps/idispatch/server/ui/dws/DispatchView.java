@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.server.ui.dws;
 
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -12,24 +13,27 @@ import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-import net.pkhapps.idispatch.server.Roles;
 import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.boundary.DispatchService;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
+import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.ui.HasNavbarContent;
+import net.pkhapps.idispatch.server.ui.RootLayout;
 import org.springframework.context.event.ApplicationEventMulticaster;
 
-@Route(value = "dws")
+@Route(value = "dws", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_DISPATCHER)
-@PageTitle("iDispatch")
+@PageTitle("iDispatch | Dispatcher")
 @JsModule("@vaadin/vaadin-lumo-styles/presets/compact.js")
 @CssImport("./styles/dispatch-view-styles.css")
 @CssImport(value = "./styles/dispatch-view-grid-styles.css", themeFor = "vaadin-grid")
-public class DispatchView extends VerticalLayout {
+public class DispatchView extends VerticalLayout implements HasNavbarContent {
 
     private final AssignmentService assignmentService;
     private final AssignmentPanel assignmentPanel;
     private final AssignmentListPanel assignmentListPanel;
     private final ResourceListPanel resourceListPanel;
+    private final HorizontalLayout toolbar;
 
     public DispatchView(AssignmentService assignmentService,
                         ResourceStatusService resourceStatusService,
@@ -45,10 +49,9 @@ public class DispatchView extends VerticalLayout {
         setSpacing(false);
         setPadding(false);
 
-        var toolbar = new HorizontalLayout();
-        toolbar.setWidthFull();
-        toolbar.addClassName("toolbar");
-        add(toolbar);
+        toolbar = new HorizontalLayout();
+        toolbar.getStyle().set("margin-left", "var(--lumo-space-m)");
+        toolbar.setSizeUndefined();
 
         var newAssignment = new Button("New Assignment", event -> newAssignment());
         newAssignment.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -56,7 +59,7 @@ public class DispatchView extends VerticalLayout {
 
         var primarySplit = new SplitLayout(SplitLayout.Orientation.HORIZONTAL);
         primarySplit.setSizeFull();
-        primarySplit.addThemeVariants(SplitLayoutVariant.LUMO_MINIMAL);
+        primarySplit.addThemeVariants(SplitLayoutVariant.LUMO_SMALL);
         add(primarySplit);
 
 
@@ -65,7 +68,7 @@ public class DispatchView extends VerticalLayout {
         primarySplit.addToPrimary(assignmentPanel);
         var secondarySplit = new SplitLayout(SplitLayout.Orientation.VERTICAL);
         secondarySplit.setSizeFull();
-        secondarySplit.addThemeVariants(SplitLayoutVariant.LUMO_MINIMAL);
+        secondarySplit.addThemeVariants(SplitLayoutVariant.LUMO_SMALL);
         secondarySplit.addToPrimary(assignmentListPanel);
         secondarySplit.addToSecondary(resourceListPanel);
         primarySplit.addToSecondary(secondarySplit);
@@ -74,5 +77,15 @@ public class DispatchView extends VerticalLayout {
     private void newAssignment() {
         var newId = assignmentService.openAssignment();
         assignmentListPanel.selectAssignmentById(newId);
+    }
+
+    @Override
+    public Component getNavbarContent() {
+        return toolbar;
+    }
+
+    @Override
+    public String getTitle() {
+        return "Dispatcher";
     }
 }
