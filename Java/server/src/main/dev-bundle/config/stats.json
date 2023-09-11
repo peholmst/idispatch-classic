@@ -237,7 +237,7 @@
   ],
   "frontendHashes": {
     "styles/login-view-styles.css": "90c40a462f0dce3b07c392a2292d17f3d5df08ade015102b3ab61ff14d53d29e",
-    "styles/dispatch-view-styles.css": "4099c1d0368fd917705a60d8d70b22c19a21d469f3bbf466acf9db177dd7bd57",
+    "styles/dispatch-view-styles.css": "982e8d29852fdbdaa4c4890541d6943926ebbc94885ecb6856f95e7531950f35",
     "styles/dispatch-view-grid-styles.css": "6a6d808ff960ce2ba5501368594eb5172d413b587b4cc0f7135cdb1121a8365d",
     "styles/management-dialog-styles.css": "be8727e3af9016372134c78f23d975a6fc8eedc826009ea72e7cd4ef42e4332a",
     "styles/management-view-grid-styles.css": "fafd8a5a4244f6d822df9c0300bfd91264669fd7365057d0ac7563cba5373709",
@@ -262,12 +262,12 @@
   },
   "themeJsonContents": {},
   "entryScripts": [
-    "VAADIN/build/indexhtml-2d8b4d0b.js"
+    "VAADIN/build/indexhtml-ac26065a.js"
   ],
   "webComponents": [],
   "cvdlModules": {},
   "packageJsonHash": "f0984c80f070bf8191d58ed5b336e3f896edfed7a09b61b69f1ee1a193c2335d",
   "indexHtmlGenerated": [
-    "  <script type=\"module\" crossorigin src=\"./VAADIN/build/indexhtml-2d8b4d0b.js\"></script>"
+    "  <script type=\"module\" crossorigin src=\"./VAADIN/build/indexhtml-ac26065a.js\"></script>"
   ]
 }

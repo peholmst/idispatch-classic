@@ -14,7 +14,6 @@ import net.pkhapps.idispatch.server.events.AssignmentUpdated;
 import net.pkhapps.idispatch.server.util.UpdateResult;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -108,13 +107,9 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
     }
 
     @Override
-    public List<Assignment> findClosedAssignments(Optional<Pageable> pageable) {
+    public List<Assignment> findClosedAssignments() {
         logger.debug("Looking up closed assignments");
-        if (pageable.isPresent()) {
-            return assignmentRepository.findByClosedIsNotNull(pageable.get());
-        } else {
-            return assignmentRepository.findByClosedIsNotNull();
-        }
+        return assignmentRepository.findByClosedIsNotNull();
     }
 
     @Override

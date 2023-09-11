@@ -1,7 +1,3 @@
-.dispatch-view {
-    background-color: var(--lumo-shade-10pct);
-}
-
 .resource-state-at_station {
     background-color: darkgreen;
     color: white;

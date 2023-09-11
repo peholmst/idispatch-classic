@@ -43,7 +43,7 @@ public class DispatchView extends VerticalLayout implements HasNavbarContent {
         assignmentPanel = new AssignmentPanel(assignmentService, resourceStatusService, dispatchService, eventMulticaster);
         assignmentListPanel = new AssignmentListPanel(assignmentService, eventMulticaster, assignmentPanel::setAssignmentId);
         resourceListPanel = new ResourceListPanel(resourceStatusService, eventMulticaster);
-        addClassName("dispatch-view");
+        getStyle().set("background-color", "var(--lumo-shade-10pct)");
         setSizeFull();
         setMargin(false);
         setSpacing(false);

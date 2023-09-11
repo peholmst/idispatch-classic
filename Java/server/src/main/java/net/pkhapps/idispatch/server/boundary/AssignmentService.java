@@ -8,7 +8,6 @@ import net.pkhapps.idispatch.server.events.AssignmentClosed;
 import net.pkhapps.idispatch.server.events.AssignmentOpened;
 import net.pkhapps.idispatch.server.events.AssignmentUpdated;
 import net.pkhapps.idispatch.server.util.UpdateResult;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +52,7 @@ public interface AssignmentService {
     /**
      * Finds all closed assignments.
      */
-    List<Assignment> findClosedAssignments(Optional<Pageable> pageable);
+    List<Assignment> findClosedAssignments();
 
     List<Municipality> findApplicableMunicipalities();
 

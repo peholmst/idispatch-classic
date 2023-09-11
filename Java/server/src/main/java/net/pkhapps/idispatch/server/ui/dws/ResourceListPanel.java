@@ -38,7 +38,6 @@ public class ResourceListPanel extends VerticalLayout {
                 GridVariant.LUMO_COMPACT,
                 GridVariant.LUMO_ROW_STRIPES
         );
-        grid.getStyle().set("background", "none");
         grid.setSelectionMode(Grid.SelectionMode.NONE);
         add(grid);
 
