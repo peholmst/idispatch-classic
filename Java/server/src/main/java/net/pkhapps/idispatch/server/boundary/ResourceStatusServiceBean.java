@@ -4,10 +4,12 @@ import net.pkhapps.idispatch.server.entity.*;
 import net.pkhapps.idispatch.server.entity.repository.ArchivedResourceStatusRepository;
 import net.pkhapps.idispatch.server.entity.repository.ResourceStatusRepository;
 import net.pkhapps.idispatch.server.events.ResourceStatusChanged;
+import net.pkhapps.idispatch.server.security.Roles;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -16,6 +18,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Secured(Roles.ROLE_ADMIN)
 class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceStatusService {
 
     private final ResourceStatusRepository resourceStatusRepository;

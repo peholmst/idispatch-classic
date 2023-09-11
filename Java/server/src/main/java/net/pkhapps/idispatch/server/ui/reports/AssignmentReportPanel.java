@@ -13,7 +13,7 @@ import com.vaadin.flow.dom.ElementFactory;
 import net.pkhapps.idispatch.server.boundary.ReportDTO;
 import net.pkhapps.idispatch.server.boundary.ReportResourceDTO;
 import net.pkhapps.idispatch.server.entity.AssignmentUrgency;
-import net.pkhapps.idispatch.server.ui.dws.Formatters;
+import net.pkhapps.idispatch.server.ui.Formatters;
 
 import java.util.Collections;
 import java.util.Objects;

@@ -31,8 +31,12 @@ abstract class AbstractManagementServiceBean<E extends AbstractEntity, R extends
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public E save(E entity) throws ValidationFailedException {
         ValidationFailedException.throwIfNotEmpty(getValidator().validate(entity, Default.class));
+        doBeforeSave(entity);
         logger.debug("Saving entity {}", entity);
         return getRepository().saveAndFlush(entity);
+    }
+
+    protected void doBeforeSave(E entity) {
     }
 
     @Override

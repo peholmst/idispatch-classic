@@ -17,9 +17,11 @@ import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.boundary.ReportService;
 import net.pkhapps.idispatch.server.entity.Assignment;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.ui.Formatters;
 import net.pkhapps.idispatch.server.ui.HasNavbarContent;
 import net.pkhapps.idispatch.server.ui.RootLayout;
-import net.pkhapps.idispatch.server.ui.dws.Formatters;
+
+import java.util.Optional;
 
 @Route(value = "reports", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_REPORT_READER)
@@ -74,11 +76,11 @@ public class ReportsView extends SplitLayout implements HasNavbarContent {
     }
 
     @Override
-    public Component getNavbarContent() {
+    public Optional<Component> getNavbarContent() {
         var toolbar = new HorizontalLayout(refreshButton);
         toolbar.getStyle().set("margin-left", "var(--lumo-space-m)");
         toolbar.setSizeUndefined();
-        return toolbar;
+        return Optional.of(toolbar);
     }
 
     @Override

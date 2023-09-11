@@ -11,6 +11,8 @@ import net.pkhapps.idispatch.server.ui.HasNavbarContent;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.TabUtils;
 
+import java.util.Optional;
+
 @JsModule("@vaadin/vaadin-lumo-styles/presets/compact.js")
 @ParentLayout(RootLayout.class)
 public class ManagementLayout extends VerticalLayout implements RouterLayout, HasNavbarContent {
@@ -37,8 +39,8 @@ public class ManagementLayout extends VerticalLayout implements RouterLayout, Ha
     }
 
     @Override
-    public Component getNavbarContent() {
-        return views;
+    public Optional<Component> getNavbarContent() {
+        return Optional.of(views);
     }
 
     @Override

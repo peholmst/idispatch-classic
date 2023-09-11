@@ -1,4 +1,4 @@
-package net.pkhapps.idispatch.server.ui.dws;
+package net.pkhapps.idispatch.server.ui;
 
 import net.pkhapps.idispatch.server.entity.*;
 import org.springframework.util.StringUtils;
@@ -51,5 +51,9 @@ public final class Formatters {
 
     public static String resourceStateClassName(ResourceState resourceState) {
         return resourceState == null ? null : String.format("resource-state-%s", resourceState.name().toLowerCase());
+    }
+
+    public static String formatBoolean(Boolean bool) {
+        return bool == null ? null : bool ? "Yes" : "No";
     }
 }

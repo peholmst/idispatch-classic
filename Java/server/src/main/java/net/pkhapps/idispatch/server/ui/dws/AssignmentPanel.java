@@ -28,6 +28,7 @@ import net.pkhapps.idispatch.server.boundary.DispatchService;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
 import net.pkhapps.idispatch.server.entity.*;
 import net.pkhapps.idispatch.server.events.ResourceStatusChanged;
+import net.pkhapps.idispatch.server.ui.Formatters;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.lang.Nullable;

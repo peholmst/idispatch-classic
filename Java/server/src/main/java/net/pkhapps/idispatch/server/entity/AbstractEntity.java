@@ -1,9 +1,6 @@
 package net.pkhapps.idispatch.server.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.*;
 import org.springframework.data.domain.Persistable;
 
 import java.io.Serializable;
@@ -18,7 +15,7 @@ public abstract class AbstractEntity implements Persistable<Long>, Serializable,
     public static final String PROP_ID = "id";
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
     private Long id;
 

@@ -9,9 +9,14 @@ import jakarta.annotation.security.PermitAll;
 @Route(value = "", layout = RootLayout.class)
 @PageTitle("iDispatch")
 @PermitAll
-public class RootView extends VerticalLayout {
+public class RootView extends VerticalLayout implements HasNavbarContent {
 
     public RootView() {
         add(new H1("Welcome to iDispatch!"));
+    }
+
+    @Override
+    public String getTitle() {
+        return "Home";
     }
 }

@@ -11,13 +11,16 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tabs;
+import com.vaadin.flow.dom.ElementFactory;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.dws.DispatchView;
 import net.pkhapps.idispatch.server.ui.management.MunicipalityManagementView;
 import net.pkhapps.idispatch.server.ui.reports.ReportsView;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 public class RootLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
 
@@ -67,17 +70,29 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
 
     private Tabs getPrimaryNavigation() {
         var tabs = new Tabs();
-        tabs.add(
-                // TODO Filter by role
-                TabUtils.createNavigationTab(VaadinIcon.HOME, "Home", RootView.class),
-                TabUtils.createNavigationTab(VaadinIcon.HEADSET, "Dispatcher", DispatchView.class),
-                TabUtils.createNavigationTab(VaadinIcon.COG, "Management", MunicipalityManagementView.class),
-                TabUtils.createNavigationTab(VaadinIcon.CHART, "Reports", ReportsView.class)
-                // TODO Change password
-        );
+        tabs.add(TabUtils.createNavigationTab(VaadinIcon.HOME, "Home", RootView.class));
+        if (isUserInRole(Roles.ROLE_DISPATCHER)) {
+            tabs.add(TabUtils.createNavigationTab(VaadinIcon.HEADSET, "Dispatcher", DispatchView.class));
+        }
+        if (isUserInRole(Roles.ROLE_REPORT_READER)) {
+            tabs.add(TabUtils.createNavigationTab(VaadinIcon.CHART, "Reports", ReportsView.class));
+        }
+        if (isUserInRole(Roles.ROLE_ADMIN)) {
+            tabs.getElement().appendChild(ElementFactory.createHr());
+            tabs.add(TabUtils.createNavigationTab(VaadinIcon.COG, "Management", MunicipalityManagementView.class));
+        }
+        // TODO Change password
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
         tabs.setSelectedIndex(1);
         return tabs;
+    }
+
+    private boolean isUserInRole(String role) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            return auth.getAuthorities().stream().anyMatch(ga -> ga.getAuthority().equals(role));
+        }
+        return false;
     }
 
     @Override
@@ -93,7 +108,7 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
 
     private void setNavbarContent(HasNavbarContent contentProvider) {
         clearNavbarContent();
-        navbarLayout.add(contentProvider.getNavbarContent());
+        contentProvider.getNavbarContent().ifPresent(navbarLayout::add);
         viewTitle.setText(contentProvider.getTitle());
     }
 

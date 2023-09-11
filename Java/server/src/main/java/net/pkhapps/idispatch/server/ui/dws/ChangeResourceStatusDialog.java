@@ -8,6 +8,7 @@ import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.ResourceState;
 import net.pkhapps.idispatch.server.entity.ResourceStatus;
+import net.pkhapps.idispatch.server.ui.Formatters;
 
 
 @CssImport("./styles/dispatch-view-styles.css")

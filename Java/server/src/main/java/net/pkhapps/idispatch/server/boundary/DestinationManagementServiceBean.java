@@ -5,11 +5,14 @@ import net.pkhapps.idispatch.server.entity.Destination;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.repository.DestinationRepository;
 import net.pkhapps.idispatch.server.entity.repository.ResourceRepository;
+import net.pkhapps.idispatch.server.security.Roles;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@Secured(Roles.ROLE_ADMIN)
 class DestinationManagementServiceBean extends AbstractSoftDeletableManagementServiceBean<Destination, DestinationRepository> implements DestinationManagementService {
 
     private final DestinationRepository repository;

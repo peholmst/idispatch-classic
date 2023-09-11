@@ -11,9 +11,11 @@ import net.pkhapps.idispatch.server.entity.repository.MunicipalityRepository;
 import net.pkhapps.idispatch.server.events.AssignmentClosed;
 import net.pkhapps.idispatch.server.events.AssignmentOpened;
 import net.pkhapps.idispatch.server.events.AssignmentUpdated;
+import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.util.UpdateResult;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Secured(Roles.ROLE_DISPATCHER)
 class AssignmentServiceBean extends AbstractServiceBean implements AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
@@ -107,6 +110,7 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
     }
 
     @Override
+    @Secured({Roles.ROLE_DISPATCHER, Roles.ROLE_REPORT_READER})
     public List<Assignment> findClosedAssignments() {
         logger.debug("Looking up closed assignments");
         return assignmentRepository.findByClosedIsNotNull();

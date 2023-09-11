@@ -5,12 +5,15 @@ import net.pkhapps.idispatch.server.entity.Assignment;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.repository.ArchivedResourceStatusRepository;
 import net.pkhapps.idispatch.server.entity.repository.AssignmentRepository;
+import net.pkhapps.idispatch.server.security.Roles;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.*;
 
 @Service
+@Secured(Roles.ROLE_REPORT_READER)
 class ReportServiceBean implements ReportService {
 
     private final ArchivedResourceStatusRepository archivedResourceStatusRepository;

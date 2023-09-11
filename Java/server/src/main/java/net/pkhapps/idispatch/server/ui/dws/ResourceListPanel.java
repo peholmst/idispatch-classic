@@ -11,6 +11,7 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
 import net.pkhapps.idispatch.server.entity.ResourceStatus;
 import net.pkhapps.idispatch.server.events.ResourceStatusChanged;
+import net.pkhapps.idispatch.server.ui.Formatters;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ApplicationEventMulticaster;
 

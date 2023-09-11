@@ -21,6 +21,8 @@ import net.pkhapps.idispatch.server.ui.HasNavbarContent;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import org.springframework.context.event.ApplicationEventMulticaster;
 
+import java.util.Optional;
+
 @Route(value = "dws", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_DISPATCHER)
 @PageTitle("iDispatch | Dispatcher")
@@ -80,8 +82,8 @@ public class DispatchView extends VerticalLayout implements HasNavbarContent {
     }
 
     @Override
-    public Component getNavbarContent() {
-        return toolbar;
+    public Optional<Component> getNavbarContent() {
+        return Optional.of(toolbar);
     }
 
     @Override

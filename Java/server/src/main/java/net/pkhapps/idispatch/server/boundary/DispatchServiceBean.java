@@ -6,7 +6,9 @@ import net.pkhapps.idispatch.server.entity.repository.DestinationRepository;
 import net.pkhapps.idispatch.server.entity.repository.DispatchNotificationRepository;
 import net.pkhapps.idispatch.server.entity.repository.ReceiptRepository;
 import net.pkhapps.idispatch.server.events.DispatchNotificationSent;
+import net.pkhapps.idispatch.server.security.Roles;
 import org.springframework.context.ApplicationContext;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.Sets.newHashSet;
 
 @Service
+@Secured(Roles.ROLE_DISPATCHER)
 class DispatchServiceBean extends AbstractServiceBean implements DispatchService {
 
     private final DispatchNotificationRepository dispatchNotificationRepository;

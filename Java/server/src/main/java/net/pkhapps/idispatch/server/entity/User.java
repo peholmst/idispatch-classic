@@ -3,12 +3,14 @@ package net.pkhapps.idispatch.server.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "users")
 public class User extends AbstractLockableEntity {
 
     @Column(name = "username", nullable = false, unique = true)
+    @NotBlank(message = "Please enter a username")
     private String username;
     @Column(name = "encoded_password", nullable = false)
     private String encodedPassword;
@@ -19,7 +21,7 @@ public class User extends AbstractLockableEntity {
     @Column(name = "is_report_reader", nullable = false)
     private boolean isReportReader;
     @Column(name = "is_enabled", nullable = false)
-    private boolean isEnabled;
+    private boolean isEnabled = true;
 
     public void setUsername(String username) {
         this.username = username;

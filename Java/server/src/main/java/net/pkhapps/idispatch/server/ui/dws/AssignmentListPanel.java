@@ -8,6 +8,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.entity.Assignment;
 import net.pkhapps.idispatch.server.events.AssignmentEvent;
+import net.pkhapps.idispatch.server.ui.Formatters;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.lang.Nullable;
