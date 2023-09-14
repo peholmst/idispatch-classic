@@ -17,9 +17,6 @@
             <source>src/main/config/idispatch-server.sh</source>
         </file>
         <file>
-            <source>src/main/config/users.properties</source>
-        </file>
-        <file>
             <source>target/idispatch-server.jar</source>
         </file>
     </files>

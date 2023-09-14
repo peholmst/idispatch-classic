@@ -13,5 +13,3 @@ aspsms:
   userKey: CHANGEME
   password: CHANGEME
   originator: iDispatch
-security:
-  users: file:/home/ubuntu/users.properties
