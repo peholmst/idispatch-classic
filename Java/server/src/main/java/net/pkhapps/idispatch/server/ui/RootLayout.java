@@ -81,7 +81,9 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
             tabs.getElement().appendChild(ElementFactory.createHr());
             tabs.add(TabUtils.createNavigationTab(VaadinIcon.COG, "Management", MunicipalityManagementView.class));
         }
-        // TODO Change password
+        tabs.getElement().appendChild(ElementFactory.createHr());
+        tabs.add(TabUtils.createNavigationTab(VaadinIcon.PASSWORD, "Change Password", ChangePasswordView.class));
+
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
         tabs.setSelectedIndex(1);
         return tabs;

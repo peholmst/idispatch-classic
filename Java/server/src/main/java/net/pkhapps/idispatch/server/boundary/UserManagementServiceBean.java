@@ -30,7 +30,11 @@ class UserManagementServiceBean extends AbstractManagementServiceBean<User, User
 
     @Override
     protected void doBeforeSave(User entity) {
-        if (SecurityContextHolder.getContext().getAuthentication().getName().equals(entity.getUsername())) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            throw new AccessDeniedException("No authenticated user");
+        }
+        if (authentication.getName().equals(entity.getUsername())) {
             throw new AccessDeniedException("You cannot make changes to your own account");
         }
         if (entity.getEncodedPassword() == null && entity.getUsername() != null) {

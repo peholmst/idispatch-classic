@@ -18,7 +18,6 @@ import net.pkhapps.idispatch.server.entity.AbstractEntity;
 import net.pkhapps.idispatch.server.entity.ValidationFailedException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.lang.Nullable;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Locale;
 
@@ -70,12 +69,6 @@ public abstract class AbstractManagementDialog<E extends AbstractEntity> extends
             ex.getViolationMessages(Locale.getDefault()).forEach(message -> validationErrors.add(new ListItem(message)));
         } catch (DataIntegrityViolationException ex) {
             var notification = new Notification("A data integrity violation has been detected. You may have entered something that already exists. Check the form and try again.");
-            notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
-            notification.setPosition(Notification.Position.MIDDLE);
-            notification.setDuration(3000);
-            notification.open();
-        } catch (AccessDeniedException ex) {
-            var notification = new Notification("You do not have permission to perform this operation: " + ex.getMessage());
             notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
             notification.setPosition(Notification.Position.MIDDLE);
             notification.setDuration(3000);
