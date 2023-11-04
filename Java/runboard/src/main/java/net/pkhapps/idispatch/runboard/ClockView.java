@@ -6,7 +6,7 @@ import java.time.LocalTime;
 
 public class ClockView extends JComponent {
 
-    private final Timer repaintTimer = new Timer(1000, e -> repaint());
+    private final Timer repaintTimer = new Timer(200, e -> repaint());
 
     public ClockView() {
         repaintTimer.start();
@@ -66,7 +66,7 @@ public class ClockView extends JComponent {
         {
             g2.setStroke(new BasicStroke(31, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2.setColor(Color.BLACK);
-            var hourAngle = ((now.getHour() % 12) / 12d) * Math.PI * 2;
+            var hourAngle = (((now.getHour() % 12) * 60 + now.getMinute()) / 720d) * Math.PI * 2;
             var hourLength = radius * 0.5;
             var sin = Math.sin(hourAngle);
             var cos = Math.cos(hourAngle);
