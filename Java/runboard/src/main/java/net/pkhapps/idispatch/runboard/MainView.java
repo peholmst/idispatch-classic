@@ -25,6 +25,7 @@ class MainView extends JFrame implements Observer {
         super("iDispatch Runboard");
         this.lowRes = lowRes;
         setExtendedState(MAXIMIZED_BOTH);
+        setMinimumSize(new Dimension(400, 400));
         notifications = new JTabbedPane();
         add(notifications, BorderLayout.CENTER);
         cardFlipperTimer = new Timer(10000, e -> flipCard());
