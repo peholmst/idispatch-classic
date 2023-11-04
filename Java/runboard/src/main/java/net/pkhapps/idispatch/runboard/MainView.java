@@ -17,7 +17,8 @@ class MainView extends JFrame implements Observer {
     private final Map<Notification, NotificationView> views = new HashMap<>();
     private final boolean lowRes;
     private Model model;
-    private JTabbedPane notifications;
+    private final JTabbedPane notifications;
+    private final ClockView clockView = new ClockView();
     private JDialog errorDialog;
 
     MainView(boolean lowRes) {
@@ -28,6 +29,7 @@ class MainView extends JFrame implements Observer {
         add(notifications, BorderLayout.CENTER);
         cardFlipperTimer = new Timer(10000, e -> flipCard());
         cardFlipperTimer.start();
+        setGlassPane(clockView);
     }
 
     private void flipCard() {
@@ -90,6 +92,7 @@ class MainView extends JFrame implements Observer {
             model.getVisibleNotifications().stream().filter(n -> !notificationsToRemove.remove(n)).forEach(this::addCard);
         }
         notificationsToRemove.forEach(this::removeCard);
+        clockView.setVisible(model.getVisibleNotifications().isEmpty());
     }
 
     private void removeCard(Notification notification) {
