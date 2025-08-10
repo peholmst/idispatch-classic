@@ -1,5 +1,6 @@
 node_modules/
 webpack.generated.js
 vite.generated.ts
-frontend/generated
+src/main/frontend/generated
+src/main/frontend/index.html
 application-prod.yml
