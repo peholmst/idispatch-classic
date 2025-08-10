@@ -3,14 +3,17 @@ package net.pkhapps.idispatch.server.boundary;
 import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.*;
 import net.pkhapps.idispatch.server.entity.repository.ResourceRepository;
+import net.pkhapps.idispatch.server.entity.repository.ResourceSpecifications;
 import net.pkhapps.idispatch.server.entity.repository.ResourceStatusRepository;
 import net.pkhapps.idispatch.server.entity.repository.ResourceTypeRepository;
 import net.pkhapps.idispatch.server.security.Roles;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -45,6 +48,18 @@ class ResourceManagementServiceBean extends AbstractSoftDeletableManagementServi
         } else {
             return super.save(entity);
         }
+    }
+
+    @Override
+    protected List<Resource> doFindAll(Filter filter) {
+        var specs = new ArrayList<Specification<Resource>>();
+        if (filter instanceof SoftDeletableFilter softDeletableFilter && softDeletableFilter.includesActiveOnly()) {
+            specs.add(ResourceSpecifications.activeOnly());
+        }
+        if (filter instanceof TextSearchFilter textSearchFilter) {
+            textSearchFilter.doWithSearchTerm(st -> specs.add(ResourceSpecifications.searchTerm(st)));
+        }
+        return getRepository().findAll(Specification.allOf(specs));
     }
 
     @Override

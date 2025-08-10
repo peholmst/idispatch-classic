@@ -15,7 +15,7 @@ public abstract class AbstractEntity implements Persistable<Long>, Serializable,
     public static final String PROP_ID = "id";
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.AUTO) // TODO Replace with sequences, one for each entity.
     @Column(name = "id", nullable = false)
     private Long id;
 

@@ -41,8 +41,10 @@ abstract class AbstractManagementServiceBean<E extends AbstractEntity, R extends
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
-    public List<E> findAll() {
+    public List<E> findAll(Filter filter) {
         logger.debug("Finding all entities");
-        return getRepository().findAll();
+        return doFindAll(filter);
     }
+
+    protected abstract List<E> doFindAll(Filter filter);
 }

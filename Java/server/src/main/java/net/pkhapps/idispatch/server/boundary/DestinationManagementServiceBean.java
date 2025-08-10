@@ -31,6 +31,11 @@ class DestinationManagementServiceBean extends AbstractSoftDeletableManagementSe
     }
 
     @Override
+    protected List<Destination> doFindAll(Filter filter) {
+        return repository.findAll(); // TODO Implement filter support
+    }
+
+    @Override
     public List<Resource> findApplicableResources() {
         return resourceRepository.findByActiveTrueOrderByCallSignAsc();
     }

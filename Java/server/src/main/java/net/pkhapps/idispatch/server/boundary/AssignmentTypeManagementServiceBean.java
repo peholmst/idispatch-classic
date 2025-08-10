@@ -7,6 +7,8 @@ import net.pkhapps.idispatch.server.security.Roles;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Secured(Roles.ROLE_ADMIN)
 class AssignmentTypeManagementServiceBean extends AbstractSoftDeletableManagementServiceBean<AssignmentType, AssignmentTypeRepository> implements AssignmentTypeManagementService {
@@ -21,5 +23,10 @@ class AssignmentTypeManagementServiceBean extends AbstractSoftDeletableManagemen
     @Override
     protected AssignmentTypeRepository getRepository() {
         return repository;
+    }
+
+    @Override
+    protected List<AssignmentType> doFindAll(Filter filter) {
+        return repository.findAll(); // TODO Implement filter support
     }
 }

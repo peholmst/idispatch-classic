@@ -2,12 +2,16 @@ package net.pkhapps.idispatch.server.ui.management;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.theme.lumo.LumoIcon;
+import net.pkhapps.idispatch.server.boundary.DefaultFilter;
 import net.pkhapps.idispatch.server.boundary.ManagementService;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
 import net.pkhapps.idispatch.server.entity.Deactivatable;
@@ -25,6 +29,8 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
     private final Button edit;
     private final Button delete;
     private final Button restore;
+    private final Checkbox includeDeleted;
+    private final TextField searchField;
 
     public AbstractManagementView(S service) {
         this.service = requireNonNull(service);
@@ -38,16 +44,34 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         var add = new Button("Add...", VaadinIcon.PLUS_CIRCLE.create(), event -> add());
         add.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         edit = new Button(VaadinIcon.EDIT.create(), event -> edit());
+        edit.setTooltipText("Edit");
         delete = new Button(VaadinIcon.CLOSE_CIRCLE.create(), event -> delete());
         delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
         restore = new Button(LumoIcon.UNDO.create(), event -> restore());
 
+        searchField = new TextField();
+        searchField.setPlaceholder("Search...");
+        searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
+        searchField.setValueChangeMode(ValueChangeMode.LAZY);
+        searchField.addValueChangeListener(event -> refresh());
+
+        includeDeleted = new Checkbox("Include deleted", event -> refresh());
         var refresh = new Button(VaadinIcon.REFRESH.create(), event -> refresh());
 
         setSizeFull();
+
+        var filterBar = new HorizontalLayout();
+        filterBar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        filterBar.add(searchField);
+        if (supportsRestore()) {
+            filterBar.add(includeDeleted);
+        }
+        filterBar.add(refresh);
+        add(filterBar);
+
         add(grid);
 
-        var buttons = new HorizontalLayout();//
+        var buttons = new HorizontalLayout();
         buttons.add(add, edit);
         if (supportsDelete()) {
             buttons.add(delete);
@@ -55,7 +79,6 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         if (supportsRestore()) {
             buttons.add(restore);
         }
-        buttons.add(refresh);
 
         add(buttons);
 
@@ -78,7 +101,8 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
     }
 
     private void refresh() {
-        grid.setItems(getService().findAll());
+        var filter = new DefaultFilter(includeDeleted.getValue(), searchField.getValue());
+        grid.setItems(getService().findAll(filter));
     }
 
     private void add() {

@@ -10,6 +10,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Secured(Roles.ROLE_ADMIN)
 class UserManagementServiceBean extends AbstractManagementServiceBean<User, UserRepository> implements UserManagementService {
@@ -40,5 +42,10 @@ class UserManagementServiceBean extends AbstractManagementServiceBean<User, User
         if (entity.getEncodedPassword() == null && entity.getUsername() != null) {
             entity.setEncodedPassword(passwordEncoder.encode(entity.getUsername()));
         }
+    }
+
+    @Override
+    protected List<User> doFindAll(Filter filter) {
+        return repository.findAll(); // TODO Implement filter support
     }
 }
