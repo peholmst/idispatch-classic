@@ -3,21 +3,16 @@ server:
     context-path: /idispatch
 
 vaadin:
-  whitelisted-packages: net.pkhapps, com.vaadin
   exclude-urls: /rest/**
   frontend:
     hotdeploy: false
+  allowed-packages: net.pkhapps, com.vaadin
 
 spring:
   jpa:
     open-in-view: false
 
-management:
-  server:
-    port: 8081
-
 logging:
   level:
     net.pkhapps: debug
     org.springframework.security: debug
-
