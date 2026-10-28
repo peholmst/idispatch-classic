@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.server.ui;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
@@ -21,6 +22,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,7 +47,7 @@ class AccessControlTest extends AbstractUITest {
     void userWithoutRoles_seesHomeOnly() {
         var root = navigate(RootView.class);
         assertThat(find(H1.class, root).single().getText()).isEqualTo("Welcome to iDispatch!");
-        assertThat(navigationTabs()).containsExactly("Home");
+        assertThat(navigationTabs()).containsExactly("Home", "Log Out");
         assertThat(navbarTitle()).isEqualTo("Home");
     }
 
@@ -81,14 +83,14 @@ class AccessControlTest extends AbstractUITest {
     @WithMockUser(username = "dispatcher", roles = "DISPATCHER")
     void dispatcher_seesDispatcherEntry() {
         navigate(RootView.class);
-        assertThat(navigationTabs()).containsExactly("Home", "Dispatcher");
+        assertThat(navigationTabs()).containsExactly("Home", "Dispatcher", "Log Out");
     }
 
     @Test
     @WithMockUser(username = "report-reader", roles = "REPORT_READER")
     void reportReader_seesReportsEntryAndCanOpenReports() {
         navigate(RootView.class);
-        assertThat(navigationTabs()).containsExactly("Home", "Reports");
+        assertThat(navigationTabs()).containsExactly("Home", "Reports", "Log Out");
         navigate(ReportsView.class);
         assertThat(navbarTitle()).isEqualTo("Reports");
     }
@@ -97,7 +99,7 @@ class AccessControlTest extends AbstractUITest {
     @WithMockUser(username = "admin-only", roles = "ADMIN")
     void admin_seesManagementEntryAndCanOpenManagement() {
         navigate(RootView.class);
-        assertThat(navigationTabs()).containsExactly("Home", "Management");
+        assertThat(navigationTabs()).containsExactly("Home", "Management", "Log Out");
         navigate(MunicipalityManagementView.class);
         assertThat(navbarTitle()).isEqualTo("Management Console");
     }
@@ -107,37 +109,63 @@ class AccessControlTest extends AbstractUITest {
     void userWithAllRoles_seesAllEntries() {
         navigate(RootView.class);
         assertThat(navigationTabs())
-                .containsExactly("Home", "Dispatcher", "Reports", "Management");
+                .containsExactly("Home", "Dispatcher", "Reports", "Management", "Log Out");
         navigate(DispatchView.class);
         assertThat(navbarTitle()).isEqualTo("Dispatcher");
     }
 
     @Test
     @WithMockUser(username = "drawer-user")
-    void drawer_showsNameOfLoggedInUser() {
+    void drawer_showsUsernameWhenThereIsNoIdToken() {
         navigate(RootView.class);
+        assertThat(find(Avatar.class).single().getName()).isEqualTo("drawer-user");
         assertThat(find(Span.class).withText("drawer-user").exists()).isTrue();
     }
 
     @Test
-    void keycloakUser_seesNameAndLinkToKeycloakAccountConsole() {
+    void keycloakUser_seesAvatarWithFirstAndLastName() {
+        loginWithIdToken(Map.of("given_name", "Dana", "family_name", "Dispatcher"));
+
+        navigate(RootView.class);
+
+        assertThat(find(Avatar.class).single().getName()).isEqualTo("Dana Dispatcher");
+        assertThat(find(Span.class).withText("Dana Dispatcher").exists()).isTrue();
+        assertThat(find(Span.class).withText("oidc-user").exists()).isFalse();
+    }
+
+    @Test
+    void keycloakUserWithoutName_seesUsername() {
+        loginWithIdToken(Map.of());
+
+        navigate(RootView.class);
+
+        assertThat(find(Avatar.class).single().getName()).isEqualTo("oidc-user");
+        assertThat(find(Span.class).withText("oidc-user").exists()).isTrue();
+    }
+
+    @Test
+    void keycloakUser_seesLinkToKeycloakAccountConsole() {
+        loginWithIdToken(Map.of());
+
+        navigate(RootView.class);
+
+        assertThat(navigationTabs()).containsExactly("Home", "Dispatcher", "My Account", "Log Out");
+        assertThat(find(Anchor.class).single().getHref())
+                .isEqualTo("http://keycloak.invalid/realms/idispatch/account");
+    }
+
+    private void loginWithIdToken(Map<String, Object> nameClaims) {
         var idToken = OidcIdToken.withTokenValue("id-token")
                 .issuer("http://keycloak.invalid/realms/idispatch")
                 .subject("f2b4c1d0")
                 .claim("preferred_username", "oidc-user")
+                .claims(claims -> claims.putAll(nameClaims))
                 .build();
         var user = new DefaultOidcUser(List.of(new SimpleGrantedAuthority(Roles.ROLE_DISPATCHER)), idToken,
                 "preferred_username");
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(new OAuth2AuthenticationToken(user, user.getAuthorities(), "keycloak"));
         SecurityContextHolder.setContext(context);
-
-        navigate(RootView.class);
-
-        assertThat(find(Span.class).withText("oidc-user").exists()).isTrue();
-        assertThat(navigationTabs()).containsExactly("Home", "Dispatcher", "My Account");
-        assertThat(find(Anchor.class).single().getHref())
-                .isEqualTo("http://keycloak.invalid/realms/idispatch/account");
     }
 
     /**

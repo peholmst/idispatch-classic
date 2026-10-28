@@ -2,12 +2,13 @@ package net.pkhapps.idispatch.server.ui;
 
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
-import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.AnchorTarget;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -27,6 +28,9 @@ import net.pkhapps.idispatch.server.ui.reports.ReportsView;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 @PermitAll
 public class RootLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
 
@@ -41,9 +45,14 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
                 .set("line-height", "var(--lumo-size-l)")
                 .set("margin", "0 var(--lumo-space-m)");
 
-        var logout = new Button(VaadinIcon.POWER_OFF.create(), event -> authenticationContext.logout());
-        var user = new HorizontalLayout(new Span(authenticationContext.getPrincipalName().orElse("")), logout);
-        user.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        var displayName = getDisplayName(authenticationContext);
+        var avatar = new Avatar(displayName);
+        var name = new Span(displayName);
+        name.getStyle()
+                .set("overflow", "hidden")
+                .set("text-overflow", "ellipsis")
+                .set("white-space", "nowrap");
+        var user = new HorizontalLayout(avatar, name);
         user.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         user.setWidthFull();
         user.setPadding(true);
@@ -74,6 +83,21 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         setPrimarySection(Section.DRAWER);
     }
 
+    /**
+     * Returns the first and last name from the user's ID token, or the username if the token has neither.
+     */
+    private static String getDisplayName(AuthenticationContext authenticationContext) {
+        return authenticationContext.getAuthenticatedUser(Object.class)
+                .filter(OidcUser.class::isInstance)
+                .map(OidcUser.class::cast)
+                .map(user -> Stream.of(user.getGivenName(), user.getFamilyName())
+                        .filter(part -> part != null && !part.isBlank())
+                        .collect(Collectors.joining(" ")))
+                .filter(fullName -> !fullName.isEmpty())
+                .or(authenticationContext::getPrincipalName)
+                .orElse("");
+    }
+
     private Tabs getPrimaryNavigation(AuthenticationContext authenticationContext) {
         var tabs = new Tabs();
         tabs.add(TabUtils.createNavigationTab(VaadinIcon.HOME, "Home", RootView.class));
@@ -87,31 +111,43 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
             tabs.getElement().appendChild(ElementFactory.createHr());
             tabs.add(TabUtils.createNavigationTab(VaadinIcon.COG, "Management", MunicipalityManagementView.class));
         }
+        // Select the first view after Home, if the user has one
+        tabs.setSelectedIndex(tabs.getComponentCount() > 1 ? 1 : 0);
+
+        tabs.getElement().appendChild(ElementFactory.createHr());
         // Users are managed in Keycloak, and change their password in the Keycloak account console of the realm
         // that issued their ID token
         authenticationContext.getAuthenticatedUser(Object.class)
                 .filter(OidcUser.class::isInstance)
                 .map(OidcUser.class::cast)
-                .ifPresent(user -> {
-                    tabs.getElement().appendChild(ElementFactory.createHr());
-                    tabs.add(createAccountTab(user.getIssuer() + "/account"));
-                });
+                .ifPresent(user -> tabs.add(createAccountTab(user.getIssuer() + "/account")));
+        var logoutTab = new Tab(createMenuItemIcon(VaadinIcon.SIGN_OUT), new Span("Log Out"));
+        tabs.add(logoutTab);
 
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
-        tabs.setSelectedIndex(1);
+        // Selecting the tab, by clicking it or with the keyboard, logs out
+        tabs.addSelectedChangeListener(event -> {
+            if (event.getSelectedTab() == logoutTab) {
+                authenticationContext.logout();
+            }
+        });
         return tabs;
     }
 
     private static Tab createAccountTab(String accountConsoleUrl) {
-        var icon = VaadinIcon.USER.create();
+        var link = new Anchor(accountConsoleUrl, createMenuItemIcon(VaadinIcon.USER), new Span("My Account"));
+        link.setTarget(AnchorTarget.BLANK);
+        link.setTabIndex(-1);
+        return new Tab(link);
+    }
+
+    private static Icon createMenuItemIcon(VaadinIcon vaadinIcon) {
+        var icon = vaadinIcon.create();
         icon.getStyle()
                 .set("box-sizing", "border-box")
                 .set("margin-inline-end", "var(--lumo-space-m)")
                 .set("padding", "var(--lumo-space-xs)");
-        var link = new Anchor(accountConsoleUrl, icon, new Span("My Account"));
-        link.setTarget(AnchorTarget.BLANK);
-        link.setTabIndex(-1);
-        return new Tab(link);
+        return icon;
     }
 
     private boolean isUserInRole(String role) {
