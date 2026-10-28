@@ -1,6 +1,6 @@
 # iDispatch Classic (Java)
 
-Maven reactor: `server` (Spring Boot 4.1 + Vaadin 25.3 Flow app, Java 25), `aspsms-integration` (generated SOAP client used by `server`), `runboard` (standalone Swing client that polls the server's `/rest` endpoints).
+Maven reactor: `server` (Spring Boot 4.1 + Vaadin 25.3 Flow app, Java 25), `aspsms-integration` (generated SOAP client used by `server`), `runboard` (standalone Swing client that receives dispatch notifications over the server's `/ws/runboard` WebSocket).
 
 ## Running and testing
 

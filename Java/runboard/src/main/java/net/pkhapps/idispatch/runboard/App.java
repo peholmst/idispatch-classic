@@ -1,20 +1,20 @@
 package net.pkhapps.idispatch.runboard;
 
 
-import net.pkhapps.idispatch.runboard.client.ServerPoller;
+import net.pkhapps.idispatch.runboard.client.ServerConnection;
 
 import javax.swing.*;
 
 public class App {
 
     private MainView mainView;
-    private ServerPoller poller;
+    private ServerConnection connection;
     private Model model;
 
     private App() {
         final Configuration configuration = new Configuration();
         model = new Model();
-        poller = new ServerPoller(configuration, model);
+        connection = new ServerConnection(configuration, model);
         mainView = new MainView(configuration.isLowResolution());
         mainView.setModel(model);
         mainView.setUndecorated(configuration.isUndecorated());
@@ -35,6 +35,6 @@ public class App {
 
     void start() {
         mainView.setVisible(true);
-        poller.start();
+        connection.start();
     }
 }

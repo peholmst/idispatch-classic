@@ -20,7 +20,7 @@ class SecurityConfig {
     @Bean
     SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(r -> r.requestMatchers(
-                        "/rest/**",
+                        "/ws/**",
                         "/actuator/**"
                 )
                 .permitAll());

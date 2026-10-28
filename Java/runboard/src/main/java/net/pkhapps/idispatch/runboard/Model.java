@@ -2,7 +2,7 @@ package net.pkhapps.idispatch.runboard;
 
 import net.pkhapps.idispatch.runboard.client.DispatcherClientException;
 import net.pkhapps.idispatch.runboard.client.Notification;
-import net.pkhapps.idispatch.runboard.client.ServerPoller;
+import net.pkhapps.idispatch.runboard.client.ServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-class Model extends Observable implements ServerPoller.Callback {
+class Model extends Observable implements ServerConnection.Callback {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<Notification> notifications = new ArrayList<>();

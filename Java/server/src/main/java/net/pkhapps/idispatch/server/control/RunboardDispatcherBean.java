@@ -3,6 +3,7 @@ package net.pkhapps.idispatch.server.control;
 import net.pkhapps.idispatch.server.entity.DispatchNotification;
 import net.pkhapps.idispatch.server.entity.RunboardDestination;
 import net.pkhapps.idispatch.server.events.DispatchNotificationSent;
+import net.pkhapps.idispatch.server.events.RunboardNotificationQueued;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ class RunboardDispatcherBean extends AbstractDispatcher implements RunboardDispa
             synchronized (notifications) {
                 notifications.put(notification.getId(), notification);
             }
+            applicationContext.publishEvent(new RunboardNotificationQueued(this, runboard.getRunboardKey()));
         });
     }
 
