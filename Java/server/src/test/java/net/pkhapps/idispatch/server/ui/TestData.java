@@ -3,7 +3,6 @@ package net.pkhapps.idispatch.server.ui;
 import net.pkhapps.idispatch.server.entity.*;
 import net.pkhapps.idispatch.server.entity.repository.*;
 import org.springframework.boot.test.context.TestComponent;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.UUID;
 
@@ -20,23 +19,17 @@ public class TestData {
     private final ResourceTypeRepository resourceTypeRepository;
     private final ResourceRepository resourceRepository;
     private final ResourceStatusRepository resourceStatusRepository;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
     TestData(MunicipalityRepository municipalityRepository,
              AssignmentTypeRepository assignmentTypeRepository,
              ResourceTypeRepository resourceTypeRepository,
              ResourceRepository resourceRepository,
-             ResourceStatusRepository resourceStatusRepository,
-             UserRepository userRepository,
-             PasswordEncoder passwordEncoder) {
+             ResourceStatusRepository resourceStatusRepository) {
         this.municipalityRepository = municipalityRepository;
         this.assignmentTypeRepository = assignmentTypeRepository;
         this.resourceTypeRepository = resourceTypeRepository;
         this.resourceRepository = resourceRepository;
         this.resourceStatusRepository = resourceStatusRepository;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -92,35 +85,5 @@ public class TestData {
 
     public ResourceStatus statusOf(Resource resource) {
         return resourceStatusRepository.findByResource(resource);
-    }
-
-    /**
-     * Creates the user unless it already exists, and returns it. The password is the username.
-     */
-    public User user(String username, boolean admin, boolean dispatcher, boolean reportReader) {
-        return userRepository.findByUsername(username).orElseGet(() -> {
-            var user = new User();
-            user.setUsername(username);
-            user.setEncodedPassword(passwordEncoder.encode(username));
-            user.setAdmin(admin);
-            user.setDispatcher(dispatcher);
-            user.setReportReader(reportReader);
-            user.setEnabled(true);
-            return userRepository.saveAndFlush(user);
-        });
-    }
-
-    public void setPassword(String username, String password) {
-        var user = userRepository.findByUsername(username).orElseThrow();
-        user.setEncodedPassword(passwordEncoder.encode(password));
-        userRepository.saveAndFlush(user);
-    }
-
-    public boolean passwordMatches(String username, String password) {
-        return passwordEncoder.matches(password, userRepository.findByUsername(username).orElseThrow().getEncodedPassword());
-    }
-
-    public User findUser(String username) {
-        return userRepository.findByUsername(username).orElseThrow();
     }
 }

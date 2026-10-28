@@ -6,6 +6,17 @@ spring:
     url: jdbc:postgresql://localhost:5432/idispatch
     username: idispatch
     password: CHANGEME
+  security:
+    oauth2:
+      client:
+        # The Keycloak realm and client to log in with; see docs/keycloak.md for how to set them up
+        registration:
+          keycloak:
+            client-id: idispatch
+            client-secret: CHANGEME
+        provider:
+          keycloak:
+            issuer-uri: https://keycloak.example.com/realms/idispatch
 aspsms:
   userKey: CHANGEME
   password: CHANGEME

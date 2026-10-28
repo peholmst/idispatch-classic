@@ -2,26 +2,33 @@ package net.pkhapps.idispatch.server.ui;
 
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
-import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.tabs.Tabs;
-import com.vaadin.flow.dom.ElementFactory;
+import com.vaadin.flow.component.sidenav.SideNav;
+import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
+import com.vaadin.flow.router.RouteConfiguration;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.dws.DispatchView;
+import net.pkhapps.idispatch.server.ui.management.ManagementLayout;
 import net.pkhapps.idispatch.server.ui.management.MunicipalityManagementView;
 import net.pkhapps.idispatch.server.ui.reports.ReportsView;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @PermitAll
 public class RootLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
@@ -37,9 +44,14 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
                 .set("line-height", "var(--lumo-size-l)")
                 .set("margin", "0 var(--lumo-space-m)");
 
-        var logout = new Button(VaadinIcon.POWER_OFF.create(), event -> authenticationContext.logout());
-        var user = new HorizontalLayout(new Span(authenticationContext.getPrincipalName().orElse("")), logout);
-        user.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        var displayName = getDisplayName(authenticationContext);
+        var avatar = new Avatar(displayName);
+        var name = new Span(displayName);
+        name.getStyle()
+                .set("overflow", "hidden")
+                .set("text-overflow", "ellipsis")
+                .set("white-space", "nowrap");
+        var user = new HorizontalLayout(avatar, name);
         user.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         user.setWidthFull();
         user.setPadding(true);
@@ -49,9 +61,13 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         header.setPadding(false);
         header.setSpacing(false);
 
-        var views = getPrimaryNavigation();
+        var navigation = new VerticalLayout(createViewNavigation());
+        if (isUserInRole(Roles.ROLE_ADMIN)) {
+            navigation.add(createAdministrationNavigation());
+        }
+        navigation.add(createAccountNavigation(authenticationContext));
 
-        addToDrawer(header, views);
+        addToDrawer(header, new Scroller(navigation));
 
         viewTitle = new H2();
         viewTitle.getStyle()
@@ -70,25 +86,67 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         setPrimarySection(Section.DRAWER);
     }
 
-    private Tabs getPrimaryNavigation() {
-        var tabs = new Tabs();
-        tabs.add(TabUtils.createNavigationTab(VaadinIcon.HOME, "Home", RootView.class));
+    /**
+     * Returns the first and last name from the user's ID token, or the username if the token has neither.
+     */
+    private static String getDisplayName(AuthenticationContext authenticationContext) {
+        return authenticationContext.getAuthenticatedUser(Object.class)
+                .filter(OidcUser.class::isInstance)
+                .map(OidcUser.class::cast)
+                .map(user -> Stream.of(user.getGivenName(), user.getFamilyName())
+                        .filter(part -> part != null && !part.isBlank())
+                        .collect(Collectors.joining(" ")))
+                .filter(fullName -> !fullName.isEmpty())
+                .or(authenticationContext::getPrincipalName)
+                .orElse("");
+    }
+
+    private SideNav createViewNavigation() {
+        var nav = new SideNav();
+        nav.addItem(new SideNavItem("Home", RootView.class, VaadinIcon.HOME.create()));
         if (isUserInRole(Roles.ROLE_DISPATCHER)) {
-            tabs.add(TabUtils.createNavigationTab(VaadinIcon.HEADSET, "Dispatcher", DispatchView.class));
+            nav.addItem(new SideNavItem("Dispatcher", DispatchView.class, VaadinIcon.HEADSET.create()));
         }
         if (isUserInRole(Roles.ROLE_REPORT_READER)) {
-            tabs.add(TabUtils.createNavigationTab(VaadinIcon.CHART, "Reports", ReportsView.class));
+            nav.addItem(new SideNavItem("Reports", ReportsView.class, VaadinIcon.CHART.create()));
         }
-        if (isUserInRole(Roles.ROLE_ADMIN)) {
-            tabs.getElement().appendChild(ElementFactory.createHr());
-            tabs.add(TabUtils.createNavigationTab(VaadinIcon.COG, "Management", MunicipalityManagementView.class));
-        }
-        tabs.getElement().appendChild(ElementFactory.createHr());
-        tabs.add(TabUtils.createNavigationTab(VaadinIcon.PASSWORD, "Change Password", ChangePasswordView.class));
+        return nav;
+    }
 
-        tabs.setOrientation(Tabs.Orientation.VERTICAL);
-        tabs.setSelectedIndex(1);
-        return tabs;
+    private SideNav createAdministrationNavigation() {
+        var management = new SideNavItem("Management", MunicipalityManagementView.class, VaadinIcon.COG.create());
+        // Highlight the item in every section of the management console, not only in the one it opens
+        var routes = RouteConfiguration.forApplicationScope();
+        management.setPathAliases(ManagementLayout.getSectionViews().stream()
+                .map(routes::getUrl)
+                .collect(Collectors.toSet()));
+
+        var nav = new SideNav("Administration");
+        nav.addItem(management);
+        return nav;
+    }
+
+    private SideNav createAccountNavigation(AuthenticationContext authenticationContext) {
+        var nav = new SideNav("Account");
+        // Users are managed in Keycloak, and change their password in the Keycloak account console of the realm
+        // that issued their ID token
+        authenticationContext.getAuthenticatedUser(Object.class)
+                .filter(OidcUser.class::isInstance)
+                .map(OidcUser.class::cast)
+                .ifPresent(user -> {
+                    var account = new SideNavItem("My Account", user.getIssuer() + "/account",
+                            VaadinIcon.USER.create());
+                    account.setOpenInNewBrowserTab(true);
+                    nav.addItem(account);
+                });
+
+        // Logging out is an action, not a link. The item still gets a path so that it is a focusable link like the
+        // others, but the router ignores it and the click never follows it.
+        var logout = new SideNavItem("Log Out", "logout", VaadinIcon.SIGN_OUT.create());
+        logout.setRouterIgnore(true);
+        logout.getElement().addEventListener("click", event -> authenticationContext.logout()).preventDefault();
+        nav.addItem(logout);
+        return nav;
     }
 
     private boolean isUserInRole(String role) {
@@ -107,7 +165,6 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
                 .map(HasNavbarContent.class::cast)
                 .findFirst()
                 .ifPresentOrElse(this::setNavbarContent, this::clearNavbarContent);
-        // TODO Select correct tab
     }
 
     private void setNavbarContent(HasNavbarContent contentProvider) {

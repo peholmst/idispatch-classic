@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.boundary;
 
+import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +16,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Verifies that the {@code @Secured} annotations on the services are enforced.
  */
 @SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TestSecurityConfiguration.class})
 class MethodSecurityTest {
 
     private static final DefaultFilter ALL = new DefaultFilter(true, null);
 
     @Autowired
     MunicipalityManagementService municipalityManagementService;
-    @Autowired
-    UserManagementService userManagementService;
     @Autowired
     AssignmentService assignmentService;
     @Autowired
@@ -35,7 +34,6 @@ class MethodSecurityTest {
     @WithMockUser(roles = "DISPATCHER")
     void dispatcher_cannotUseManagementOrReportServices() {
         assertThatThrownBy(() -> municipalityManagementService.findAll(ALL)).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> userManagementService.findAll(ALL)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.findReportByAssignmentId(1L)).isInstanceOf(AccessDeniedException.class);
     }
 

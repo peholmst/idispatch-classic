@@ -9,6 +9,20 @@ vaadin:
   allowed-packages: net.pkhapps, com.vaadin
 
 spring:
+  security:
+    oauth2:
+      client:
+        # Development defaults, matching the Keycloak realm that compose.yaml imports from keycloak/idispatch-realm.json.
+        # Production overrides these in its own application.yml (see docs/keycloak.md).
+        registration:
+          keycloak:
+            client-id: idispatch
+            client-secret: idispatch-dev-secret
+            scope: openid,profile
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8180/realms/idispatch
+            user-name-attribute: preferred_username
   jpa:
     open-in-view: false
     hibernate:

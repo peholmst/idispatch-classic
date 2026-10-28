@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.control;
 
+import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.support.AopUtils;
@@ -15,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code @EnableAsync} and {@code @EnableScheduling}, Spring silently ignores them.
  */
 @SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TestSecurityConfiguration.class})
 class AsyncAndSchedulingTest {
 
     @Autowired

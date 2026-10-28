@@ -1,0 +1,87 @@
+{
+  "realm": "idispatch",
+  "displayName": "iDispatch",
+  "enabled": true,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "idispatch",
+      "name": "iDispatch",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "idispatch-dev-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "rootUrl": "http://localhost:8080/idispatch",
+      "baseUrl": "/",
+      "redirectUris": ["/login/oauth2/code/keycloak"],
+      "webOrigins": ["+"],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8080/idispatch"
+      },
+      "protocolMappers": [
+        {
+          "name": "application roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "config": {
+            "usermodel.clientRoleMapping.clientId": "idispatch",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "roles": {
+    "client": {
+      "idispatch": [
+        {"name": "ADMIN", "description": "Manages municipalities, assignment types, resources and destinations"},
+        {"name": "DISPATCHER", "description": "Uses the dispatcher workstation"},
+        {"name": "REPORT_READER", "description": "Reads reports of closed assignments"}
+      ]
+    }
+  },
+  "users": [
+    {
+      "username": "admin",
+      "firstName": "Admin",
+      "lastName": "User",
+      "email": "admin@idispatch.local",
+      "emailVerified": true,
+      "enabled": true,
+      "realmRoles": ["default-roles-idispatch"],
+      "credentials": [{"type": "password", "value": "changeme", "temporary": false}],
+      "clientRoles": {"idispatch": ["ADMIN", "DISPATCHER", "REPORT_READER"]}
+    },
+    {
+      "username": "dispatcher",
+      "firstName": "Dispatcher",
+      "lastName": "User",
+      "email": "dispatcher@idispatch.local",
+      "emailVerified": true,
+      "enabled": true,
+      "realmRoles": ["default-roles-idispatch"],
+      "credentials": [{"type": "password", "value": "dispatcher", "temporary": false}],
+      "clientRoles": {"idispatch": ["DISPATCHER"]}
+    },
+    {
+      "username": "reports",
+      "firstName": "Report",
+      "lastName": "Reader",
+      "email": "reports@idispatch.local",
+      "emailVerified": true,
+      "enabled": true,
+      "realmRoles": ["default-roles-idispatch"],
+      "credentials": [{"type": "password", "value": "reports", "temporary": false}],
+      "clientRoles": {"idispatch": ["REPORT_READER"]}
+    }
+  ]
+}
