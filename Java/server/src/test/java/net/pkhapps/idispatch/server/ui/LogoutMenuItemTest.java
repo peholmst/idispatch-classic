@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.server.ui;
 
-import com.vaadin.flow.component.tabs.Tab;
-import com.vaadin.flow.component.tabs.Tabs;
+import com.vaadin.browserless.ComponentTester;
+import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -26,7 +26,6 @@ class LogoutMenuItemTest extends AbstractUITest {
     void openingTheMenu_doesNotLogOut() {
         navigate(RootView.class);
 
-        assertThat(find(Tabs.class).single().getSelectedIndex()).isNotEqualTo(logOutTabIndex());
         verify(authenticationContext, never()).logout();
     }
 
@@ -36,13 +35,33 @@ class LogoutMenuItemTest extends AbstractUITest {
         doNothing().when(authenticationContext).logout();
         navigate(RootView.class);
 
-        test(find(Tabs.class).single()).select(logOutTabIndex());
+        new SideNavItemTester(logOutItem()).clickLink();
 
         verify(authenticationContext).logout();
     }
 
-    private int logOutTabIndex() {
-        var labels = find(Tab.class).all().stream().map(tab -> tab.getElement().getTextRecursively()).toList();
-        return labels.indexOf("Log Out");
+    @Test
+    void logOutItem_isNotFollowedAsALink() {
+        navigate(RootView.class);
+
+        assertThat(logOutItem().isRouterIgnore()).isTrue();
+    }
+
+    private SideNavItem logOutItem() {
+        return find(SideNavItem.class).withCondition(item -> "Log Out".equals(item.getLabel())).single();
+    }
+
+    /**
+     * Clicks a side navigation item the way the browser does, firing the DOM event that its listeners receive.
+     */
+    private static final class SideNavItemTester extends ComponentTester<SideNavItem> {
+
+        SideNavItemTester(SideNavItem item) {
+            super(item);
+        }
+
+        void clickLink() {
+            fireDomEvent("click");
+        }
     }
 }

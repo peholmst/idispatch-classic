@@ -2,11 +2,10 @@ package net.pkhapps.idispatch.server.ui;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
-import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.RouteNotFoundError;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.dws.DispatchView;
@@ -47,7 +46,7 @@ class AccessControlTest extends AbstractUITest {
     void userWithoutRoles_seesHomeOnly() {
         var root = navigate(RootView.class);
         assertThat(find(H1.class, root).single().getText()).isEqualTo("Welcome to iDispatch!");
-        assertThat(navigationTabs()).containsExactly("Home", "Log Out");
+        assertThat(navigationItems()).containsExactly("Home", "Log Out");
         assertThat(navbarTitle()).isEqualTo("Home");
     }
 
@@ -83,14 +82,14 @@ class AccessControlTest extends AbstractUITest {
     @WithMockUser(username = "dispatcher", roles = "DISPATCHER")
     void dispatcher_seesDispatcherEntry() {
         navigate(RootView.class);
-        assertThat(navigationTabs()).containsExactly("Home", "Dispatcher", "Log Out");
+        assertThat(navigationItems()).containsExactly("Home", "Dispatcher", "Log Out");
     }
 
     @Test
     @WithMockUser(username = "report-reader", roles = "REPORT_READER")
     void reportReader_seesReportsEntryAndCanOpenReports() {
         navigate(RootView.class);
-        assertThat(navigationTabs()).containsExactly("Home", "Reports", "Log Out");
+        assertThat(navigationItems()).containsExactly("Home", "Reports", "Log Out");
         navigate(ReportsView.class);
         assertThat(navbarTitle()).isEqualTo("Reports");
     }
@@ -99,7 +98,7 @@ class AccessControlTest extends AbstractUITest {
     @WithMockUser(username = "admin-only", roles = "ADMIN")
     void admin_seesManagementEntryAndCanOpenManagement() {
         navigate(RootView.class);
-        assertThat(navigationTabs()).containsExactly("Home", "Management", "Log Out");
+        assertThat(navigationItems()).containsExactly("Home", "Management", "Log Out");
         navigate(MunicipalityManagementView.class);
         assertThat(navbarTitle()).isEqualTo("Management Console");
     }
@@ -108,7 +107,7 @@ class AccessControlTest extends AbstractUITest {
     @WithMockUser(username = "all-roles", roles = {"ADMIN", "DISPATCHER", "REPORT_READER"})
     void userWithAllRoles_seesAllEntries() {
         navigate(RootView.class);
-        assertThat(navigationTabs())
+        assertThat(navigationItems())
                 .containsExactly("Home", "Dispatcher", "Reports", "Management", "Log Out");
         navigate(DispatchView.class);
         assertThat(navbarTitle()).isEqualTo("Dispatcher");
@@ -149,9 +148,10 @@ class AccessControlTest extends AbstractUITest {
 
         navigate(RootView.class);
 
-        assertThat(navigationTabs()).containsExactly("Home", "Dispatcher", "My Account", "Log Out");
-        assertThat(find(Anchor.class).single().getHref())
-                .isEqualTo("http://keycloak.invalid/realms/idispatch/account");
+        assertThat(navigationItems()).containsExactly("Home", "Dispatcher", "My Account", "Log Out");
+        var account = find(SideNavItem.class).withCondition(item -> "My Account".equals(item.getLabel())).single();
+        assertThat(account.getPath()).isEqualTo("http://keycloak.invalid/realms/idispatch/account");
+        assertThat(account.isOpenInNewBrowserTab()).isTrue();
     }
 
     private void loginWithIdToken(Map<String, Object> nameClaims) {
@@ -178,9 +178,21 @@ class AccessControlTest extends AbstractUITest {
                 .toList();
     }
 
-    private List<String> navigationTabs() {
-        return find(Tab.class).all().stream()
-                .map(tab -> tab.getElement().getTextRecursively())
+    @Test
+    @WithMockUser(username = "admin-only", roles = "ADMIN")
+    void managementItem_matchesEverySectionOfTheManagementConsole() {
+        navigate(RootView.class);
+
+        var management = find(SideNavItem.class).withCondition(item -> "Management".equals(item.getLabel())).single();
+        assertThat(management.getPath()).isEqualTo("management/municipality");
+        assertThat(management.getPathAliases()).containsExactlyInAnyOrder("management/municipality",
+                "management/assignment-type", "management/resource", "management/resource-type",
+                "management/destination");
+    }
+
+    private List<String> navigationItems() {
+        return find(SideNavItem.class).all().stream()
+                .map(SideNavItem::getLabel)
                 .toList();
     }
 
