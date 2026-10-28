@@ -19,6 +19,7 @@ Maven reactor: `server` (Spring Boot 4.1 + Vaadin 25.3 Flow app, Java 25), `asps
 - Services publish Spring application events (`events/`) synchronously. A view that refreshes on an event must go through `OwnerUpdater`, which locks the right session and runs as the view's owner. Server push is enabled.
 - Theme is Lumo (dark), loaded with `@StyleSheet` on `AppShellConfiguratorImpl`. Style Grid cells with part name generators and `::part()`, not `themeFor`.
 - Use the Vaadin docs MCP server for Vaadin 25.3 APIs rather than recalled Vaadin 24 knowledge.
+- The runboard reads notifications out loud through the speech engine SPI in `runboard/.../speech` (Piper is the only engine). Engine code stays behind that SPI; see `runboard/docs/speech.md`.
 
 ## Tests
 

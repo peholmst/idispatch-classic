@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.runboard;
 
-import java.nio.file.Path;
+import net.pkhapps.idispatch.runboard.speech.SpeechSettings;
+
 import java.util.Optional;
 
 public class Configuration extends net.pkhapps.idispatch.runboard.client.Configuration {
@@ -14,12 +15,20 @@ public class Configuration extends net.pkhapps.idispatch.runboard.client.Configu
     }
 
     /**
-     * Returns the Piper voice model ({@code .onnx} file) to read notifications in the given language with, if one has
-     * been configured. The voice's {@code .onnx.json} file must be next to it.
+     * Returns the name of the speech engine that reads notifications out loud, or {@link Speech#NONE} for no speech.
      */
-    public Optional<Path> getVoiceModel(String language) {
-        return Optional.ofNullable(getProperty("idispatch.voice." + language, null))
-                .filter(value -> !value.isBlank())
-                .map(Path::of);
+    public String getSpeechEngine() {
+        return getProperty("idispatch.speech.engine", "piper").strip();
+    }
+
+    /**
+     * Returns the settings of the {@linkplain #getSpeechEngine() speech engine}: the properties starting with
+     * {@code idispatch.speech.<engine name>.}.
+     */
+    public SpeechSettings getSpeechSettings() {
+        final String prefix = "idispatch.speech." + getSpeechEngine() + ".";
+        return name -> Optional.ofNullable(getProperty(prefix + name, null))
+                .map(String::strip)
+                .filter(value -> !value.isEmpty());
     }
 }

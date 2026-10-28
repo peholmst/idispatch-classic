@@ -2,6 +2,7 @@ package net.pkhapps.idispatch.runboard;
 
 
 import net.pkhapps.idispatch.runboard.client.Notification;
+import net.pkhapps.idispatch.runboard.speech.SpeechAudio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,9 +83,10 @@ class Alarm implements Observer {
     private void alert(List<Notification> notifications) {
         try {
             // Synthesize while the alarm plays, so that the speech is ready when it ends.
-            final int alarmPlays = speech.isAvailable() ? ALARM_PLAYS_BEFORE_SPEECH : ALARM_PLAYS_WITHOUT_SPEECH;
+            final boolean speechExpected = notifications.stream().anyMatch(n -> speech.supportsLanguage(n.getLanguage()));
+            final int alarmPlays = speechExpected ? ALARM_PLAYS_BEFORE_SPEECH : ALARM_PLAYS_WITHOUT_SPEECH;
             final AlarmPlayback alarm = startAlarm(alarmPlays);
-            final List<Speech.Audio> announcements = notifications.stream()
+            final List<SpeechAudio> announcements = notifications.stream()
                     .flatMap(n -> speech.synthesize(n.getLanguage(), Announcement.text(n)).stream())
                     .toList();
             alarm.await();
@@ -94,7 +96,7 @@ class Alarm implements Observer {
                 }
                 return;
             }
-            for (Speech.Audio announcement : announcements) {
+            for (SpeechAudio announcement : announcements) {
                 for (int i = 0; i < SPEECH_REPEATS; i++) {
                     Thread.sleep(PAUSE_MILLISECONDS);
                     play(announcement);
@@ -123,7 +125,7 @@ class Alarm implements Observer {
         return playback;
     }
 
-    private void play(Speech.Audio audio) throws LineUnavailableException {
+    private void play(SpeechAudio audio) throws LineUnavailableException {
         try (SourceDataLine line = AudioSystem.getSourceDataLine(audio.format())) {
             line.open(audio.format());
             line.start();

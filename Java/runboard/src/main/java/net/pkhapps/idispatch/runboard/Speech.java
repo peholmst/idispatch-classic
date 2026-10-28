@@ -1,99 +1,97 @@
 package net.pkhapps.idispatch.runboard;
 
-import io.github.givimad.piperjni.PiperJNI;
-import io.github.givimad.piperjni.PiperVoice;
+import net.pkhapps.idispatch.runboard.speech.SpeechAudio;
+import net.pkhapps.idispatch.runboard.speech.SpeechEngine;
+import net.pkhapps.idispatch.runboard.speech.SpeechEngineProvider;
+import net.pkhapps.idispatch.runboard.speech.SpeechSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sound.sampled.AudioFormat;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
 
 /**
- * Turns text into speech with the Piper voice configured for its language. Voices are loaded the first time they are
- * needed. Not thread safe: use one instance from a single thread.
+ * Reads text out loud with the {@link SpeechEngine} selected by {@code idispatch.speech.engine}, found with
+ * {@link ServiceLoader}. Errors from the engine are logged and never reach the caller, so that a broken engine only
+ * costs the speech, not the alarm. Use from a single thread, starting with {@link #initialize()}.
  */
 class Speech {
 
     /**
-     * Speech as signed 16-bit little-endian PCM.
+     * The engine name that turns speech off.
      */
-    record Audio(byte[] samples, AudioFormat format) {
-    }
+    static final String NONE = "none";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Configuration configuration;
-    private final Map<String, Optional<PiperVoice>> voices = new HashMap<>();
-    private PiperJNI piper;
+    private final String engineName;
+    private final SpeechSettings settings;
+    private SpeechEngine engine;
 
     Speech(Configuration configuration) {
-        this.configuration = configuration;
+        this(configuration.getSpeechEngine(), configuration.getSpeechSettings());
+    }
+
+    Speech(String engineName, SpeechSettings settings) {
+        this.engineName = engineName;
+        this.settings = settings;
     }
 
     /**
-     * Loads the native Piper libraries. If this fails, {@link #isAvailable()} returns false and nothing is spoken.
+     * Creates the engine. If it cannot be found or created, nothing is spoken.
      */
     void initialize() {
-        try {
-            final PiperJNI piper = new PiperJNI();
-            piper.initialize();
-            this.piper = piper;
-            logger.info("Initialized Piper {}", piper.getPiperVersion());
-        } catch (Exception | LinkageError ex) {
-            logger.error("Could not initialize Piper, notifications will not be read out loud", ex);
+        if (NONE.equals(engineName)) {
+            logger.info("Speech is turned off, notifications will not be read out loud");
+            return;
         }
-    }
-
-    boolean isAvailable() {
-        return piper != null;
+        try {
+            final List<SpeechEngineProvider> providers = ServiceLoader.load(SpeechEngineProvider.class).stream()
+                    .map(ServiceLoader.Provider::get)
+                    .toList();
+            final Optional<SpeechEngineProvider> provider = providers.stream()
+                    .filter(p -> p.name().equals(engineName))
+                    .findFirst();
+            if (provider.isEmpty()) {
+                logger.error("No speech engine named '{}', notifications will not be read out loud. Available: {}",
+                        engineName, providers.stream().map(SpeechEngineProvider::name).toList());
+                return;
+            }
+            engine = provider.get().create(settings);
+            logger.info("Using speech engine '{}'", engineName);
+        } catch (Exception | ServiceConfigurationError | LinkageError ex) {
+            logger.error("Could not create speech engine '{}', notifications will not be read out loud", engineName, ex);
+        }
     }
 
     /**
-     * Returns the text spoken in the given language, or an empty optional if there is no voice for the language or
-     * synthesis fails.
+     * Returns whether text in the given language can be read out loud.
      */
-    Optional<Audio> synthesize(String language, String text) {
-        return voice(language).flatMap(voice -> {
-            try {
-                final long start = System.nanoTime();
-                final short[] samples = piper.textToAudio(voice, text);
-                logger.debug("Synthesized {} samples in {} ms", samples.length, (System.nanoTime() - start) / 1_000_000);
-                final ByteBuffer buffer = ByteBuffer.allocate(samples.length * 2).order(ByteOrder.LITTLE_ENDIAN);
-                buffer.asShortBuffer().put(samples);
-                return Optional.of(new Audio(buffer.array(), new AudioFormat(voice.getSampleRate(), 16, 1, true, false)));
-            } catch (Exception ex) {
-                logger.error("Could not synthesize speech for text: {}", text, ex);
-                return Optional.empty();
-            }
-        });
-    }
-
-    private Optional<PiperVoice> voice(String language) {
-        if (piper == null) {
-            return Optional.empty();
+    boolean supportsLanguage(String language) {
+        if (engine == null) {
+            return false;
         }
-        return voices.computeIfAbsent(language, this::loadVoice);
-    }
-
-    private Optional<PiperVoice> loadVoice(String language) {
-        final Optional<Path> model = configuration.getVoiceModel(language);
-        if (model.isEmpty()) {
-            logger.warn("No voice configured for language '{}', notifications in it will not be read out loud", language);
-            return Optional.empty();
-        }
-        final Path config = model.get().resolveSibling(model.get().getFileName() + ".json");
         try {
-            final long start = System.nanoTime();
-            final PiperVoice voice = piper.loadVoice(model.get(), config);
-            logger.info("Loaded voice {} for language '{}' in {} ms", model.get(), language,
-                    (System.nanoTime() - start) / 1_000_000);
-            return Optional.of(voice);
-        } catch (Exception ex) {
-            logger.error("Could not load voice {} for language '{}'", model.get(), language, ex);
+            return engine.supportsLanguage(language);
+        } catch (RuntimeException ex) {
+            logger.error("Speech engine '{}' failed to check language '{}'", engineName, language, ex);
+            return false;
+        }
+    }
+
+    /**
+     * Returns the text spoken in the given language, or an empty optional if it cannot be spoken.
+     */
+    Optional<SpeechAudio> synthesize(String language, String text) {
+        if (engine == null) {
+            return Optional.empty();
+        }
+        try {
+            return engine.synthesize(language, text);
+        } catch (Exception | LinkageError ex) {
+            logger.error("Speech engine '{}' could not synthesize text in language '{}': {}", engineName, language,
+                    text, ex);
             return Optional.empty();
         }
     }
