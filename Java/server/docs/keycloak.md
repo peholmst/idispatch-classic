@@ -204,6 +204,7 @@ The proxy must set `X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-Port
 | Keycloak shows *Invalid redirect uri* when logging out | **Valid post logout redirect URIs** doesn't contain the application's base URL. |
 | Login fails with *invalid_token_response* or *invalid_client* | The client secret is wrong, or **Client authentication** is off. |
 | Login works, but the user only sees **Home** | The ID token has no `roles` claim (check the mapper in step 4), or the user has no `idispatch` client roles, or the roles are realm roles instead of client roles. |
+| **My Account** shows *Sorry, an unexpected error has occurred* | The user lacks the realm's default roles (`default-roles-<realm>`, which grants the `account` client's `manage-account` and `view-profile`). Users created in the admin console get them automatically, but users imported from JSON or created through the admin REST API may not. Assign the role under the user's **Role mapping** tab. |
 | Login fails with *invalid_id_token* and *iss* | The browser and the server reach Keycloak through different URLs. Set Keycloak's hostname (`KC_HOSTNAME`) so that both use the same one. |
 
 Role changes in Keycloak take effect the next time the user logs in. Disabling a user, or ending their session in

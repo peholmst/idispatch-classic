@@ -57,6 +57,7 @@
       "email": "admin@idispatch.local",
       "emailVerified": true,
       "enabled": true,
+      "realmRoles": ["default-roles-idispatch"],
       "credentials": [{"type": "password", "value": "changeme", "temporary": false}],
       "clientRoles": {"idispatch": ["ADMIN", "DISPATCHER", "REPORT_READER"]}
     },
@@ -67,6 +68,7 @@
       "email": "dispatcher@idispatch.local",
       "emailVerified": true,
       "enabled": true,
+      "realmRoles": ["default-roles-idispatch"],
       "credentials": [{"type": "password", "value": "dispatcher", "temporary": false}],
       "clientRoles": {"idispatch": ["DISPATCHER"]}
     },
@@ -77,6 +79,7 @@
       "email": "reports@idispatch.local",
       "emailVerified": true,
       "enabled": true,
+      "realmRoles": ["default-roles-idispatch"],
       "credentials": [{"type": "password", "value": "reports", "temporary": false}],
       "clientRoles": {"idispatch": ["REPORT_READER"]}
     }
