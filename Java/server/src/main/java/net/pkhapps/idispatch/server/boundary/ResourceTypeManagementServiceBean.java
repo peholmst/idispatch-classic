@@ -3,10 +3,13 @@ package net.pkhapps.idispatch.server.boundary;
 import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.ResourceType;
 import net.pkhapps.idispatch.server.entity.repository.ResourceTypeRepository;
+import net.pkhapps.idispatch.server.entity.repository.ResourceTypeSpecifications;
 import net.pkhapps.idispatch.server.security.Roles;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -27,6 +30,13 @@ class ResourceTypeManagementServiceBean extends AbstractSoftDeletableManagementS
 
     @Override
     protected List<ResourceType> doFindAll(Filter filter) {
-        return repository.findAll(); // TODO Implement filter support
+        var specs = new ArrayList<Specification<ResourceType>>();
+        if (filter instanceof SoftDeletableFilter softDeletableFilter && softDeletableFilter.includesActiveOnly()) {
+            specs.add(ResourceTypeSpecifications.activeOnly());
+        }
+        if (filter instanceof TextSearchFilter textSearchFilter) {
+            textSearchFilter.doWithSearchTerm(st -> specs.add(ResourceTypeSpecifications.searchTerm(st)));
+        }
+        return repository.findAll(Specification.allOf(specs));
     }
 }

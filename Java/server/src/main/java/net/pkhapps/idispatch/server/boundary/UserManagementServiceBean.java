@@ -3,13 +3,16 @@ package net.pkhapps.idispatch.server.boundary;
 import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.User;
 import net.pkhapps.idispatch.server.entity.repository.UserRepository;
+import net.pkhapps.idispatch.server.entity.repository.UserSpecifications;
 import net.pkhapps.idispatch.server.security.Roles;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -46,6 +49,10 @@ class UserManagementServiceBean extends AbstractManagementServiceBean<User, User
 
     @Override
     protected List<User> doFindAll(Filter filter) {
-        return repository.findAll(); // TODO Implement filter support
+        var specs = new ArrayList<Specification<User>>();
+        if (filter instanceof TextSearchFilter textSearchFilter) {
+            textSearchFilter.doWithSearchTerm(st -> specs.add(UserSpecifications.searchTerm(st)));
+        }
+        return repository.findAll(Specification.allOf(specs));
     }
 }

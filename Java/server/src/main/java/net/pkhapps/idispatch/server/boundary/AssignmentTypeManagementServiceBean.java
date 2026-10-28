@@ -3,10 +3,13 @@ package net.pkhapps.idispatch.server.boundary;
 import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.AssignmentType;
 import net.pkhapps.idispatch.server.entity.repository.AssignmentTypeRepository;
+import net.pkhapps.idispatch.server.entity.repository.AssignmentTypeSpecifications;
 import net.pkhapps.idispatch.server.security.Roles;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -27,6 +30,13 @@ class AssignmentTypeManagementServiceBean extends AbstractSoftDeletableManagemen
 
     @Override
     protected List<AssignmentType> doFindAll(Filter filter) {
-        return repository.findAll(); // TODO Implement filter support
+        var specs = new ArrayList<Specification<AssignmentType>>();
+        if (filter instanceof SoftDeletableFilter softDeletableFilter && softDeletableFilter.includesActiveOnly()) {
+            specs.add(AssignmentTypeSpecifications.activeOnly());
+        }
+        if (filter instanceof TextSearchFilter textSearchFilter) {
+            textSearchFilter.doWithSearchTerm(st -> specs.add(AssignmentTypeSpecifications.searchTerm(st)));
+        }
+        return repository.findAll(Specification.allOf(specs));
     }
 }
