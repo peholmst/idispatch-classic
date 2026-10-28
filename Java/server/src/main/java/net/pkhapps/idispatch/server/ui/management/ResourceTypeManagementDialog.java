@@ -15,7 +15,7 @@ public class ResourceTypeManagementDialog extends AbstractManagementDialog<Resou
 
     @Override
     protected String getTitle(@Nullable ResourceType entity) {
-        return entity == null ? "Add ResourceType" : "Edit Resource Type";
+        return entity == null ? "Add Resource Type" : "Edit Resource Type";
     }
 
     @Override
