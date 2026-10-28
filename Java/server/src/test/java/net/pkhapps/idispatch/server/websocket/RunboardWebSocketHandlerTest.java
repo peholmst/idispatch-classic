@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.websocket;
 
+import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import net.pkhapps.idispatch.server.entity.*;
 import net.pkhapps.idispatch.server.entity.repository.AssignmentRepository;
 import net.pkhapps.idispatch.server.entity.repository.DestinationRepository;
@@ -36,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = "idispatch.runboard.heartbeat-interval=200ms")
-@Import(TestData.class)
+@Import({TestData.class, TestcontainersConfiguration.class})
 class RunboardWebSocketHandlerTest {
 
     private static final long TIMEOUT_SECONDS = 5;

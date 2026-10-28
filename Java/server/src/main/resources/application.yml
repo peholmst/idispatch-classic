@@ -11,6 +11,9 @@ vaadin:
 spring:
   jpa:
     open-in-view: false
+    hibernate:
+      # Flyway owns the schema (src/main/resources/db/migration); Hibernate only checks that the mappings match it.
+      ddl-auto: validate
 
 logging:
   level:

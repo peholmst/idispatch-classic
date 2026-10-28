@@ -3,12 +3,9 @@ server:
     context-path: /
 spring:
   datasource:
-    url: jdbc:h2:file:/home/ubuntu/idispatch.db
-    username: sa
-    password: sa
-  jpa:
-    hibernate:
-      ddl-auto: update
+    url: jdbc:postgresql://localhost:5432/idispatch
+    username: idispatch
+    password: CHANGEME
 aspsms:
   userKey: CHANGEME
   password: CHANGEME

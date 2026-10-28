@@ -1,8 +1,10 @@
 package net.pkhapps.idispatch.server.boundary;
 
+import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -13,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Verifies that the {@code @Secured} annotations on the services are enforced.
  */
 @SpringBootTest
+@Import(TestcontainersConfiguration.class)
 class MethodSecurityTest {
 
     private static final DefaultFilter ALL = new DefaultFilter(true, null);
