@@ -6,6 +6,7 @@ import com.vaadin.browserless.SpringBrowserlessApplicationContext;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
+import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import net.pkhapps.idispatch.server.entity.Assignment;
 import net.pkhapps.idispatch.server.entity.Resource;
@@ -34,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * to the other dispatcher's open view through application events.
  */
 @SpringBootTest
-@Import({TestData.class, TestcontainersConfiguration.class})
+@Import({TestData.class, TestcontainersConfiguration.class, TestSecurityConfiguration.class})
 class MultiDispatcherTest {
 
     @Autowired

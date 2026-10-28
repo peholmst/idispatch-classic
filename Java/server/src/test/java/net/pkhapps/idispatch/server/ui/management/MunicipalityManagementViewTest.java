@@ -27,7 +27,7 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
 
         assertThat(find(H2.class).single().getText()).isEqualTo("Management Console");
         assertThat(find(Tab.class).all().stream().map(tab -> tab.getElement().getTextRecursively()))
-                .contains("Municipalities", "Assignment Types", "Resources", "Resource Types", "Destinations", "Users");
+                .contains("Municipalities", "Assignment Types", "Resources", "Resource Types", "Destinations");
     }
 
     @Test

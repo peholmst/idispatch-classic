@@ -10,5 +10,28 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql
 
+  # Development identity provider. Imports the idispatch realm (client, roles and test users) from
+  # keycloak/idispatch-realm.json on every start; Keycloak keeps no state between restarts.
+  # Admin console: http://localhost:8180/admin, user admin / admin.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    command: start-dev --import-realm --http-port=8180
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    # The application reads the realm's OpenID configuration on startup, so Spring Boot's Docker Compose support
+    # must wait until the realm has been imported, not only until the port is open.
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
 volumes:
   postgres-data:

@@ -3,6 +3,8 @@ package net.pkhapps.idispatch.server.ui;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.AnchorTarget;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
@@ -10,6 +12,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.dom.ElementFactory;
 import com.vaadin.flow.router.AfterNavigationEvent;
@@ -22,6 +25,7 @@ import net.pkhapps.idispatch.server.ui.dws.DispatchView;
 import net.pkhapps.idispatch.server.ui.management.MunicipalityManagementView;
 import net.pkhapps.idispatch.server.ui.reports.ReportsView;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 @PermitAll
 public class RootLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
@@ -49,7 +53,7 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         header.setPadding(false);
         header.setSpacing(false);
 
-        var views = getPrimaryNavigation();
+        var views = getPrimaryNavigation(authenticationContext);
 
         addToDrawer(header, views);
 
@@ -70,7 +74,7 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         setPrimarySection(Section.DRAWER);
     }
 
-    private Tabs getPrimaryNavigation() {
+    private Tabs getPrimaryNavigation(AuthenticationContext authenticationContext) {
         var tabs = new Tabs();
         tabs.add(TabUtils.createNavigationTab(VaadinIcon.HOME, "Home", RootView.class));
         if (isUserInRole(Roles.ROLE_DISPATCHER)) {
@@ -83,12 +87,31 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
             tabs.getElement().appendChild(ElementFactory.createHr());
             tabs.add(TabUtils.createNavigationTab(VaadinIcon.COG, "Management", MunicipalityManagementView.class));
         }
-        tabs.getElement().appendChild(ElementFactory.createHr());
-        tabs.add(TabUtils.createNavigationTab(VaadinIcon.PASSWORD, "Change Password", ChangePasswordView.class));
+        // Users are managed in Keycloak, and change their password in the Keycloak account console of the realm
+        // that issued their ID token
+        authenticationContext.getAuthenticatedUser(Object.class)
+                .filter(OidcUser.class::isInstance)
+                .map(OidcUser.class::cast)
+                .ifPresent(user -> {
+                    tabs.getElement().appendChild(ElementFactory.createHr());
+                    tabs.add(createAccountTab(user.getIssuer() + "/account"));
+                });
 
         tabs.setOrientation(Tabs.Orientation.VERTICAL);
         tabs.setSelectedIndex(1);
         return tabs;
+    }
+
+    private static Tab createAccountTab(String accountConsoleUrl) {
+        var icon = VaadinIcon.USER.create();
+        icon.getStyle()
+                .set("box-sizing", "border-box")
+                .set("margin-inline-end", "var(--lumo-space-m)")
+                .set("padding", "var(--lumo-space-xs)");
+        var link = new Anchor(accountConsoleUrl, icon, new Span("My Account"));
+        link.setTarget(AnchorTarget.BLANK);
+        link.setTabIndex(-1);
+        return new Tab(link);
     }
 
     private boolean isUserInRole(String role) {

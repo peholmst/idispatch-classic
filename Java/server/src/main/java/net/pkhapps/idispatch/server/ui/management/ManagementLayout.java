@@ -32,8 +32,7 @@ public class ManagementLayout extends VerticalLayout implements RouterLayout, Ha
                 TabUtils.createNavigationTab("Assignment Types", AssignmentTypeManagementView.class),
                 TabUtils.createNavigationTab("Resources", ResourceManagementView.class),
                 TabUtils.createNavigationTab("Resource Types", ResourceTypeManagementView.class),
-                TabUtils.createNavigationTab("Destinations", DestinationManagementView.class),
-                TabUtils.createNavigationTab("Users", UserManagementView.class)
+                TabUtils.createNavigationTab("Destinations", DestinationManagementView.class)
         );
 
         getStyle().set("background-color", "var(--lumo-shade-10pct)");
