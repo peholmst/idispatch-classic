@@ -44,7 +44,7 @@ public class AssignmentListPanel extends VerticalLayout {
         grid.addColumn(Assignment::getId).setHeader("ID");
         grid.addColumn(assignment -> Formatters.formatDateTime(assignment.getOpened())).setHeader("Date");
         grid.addColumn(assignment -> Formatters.formatAssignmentType(assignment.getType())).setHeader("Type");
-        grid.addColumn(Assignment::getUrgency).setHeader("Urgency").setClassNameGenerator((assignment -> Formatters.assignmentUrgencyClassName(assignment.getUrgency())));
+        grid.addColumn(Assignment::getUrgency).setHeader("Urgency").setPartNameGenerator((assignment -> Formatters.assignmentUrgencyClassName(assignment.getUrgency())));
         grid.addColumn(assignment -> Formatters.formatMunicipality(assignment.getMunicipality())).setHeader("Municipality");
         grid.addColumn(Assignment::getAddress).setHeader("Address");
 

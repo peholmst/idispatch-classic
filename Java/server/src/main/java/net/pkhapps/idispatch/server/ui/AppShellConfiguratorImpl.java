@@ -1,13 +1,15 @@
 package net.pkhapps.idispatch.server.ui;
 
+import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.page.AppShellConfigurator;
+import com.vaadin.flow.component.page.ColorScheme;
 import com.vaadin.flow.server.VaadinServiceInitListener;
-import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Theme(variant = Lumo.DARK)
+@StyleSheet(Lumo.STYLESHEET)
+@ColorScheme(ColorScheme.Value.DARK)
 @Configuration
 public class AppShellConfiguratorImpl implements AppShellConfigurator {
 

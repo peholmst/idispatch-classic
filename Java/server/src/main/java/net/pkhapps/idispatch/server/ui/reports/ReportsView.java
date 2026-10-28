@@ -3,7 +3,7 @@ package net.pkhapps.idispatch.server.ui.reports;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -12,6 +12,7 @@ import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.Lumo;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.boundary.ReportService;
@@ -26,7 +27,7 @@ import java.util.Optional;
 @Route(value = "reports", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_REPORT_READER)
 @PageTitle("iDispatch | Reports")
-@JsModule("@vaadin/vaadin-lumo-styles/presets/compact.js")
+@StyleSheet(Lumo.COMPACT_STYLESHEET)
 public class ReportsView extends SplitLayout implements HasNavbarContent {
 
     private final AssignmentService assignmentService;

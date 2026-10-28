@@ -32,7 +32,7 @@ class RunboardRestClient {
 
     @SuppressWarnings("unchecked")
     List<Map<String, Object>> findNewNotifications() throws DispatcherClientException {
-        final URI uri = UriComponentsBuilder.fromHttpUrl(configuration.getUrl())
+        final URI uri = UriComponentsBuilder.fromUriString(configuration.getUrl())
                 .path("/runboardNotifications")
                 .queryParam("runboardKey", configuration.getRunboardKey())
                 .build().toUri();
@@ -54,7 +54,7 @@ class RunboardRestClient {
 
     private void acknowledge(Object notificationId) {
         logger.info("Acknowledging notification {}", notificationId);
-        final URI uri = UriComponentsBuilder.fromHttpUrl(configuration.getUrl())
+        final URI uri = UriComponentsBuilder.fromUriString(configuration.getUrl())
                 .path("/runboardAcknowledge")
                 .queryParam("runboardKey", configuration.getRunboardKey())
                 .queryParam("notification", notificationId)
