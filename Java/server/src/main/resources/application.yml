@@ -3,7 +3,7 @@ server:
     context-path: /idispatch
 
 vaadin:
-  exclude-urls: /rest/**
+  exclude-urls: /ws/**
   frontend:
     hotdeploy: false
   allowed-packages: net.pkhapps, com.vaadin

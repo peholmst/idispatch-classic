@@ -44,16 +44,16 @@ public class Configuration {
         }
     }
 
-    public String getUrl() {
-        return getProperty("idispatch.rest.url", "http://localhost:8080/rest");
+    public String getServerUrl() {
+        return getProperty("idispatch.server.url", "ws://localhost:8080/ws/runboard");
     }
 
     public String getRunboardKey() {
         return getProperty("idispatch.runboardKey", "test123");
     }
 
-    public int getPollingIntervalMilliseconds() {
-        return Integer.parseInt(getProperty("idispatch.pollingInterval", "1000"));
+    public long getHeartbeatIntervalMilliseconds() {
+        return Long.parseLong(getProperty("idispatch.heartbeatInterval", "10000"));
     }
 
 }
