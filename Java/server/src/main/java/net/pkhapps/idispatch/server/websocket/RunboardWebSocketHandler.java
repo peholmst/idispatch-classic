@@ -34,6 +34,10 @@ import java.util.stream.Collectors;
  * The server pings every runboard at the interval set by {@code idispatch.runboard.heartbeat-interval} and closes
  * connections that have not been heard from in three intervals, so that dead connections are detected and idle ones
  * are kept alive.
+ * <p>
+ * Every notification carries the language of the installation, set by {@code idispatch.runboard.language} as an
+ * ISO 639-1 code such as {@code fi} or {@code sv}. Runboards use it to pick the voice that reads the notification out
+ * loud, so it should match the language the assignment types and municipalities have been entered in.
  */
 @Component
 class RunboardWebSocketHandler extends TextWebSocketHandler implements ApplicationListener<RunboardNotificationQueued> {
@@ -46,13 +50,16 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
     private final RunboardDispatcher runboardDispatcher;
     private final JsonMapper jsonMapper;
     private final Duration heartbeatTimeout;
+    private final String language;
     private final Map<String, RunboardConnection> connections = new ConcurrentHashMap<>();
 
     RunboardWebSocketHandler(RunboardDispatcher runboardDispatcher, JsonMapper jsonMapper,
-                             @Value("${idispatch.runboard.heartbeat-interval:10s}") Duration heartbeatInterval) {
+                             @Value("${idispatch.runboard.heartbeat-interval:10s}") Duration heartbeatInterval,
+                             @Value("${idispatch.runboard.language:fi}") String language) {
         this.runboardDispatcher = runboardDispatcher;
         this.jsonMapper = jsonMapper;
         this.heartbeatTimeout = heartbeatInterval.multipliedBy(3);
+        this.language = language;
     }
 
     @Override
@@ -175,6 +182,7 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
         map.put("address", notification.getAddress());
         map.put("description", notification.getDescription());
         map.put("resources", notification.getAssignedResources().stream().map(Resource::getCallSign).collect(Collectors.toSet()));
+        map.put("language", language);
         return map;
     }
 
