@@ -5,8 +5,10 @@ Maven reactor: `server` (Spring Boot 4.1 + Vaadin 25.3 Flow app, Java 25), `asps
 ## Running and testing
 
 - Run the app with the Vaadin dev loop, not `mvn spring-boot:run`: `server/.vaadin/vaadin-dev start`, then `apply` after edits. See the `vaadin-devloop` skill in `server/.claude/skills/`.
-- App: http://localhost:8080/idispatch, initial user `admin` / `changeme`. The database is in-memory H2 and starts empty on every start.
-- Tests: `mvn test` in `server/`. Running Maven while the dev loop owns the app rewrites `target/classes` under it, and hot reload recreates the database (the `admin` user disappears); run `.vaadin/vaadin-dev restart` afterwards.
+- App: http://localhost:8080/idispatch, initial user `admin` / `changeme`.
+- Database is PostgreSQL from `server/compose.yaml`. Spring Boot's Docker Compose support starts it with the app and supplies the datasource; data persists in the `postgres-data` volume (`docker compose down -v` in `server/` wipes it).
+- Schema changes go in a new Flyway migration in `server/src/main/resources/db/migration` (never edit an applied one). Hibernate runs with `ddl-auto: validate`, so the app fails to start if the entities and the schema disagree.
+- Tests: `mvn test` in `server/`; needs Docker, as `TestcontainersConfiguration` starts a PostgreSQL container per Spring context. Running Maven while the dev loop owns the app rewrites `target/classes` under it; run `.vaadin/vaadin-dev restart` afterwards.
 
 ## Conventions
 

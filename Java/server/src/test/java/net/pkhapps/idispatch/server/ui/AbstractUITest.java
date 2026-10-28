@@ -6,6 +6,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
+import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -17,10 +18,10 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 
 /**
- * Base class for browserless UI tests. Runs against the full application context and an in-memory database.
+ * Base class for browserless UI tests. Runs against the full application context and a PostgreSQL container.
  */
 @SpringBootTest
-@Import(TestData.class)
+@Import({TestData.class, TestcontainersConfiguration.class})
 public abstract class AbstractUITest extends SpringBrowserlessTest {
 
     @Autowired
