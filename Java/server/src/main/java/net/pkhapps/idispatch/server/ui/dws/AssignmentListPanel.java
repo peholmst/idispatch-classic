@@ -20,7 +20,8 @@ public class AssignmentListPanel extends VerticalLayout {
     private final AssignmentService assignmentService;
     private final ApplicationEventMulticaster eventMulticaster;
     private final Grid<Assignment> grid;
-    private final ApplicationListener<AssignmentEvent> assignmentEventListener = event -> refresh();
+    private OwnerUpdater ownerUpdater;
+    private final ApplicationListener<AssignmentEvent> assignmentEventListener = event -> ownerUpdater.update(this::refresh);
 
     public AssignmentListPanel(AssignmentService assignmentService,
                                ApplicationEventMulticaster eventMulticaster,
@@ -60,6 +61,7 @@ public class AssignmentListPanel extends VerticalLayout {
 
     @Override
     protected void onAttach(AttachEvent attachEvent) {
+        ownerUpdater = OwnerUpdater.forCurrentUser(attachEvent.getUI());
         eventMulticaster.addApplicationListener(assignmentEventListener);
         refresh();
     }

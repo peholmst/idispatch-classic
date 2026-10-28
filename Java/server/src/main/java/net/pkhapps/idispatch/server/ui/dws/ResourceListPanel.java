@@ -20,7 +20,8 @@ public class ResourceListPanel extends VerticalLayout {
     private final ResourceStatusService resourceStatusService;
     private final ApplicationEventMulticaster eventMulticaster;
     private final Grid<ResourceStatus> grid;
-    private final ApplicationListener<ResourceStatusChanged> resourceStatusChangedListener = event -> refresh();
+    private OwnerUpdater ownerUpdater;
+    private final ApplicationListener<ResourceStatusChanged> resourceStatusChangedListener = event -> ownerUpdater.update(this::refresh);
 
     public ResourceListPanel(ResourceStatusService resourceStatusService,
                              ApplicationEventMulticaster eventMulticaster) {
@@ -58,6 +59,7 @@ public class ResourceListPanel extends VerticalLayout {
 
     @Override
     protected void onAttach(AttachEvent attachEvent) {
+        ownerUpdater = OwnerUpdater.forCurrentUser(attachEvent.getUI());
         eventMulticaster.addApplicationListener(resourceStatusChangedListener);
         refresh();
     }
