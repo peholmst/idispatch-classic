@@ -49,11 +49,14 @@ public class AssignmentPanel extends VerticalLayout {
     private final Binder<Assignment> binder;
     private final Component noAssignmentSelected;
     private final Component assignmentForm;
+    private final ComboBox<AssignmentType> assignmentType;
+    private final ComboBox<Municipality> municipality;
     private final ComboBox<Resource> availableResource;
 
     private final AtomicBoolean initializingForm = new AtomicBoolean(false);
     private final Grid<ResourceStatus> assignedResources;
-    private final ApplicationListener<ResourceStatusChanged> resourceStatusChangedListener = event -> updateResources();
+    private OwnerUpdater ownerUpdater;
+    private final ApplicationListener<ResourceStatusChanged> resourceStatusChangedListener = event -> ownerUpdater.update(this::updateResources);
     private Long selectedAssignmentId;
 
     public AssignmentPanel(AssignmentService assignmentService, ResourceStatusService resourceStatusService,
@@ -86,8 +89,7 @@ public class AssignmentPanel extends VerticalLayout {
         assignmentLayout.setSpacing(true);
         assignmentLayout.setPadding(true);
 
-        var assignmentType = new ComboBox<AssignmentType>("Type");
-        assignmentType.setItems(assignmentService.findApplicableAssignmentTypes());
+        assignmentType = new ComboBox<>("Type");
         assignmentType.setItemLabelGenerator(AssignmentType::getFormattedDescription);
         assignmentType.setWidthFull();
         binder.bind(assignmentType, Assignment::getType, Assignment::setType);
@@ -101,8 +103,7 @@ public class AssignmentPanel extends VerticalLayout {
         typeAndUrgency.setWidthFull();
         assignmentLayout.add(typeAndUrgency);
 
-        var municipality = new ComboBox<Municipality>("Municipality");
-        municipality.setItems(assignmentService.findApplicableMunicipalities());
+        municipality = new ComboBox<>("Municipality");
         municipality.setItemLabelGenerator(Municipality::getName);
         municipality.setWidthFull();
         assignmentLayout.add(municipality);
@@ -288,6 +289,9 @@ public class AssignmentPanel extends VerticalLayout {
         initializingForm.set(true);
         try {
             selectedAssignmentId = assignment.getId();
+            // Reload the options every time, so that changes made in the management console show up
+            assignmentType.setItems(assignmentService.findApplicableAssignmentTypes());
+            municipality.setItems(assignmentService.findApplicableMunicipalities());
             binder.setBean(assignment);
             updateResources();
             noAssignmentSelected.setVisible(false);
@@ -311,6 +315,7 @@ public class AssignmentPanel extends VerticalLayout {
 
     @Override
     protected void onAttach(AttachEvent attachEvent) {
+        ownerUpdater = OwnerUpdater.forCurrentUser(attachEvent.getUI());
         eventMulticaster.addApplicationListener(resourceStatusChangedListener);
     }
 

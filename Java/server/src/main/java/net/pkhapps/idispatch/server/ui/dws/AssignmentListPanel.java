@@ -20,7 +20,8 @@ public class AssignmentListPanel extends VerticalLayout {
     private final AssignmentService assignmentService;
     private final ApplicationEventMulticaster eventMulticaster;
     private final Grid<Assignment> grid;
-    private final ApplicationListener<AssignmentEvent> assignmentEventListener = event -> refresh();
+    private OwnerUpdater ownerUpdater;
+    private final ApplicationListener<AssignmentEvent> assignmentEventListener = event -> ownerUpdater.update(this::refresh);
 
     public AssignmentListPanel(AssignmentService assignmentService,
                                ApplicationEventMulticaster eventMulticaster,
@@ -44,7 +45,7 @@ public class AssignmentListPanel extends VerticalLayout {
         grid.addColumn(Assignment::getId).setHeader("ID");
         grid.addColumn(assignment -> Formatters.formatDateTime(assignment.getOpened())).setHeader("Date");
         grid.addColumn(assignment -> Formatters.formatAssignmentType(assignment.getType())).setHeader("Type");
-        grid.addColumn(Assignment::getUrgency).setHeader("Urgency").setClassNameGenerator((assignment -> Formatters.assignmentUrgencyClassName(assignment.getUrgency())));
+        grid.addColumn(Assignment::getUrgency).setHeader("Urgency").setPartNameGenerator((assignment -> Formatters.assignmentUrgencyClassName(assignment.getUrgency())));
         grid.addColumn(assignment -> Formatters.formatMunicipality(assignment.getMunicipality())).setHeader("Municipality");
         grid.addColumn(Assignment::getAddress).setHeader("Address");
 
@@ -60,6 +61,7 @@ public class AssignmentListPanel extends VerticalLayout {
 
     @Override
     protected void onAttach(AttachEvent attachEvent) {
+        ownerUpdater = OwnerUpdater.forCurrentUser(attachEvent.getUI());
         eventMulticaster.addApplicationListener(assignmentEventListener);
         refresh();
     }

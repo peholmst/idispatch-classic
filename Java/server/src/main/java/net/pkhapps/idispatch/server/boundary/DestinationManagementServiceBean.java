@@ -4,11 +4,14 @@ import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.Destination;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.repository.DestinationRepository;
+import net.pkhapps.idispatch.server.entity.repository.DestinationSpecifications;
 import net.pkhapps.idispatch.server.entity.repository.ResourceRepository;
 import net.pkhapps.idispatch.server.security.Roles;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -32,7 +35,14 @@ class DestinationManagementServiceBean extends AbstractSoftDeletableManagementSe
 
     @Override
     protected List<Destination> doFindAll(Filter filter) {
-        return repository.findAll(); // TODO Implement filter support
+        var specs = new ArrayList<Specification<Destination>>();
+        if (filter instanceof SoftDeletableFilter softDeletableFilter && softDeletableFilter.includesActiveOnly()) {
+            specs.add(DestinationSpecifications.activeOnly());
+        }
+        if (filter instanceof TextSearchFilter textSearchFilter) {
+            textSearchFilter.doWithSearchTerm(st -> specs.add(DestinationSpecifications.searchTerm(st)));
+        }
+        return repository.findAll(Specification.allOf(specs));
     }
 
     @Override

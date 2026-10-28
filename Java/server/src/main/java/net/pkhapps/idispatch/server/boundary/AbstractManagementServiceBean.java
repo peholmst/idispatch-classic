@@ -4,14 +4,21 @@ import jakarta.validation.Validator;
 import jakarta.validation.groups.Default;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
 import net.pkhapps.idispatch.server.entity.ValidationFailedException;
+import net.pkhapps.idispatch.server.security.Roles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Base class for the management console services. Spring Security looks for {@code @Secured} on the class that
+ * declares a method, so the methods inherited from here are secured here rather than by the subclasses.
+ */
+@Secured(Roles.ROLE_ADMIN)
 abstract class AbstractManagementServiceBean<E extends AbstractEntity, R extends JpaRepository<E, Long>> implements ManagementService<E> {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());

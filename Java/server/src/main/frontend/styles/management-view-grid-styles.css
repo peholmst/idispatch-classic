@@ -1,3 +1,3 @@
-.deleted {
+vaadin-grid::part(deleted) {
     background-color: indianred;
 }

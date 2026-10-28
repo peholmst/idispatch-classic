@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@Secured(Roles.ROLE_ADMIN)
+@Secured(Roles.ROLE_DISPATCHER)
 class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceStatusService {
 
     private final ResourceStatusRepository resourceStatusRepository;

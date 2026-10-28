@@ -16,12 +16,14 @@ import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import jakarta.annotation.security.PermitAll;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.dws.DispatchView;
 import net.pkhapps.idispatch.server.ui.management.MunicipalityManagementView;
 import net.pkhapps.idispatch.server.ui.reports.ReportsView;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+@PermitAll
 public class RootLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
 
     private final HorizontalLayout navbarLayout;

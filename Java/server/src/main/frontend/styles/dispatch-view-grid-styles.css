@@ -1,23 +1,23 @@
-.urgency-a {
+vaadin-grid::part(urgency-a) {
     background-color: orangered;
     color: white;
 }
 
-.urgency-b {
+vaadin-grid::part(urgency-b) {
     background-color: salmon;
     color: black;
 }
 
-.urgency-c {
+vaadin-grid::part(urgency-c) {
     background-color: yellow;
     color: black;
 }
 
-.urgency-d {
+vaadin-grid::part(urgency-d) {
     background-color: lightgreen;
     color: black;
 }
 
-:host [part="row"] [part ~= "header-cell"] ::slotted(vaadin-grid-cell-content) {
+vaadin-grid::part(header-cell) {
     font-weight: bold;
 }

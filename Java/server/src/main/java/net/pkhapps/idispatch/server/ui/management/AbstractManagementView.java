@@ -20,7 +20,7 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-@CssImport(value = "./styles/management-view-grid-styles.css", themeFor = "vaadin-grid")
+@CssImport("./styles/management-view-grid-styles.css")
 public abstract class AbstractManagementView<E extends AbstractEntity, S extends ManagementService<E>>
         extends VerticalLayout {
 
@@ -39,7 +39,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         configureGrid(grid);
         grid.setSizeFull();
         grid.setSelectionMode(Grid.SelectionMode.SINGLE);
-        grid.setClassNameGenerator(entity -> isDeleted(entity) ? "deleted" : null);
+        grid.setPartNameGenerator(entity -> isDeleted(entity) ? "deleted" : null);
 
         var add = new Button("Add...", VaadinIcon.PLUS_CIRCLE.create(), event -> add());
         add.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
