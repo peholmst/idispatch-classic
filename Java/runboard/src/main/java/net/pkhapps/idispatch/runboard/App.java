@@ -19,7 +19,7 @@ public class App {
         mainView.setModel(model);
         mainView.setUndecorated(configuration.isUndecorated());
         mainView.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        model.addObserver(new Alarm(new Speech(configuration)));
+        model.addObserver(new Alarm(new Speech(configuration), configuration.getAlertTimings()));
     }
 
     public static void main(String[] args) throws Exception {

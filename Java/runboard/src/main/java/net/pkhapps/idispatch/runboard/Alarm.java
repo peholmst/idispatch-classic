@@ -15,26 +15,24 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Sounds the alarm for new notifications and then reads them out loud, each one twice. Without speech, the alarm
- * plays for longer instead. Sound is played on a thread of its own, one alert at a time.
+ * Sounds the alarm for new notifications and then reads them out loud. Without speech, the alarm plays for longer
+ * instead. {@link AlertTimings} sets how many times each part plays. Sound is played on a thread of its own, one alert
+ * at a time.
  */
 class Alarm implements Observer {
-
-    private static final int ALARM_PLAYS_BEFORE_SPEECH = 3;
-    private static final int ALARM_PLAYS_WITHOUT_SPEECH = 9;
-    private static final int SPEECH_REPEATS = 2;
-    private static final long PAUSE_MILLISECONDS = 1000;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ExecutorService audioExecutor = Executors.newSingleThreadExecutor(
             Thread.ofPlatform().name("audio").daemon().factory());
     private final Speech speech;
+    private final AlertTimings timings;
     private Clip alarmClip;
     private Clip beepClip;
     private Set<Notification> seenNotifications = new HashSet<>();
 
-    Alarm(Speech speech) {
+    Alarm(Speech speech, AlertTimings timings) {
         this.speech = speech;
+        this.timings = timings;
         try {
             alarmClip = openClip("/sounds/alarm.wav");
             beepClip = openClip("/sounds/beep.wav");
@@ -84,21 +82,21 @@ class Alarm implements Observer {
         try {
             // Synthesize while the alarm plays, so that the speech is ready when it ends.
             final boolean speechExpected = notifications.stream().anyMatch(n -> speech.supportsLanguage(n.getLanguage()));
-            final int alarmPlays = speechExpected ? ALARM_PLAYS_BEFORE_SPEECH : ALARM_PLAYS_WITHOUT_SPEECH;
+            final int alarmPlays = speechExpected ? timings.alarmPlaysBeforeSpeech() : timings.alarmPlays();
             final AlarmPlayback alarm = startAlarm(alarmPlays);
             final List<SpeechAudio> announcements = notifications.stream()
                     .flatMap(n -> speech.synthesize(n.getLanguage(), Announcement.text(n)).stream())
                     .toList();
             alarm.await();
             if (announcements.isEmpty()) {
-                if (alarmPlays < ALARM_PLAYS_WITHOUT_SPEECH) {
-                    startAlarm(ALARM_PLAYS_WITHOUT_SPEECH - alarmPlays).await();
+                if (alarmPlays < timings.alarmPlays()) {
+                    startAlarm(timings.alarmPlays() - alarmPlays).await();
                 }
                 return;
             }
             for (SpeechAudio announcement : announcements) {
-                for (int i = 0; i < SPEECH_REPEATS; i++) {
-                    Thread.sleep(PAUSE_MILLISECONDS);
+                for (int i = 0; i < timings.speechRepeats(); i++) {
+                    Thread.sleep(timings.speechPause());
                     play(announcement);
                 }
             }

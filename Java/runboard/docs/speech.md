@@ -8,11 +8,13 @@ from a *speech engine*, plugged in through a small service provider interface (S
 
 1. The audio thread asks the engine whether it supports the language of any of the new notifications
    (`SpeechEngine.supportsLanguage`).
-2. The alarm starts: 3 times if speech is expected, otherwise 9 times.
+2. The alarm starts. It plays `idispatch.alarm.playsBeforeSpeech` times (default 3) if speech is expected, otherwise
+   `idispatch.alarm.plays` times (default 9).
 3. While it plays, the engine synthesizes the text of each notification (`SpeechEngine.synthesize`). The text comes
    from `Announcement` and is the same for every engine.
-4. When the alarm ends, each notification is read twice. If no speech came out after all, the alarm plays the rest of
-   its 9 times instead.
+4. When the alarm ends, each notification is read `idispatch.speech.repeats` times (default 2), each time after
+   `idispatch.speech.pause` milliseconds of silence (default 1000). If no speech came out after all, the alarm
+   plays the rest of its `idispatch.alarm.plays` times instead.
 
 Errors from the engine are logged and never stop the alarm. An engine that can't be found or created means alarm only.
 
@@ -32,6 +34,12 @@ The runboard picks the engine in `runboard.properties` (or as system properties)
 ```properties
 # The engine's name, or 'none' to only play the alarm. Default: piper
 idispatch.speech.engine=piper
+
+# Timings, with their defaults. Invalid values are logged and replaced by the default.
+idispatch.alarm.plays=9
+idispatch.alarm.playsBeforeSpeech=3
+idispatch.speech.repeats=2
+idispatch.speech.pause=1000
 ```
 
 Each engine reads its own settings from properties starting with `idispatch.speech.<engine name>.`. The engine sees
@@ -126,7 +134,8 @@ The contract, as documented on the interfaces:
 - **Languages:** ISO 639-1 codes (`fi`, `sv`). The code is empty if the server didn't send one.
 - **Audio:** `SpeechAudio` can be any format that `javax.sound.sampled` can play. `ofMono16Bit` covers the usual
   case of signed 16-bit mono samples.
-- **Synthesis time:** must fit within the alarm, about 6 seconds, or the speech starts late. Measure it on the target
+- **Synthesis time:** must fit within the alarm, about 6 seconds with the default `idispatch.alarm.playsBeforeSpeech`
+  (each play is 2 seconds), or the speech starts late. Measure it on the target
   hardware: a Raspberry Pi 4.
 
 ### 2. Register it
