@@ -14,13 +14,18 @@ import java.util.stream.Collectors;
  */
 final class Announcement {
 
-    private record Phrases(String assignment, String resources) {
+    /**
+     * @param urgencies the words that urgency letters are read as, the way they are said over the radio
+     */
+    private record Phrases(String assignment, String resources, Map<String, String> urgencies) {
     }
 
     private static final Map<String, Phrases> PHRASES = Map.of(
-            "fi", new Phrases("Tehtävä", "Yksiköt"),
-            "sv", new Phrases("Uppdrag", "Enheter"));
-    private static final Phrases NO_PHRASES = new Phrases("", "");
+            "fi", new Phrases("Tehtävä", "Yksiköt",
+                    Map.of("A", "Aarne", "B", "Bertta", "C", "Celsius", "D", "David", "N", "Nilo")),
+            "sv", new Phrases("Uppdrag", "Enheter",
+                    Map.of("A", "Arne", "B", "Berta", "C", "Celsius", "D", "David", "N", "Niklas")));
+    private static final Phrases NO_PHRASES = new Phrases("", "", Map.of());
     private static final Pattern CALL_SIGN = Pattern.compile("(\\p{Lu}+)(\\d*)");
 
     private Announcement() {
@@ -33,7 +38,9 @@ final class Announcement {
     static String text(Notification notification, String language) {
         final Phrases phrases = PHRASES.getOrDefault(language, NO_PHRASES);
         final List<String> sentences = new ArrayList<>();
-        sentences.add(join(" ", phrases.assignment(), notification.getAssignmentTypeCode(), notification.getUrgency()));
+        final String urgency = notification.getUrgency();
+        sentences.add(join(" ", phrases.assignment(), notification.getAssignmentTypeCode(),
+                phrases.urgencies().getOrDefault(urgency, urgency)));
         sentences.add(notification.getAssignmentTypeDescription());
         sentences.add(join(", ", notification.getMunicipality(), notification.getAddress()));
         sentences.add(notification.getDescription());
@@ -52,14 +59,15 @@ final class Announcement {
     }
 
     /**
-     * Spells out the letters of a call sign such as {@code RVS201}, which would otherwise be read as a word.
+     * Spells out a call sign such as {@code RVS201} letter by letter and digit by digit, as {@code R V S 2 0 1}, which
+     * would otherwise be read as a word and a number.
      */
     static String spellCallSign(String callSign) {
         final var matcher = CALL_SIGN.matcher(callSign);
         if (!matcher.matches()) {
             return callSign;
         }
-        return join(" ", String.join(" ", matcher.group(1).split("")), matcher.group(2));
+        return join(" ", String.join(" ", matcher.group(1).split("")), String.join(" ", matcher.group(2).split("")));
     }
 
     private static String join(String delimiter, String... parts) {
