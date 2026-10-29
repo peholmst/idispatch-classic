@@ -6,17 +6,27 @@ import java.time.LocalTime;
 
 public class ClockView extends JComponent {
 
-    private final Timer repaintTimer = new Timer(200, e -> repaint());
+    // The second hand jumps once a second, so repaint once a second, just after the second changes.
+    private final Timer repaintTimer = new Timer(0, e -> {
+        repaint();
+        scheduleRepaint();
+    });
 
     public ClockView() {
-        repaintTimer.start();
+        repaintTimer.setRepeats(false);
+        scheduleRepaint();
+    }
+
+    private void scheduleRepaint() {
+        repaintTimer.setInitialDelay((int) (1010 - System.currentTimeMillis() % 1000));
+        repaintTimer.restart();
     }
 
     @Override
     public void setVisible(boolean visible) {
         super.setVisible(visible);
         if (visible) {
-            repaintTimer.start();
+            scheduleRepaint();
         } else {
             repaintTimer.stop();
         }

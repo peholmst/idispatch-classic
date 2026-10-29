@@ -26,6 +26,11 @@ public class App {
     }
 
     public static void main(String[] args) throws Exception {
+        // Without a desktop environment, as in a kiosk on a Raspberry Pi, Java on Linux draws text without antialiasing.
+        if (System.getProperty("os.name").startsWith("Linux")
+                && System.getProperty("awt.useSystemAAFontSettings") == null) {
+            System.setProperty("awt.useSystemAAFontSettings", "on");
+        }
         UIManager.setLookAndFeel(
                 UIManager.getCrossPlatformLookAndFeelClassName());
         SwingUtilities.invokeLater(new Runnable() {
