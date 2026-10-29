@@ -42,6 +42,23 @@ class Alarm implements Observer {
         audioExecutor.execute(speech::initialize);
     }
 
+    /**
+     * Stops the audio thread, cutting off any alert that is playing, and then releases the speech engine. Called when
+     * the runboard exits.
+     */
+    void close() {
+        audioExecutor.shutdownNow();
+        try {
+            if (audioExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                speech.close();
+            } else {
+                logger.warn("Audio thread did not stop, leaving the speech engine open");
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     private static Clip openClip(String resource)
             throws UnsupportedAudioFileException, IOException, LineUnavailableException {
         final Clip clip = AudioSystem.getClip();

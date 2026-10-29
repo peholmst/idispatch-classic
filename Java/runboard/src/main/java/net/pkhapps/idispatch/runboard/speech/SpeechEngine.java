@@ -26,7 +26,9 @@ public interface SpeechEngine extends AutoCloseable {
     Optional<SpeechAudio> synthesize(String language, String text) throws Exception;
 
     /**
-     * Releases the engine's resources. The default does nothing.
+     * Releases the engine's resources. Called once when the runboard exits, from a shutdown hook, after the audio
+     * thread has stopped. Engines with native resources must free them here: native destructors that run after the
+     * JVM has exited can crash it. The default does nothing.
      */
     @Override
     default void close() throws Exception {

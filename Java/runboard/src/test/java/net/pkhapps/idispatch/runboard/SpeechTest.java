@@ -56,6 +56,17 @@ class SpeechTest {
     }
 
     @Test
+    void closedSpeech_speaksNothing() {
+        var speech = initialized("fake", FINNISH_ONLY);
+
+        speech.close();
+        speech.close();
+
+        assertFalse(speech.supportsLanguage("fi"));
+        assertTrue(speech.synthesize("fi", "Tehtävä 1.").isEmpty());
+    }
+
+    @Test
     void notificationWithoutLanguage_isReadInTheDefaultLanguage() {
         var speech = new Speech("fake", FINNISH_ONLY, "fi");
 

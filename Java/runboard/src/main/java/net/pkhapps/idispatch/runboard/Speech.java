@@ -16,7 +16,8 @@ import java.util.ServiceLoader;
 /**
  * Reads text out loud with the {@link SpeechEngine} selected by {@code idispatch.speech.engine}, found with
  * {@link ServiceLoader}. Errors from the engine are logged and never reach the caller, so that a broken engine only
- * costs the speech, not the alarm. Use from a single thread, starting with {@link #initialize()}.
+ * costs the speech, not the alarm. Use from a single thread, starting with {@link #initialize()} and ending with
+ * {@link #close()}.
  */
 class Speech {
 
@@ -74,6 +75,23 @@ class Speech {
             logger.info("Using speech engine '{}'", engineName);
         } catch (Exception | ServiceConfigurationError | LinkageError ex) {
             logger.error("Could not create speech engine '{}', notifications will not be read out loud", engineName, ex);
+        }
+    }
+
+    /**
+     * Releases the engine. Nothing is spoken after this.
+     */
+    void close() {
+        if (engine == null) {
+            return;
+        }
+        try {
+            engine.close();
+            logger.info("Closed speech engine '{}'", engineName);
+        } catch (Exception | LinkageError ex) {
+            logger.error("Could not close speech engine '{}'", engineName, ex);
+        } finally {
+            engine = null;
         }
     }
 

@@ -150,7 +150,7 @@ The contract, as documented on the interfaces:
 | `create(settings)` | Once, on the audio thread, when the runboard starts | Load everything that is slow to load. Throw if the engine can't run here. |
 | `supportsLanguage(language)` | Before every alert, before the alarm starts | Answer quickly from the configuration, without loading anything, since it delays the alarm |
 | `synthesize(language, text)` | While the alarm plays | Return empty for an unsupported language, throw on failure |
-| `close()` | When the engine is released | Free native resources |
+| `close()` | Once, when the runboard exits, from a shutdown hook after the audio thread has stopped | Free native resources. Native libraries whose objects are still alive when the JVM exits can crash it: Piper's onnxruntime aborts with *mutex lock failed*. |
 
 - **Threads:** an engine is only used from the audio thread, so it doesn't need to be thread safe.
 - **Languages:** ISO 639-1 codes (`fi`, `sv`). The code is empty if the server didn't send one.
