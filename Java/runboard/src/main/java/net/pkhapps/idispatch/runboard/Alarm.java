@@ -105,6 +105,9 @@ class Alarm implements Observer {
             final List<SpeechAudio> announcements = notifications.stream()
                     .flatMap(n -> {
                         final String language = speech.languageOf(n);
+                        logger.info("Notification {} came in language '{}' from the server, reading it in '{}'",
+                                n.getId(), n.getLanguage().isEmpty() ? "none" : n.getLanguage(),
+                                language.isEmpty() ? "none" : language);
                         return speech.synthesize(language, Announcement.text(n, language)).stream();
                     })
                     .toList();

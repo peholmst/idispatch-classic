@@ -60,6 +60,7 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
         this.jsonMapper = jsonMapper;
         this.heartbeatTimeout = heartbeatInterval.multipliedBy(3);
         this.language = language;
+        logger.info("Runboard notifications are sent in language '{}' (idispatch.runboard.language)", language);
     }
 
     @Override
@@ -73,7 +74,8 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
             session.close(CloseStatus.POLICY_VIOLATION.withReason("Missing runboard key"));
             return;
         }
-        logger.info("Runboard {} connected from {}", runboardKey, session.getRemoteAddress());
+        logger.info("Runboard {} connected from {}, notifications are in language '{}'", runboardKey,
+                session.getRemoteAddress(), language);
         final RunboardConnection connection = new RunboardConnection(runboardKey,
                 new ConcurrentWebSocketSessionDecorator(session, SEND_TIME_LIMIT_MS, SEND_BUFFER_SIZE_LIMIT));
         connections.put(session.getId(), connection);

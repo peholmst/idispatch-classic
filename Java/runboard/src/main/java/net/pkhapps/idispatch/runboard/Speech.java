@@ -55,6 +55,8 @@ class Speech {
      * Creates the engine. If it cannot be found or created, nothing is spoken.
      */
     void initialize() {
+        logger.info("Notifications that come without a language from the server are read in '{}' "
+                + "(idispatch.speech.defaultLanguage)", defaultLanguage.isEmpty() ? "none" : defaultLanguage);
         if (NONE.equals(engineName)) {
             logger.info("Speech is turned off, notifications will not be read out loud");
             return;
