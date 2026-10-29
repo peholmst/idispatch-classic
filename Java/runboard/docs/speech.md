@@ -64,7 +64,7 @@ idispatch.speech.piper.voice.sv=voices/sv_SE-nst-medium.onnx
 
 Each value is the path of a voice's `.onnx` file, with its `.onnx.json` file next to it. Voices are downloaded from
 [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices); check each voice's `MODEL_CARD` for its license.
-Piper is used through [piper-jni](https://github.com/GiviMAD/piper-jni), which bundles the native libraries for Linux
+Piper is used through [piper-jni](https://github.com/jvoice-project/piper-jni), which bundles the native libraries for Linux
 (x86_64, arm64), macOS and Windows. The native libraries load when the runboard starts, and each voice the first time
 a notification in its language arrives.
 

@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.runboard.speech.piper;
 
-import io.github.givimad.piperjni.PiperJNI;
-import io.github.givimad.piperjni.PiperVoice;
+import io.github.jvoiceproject.piperjni.PiperJNI;
+import io.github.jvoiceproject.piperjni.PiperVoice;
 import net.pkhapps.idispatch.runboard.speech.SpeechAudio;
 import net.pkhapps.idispatch.runboard.speech.SpeechEngine;
 import net.pkhapps.idispatch.runboard.speech.SpeechSettings;

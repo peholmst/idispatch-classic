@@ -31,9 +31,9 @@
         </dependency>
         <dependency>
             <!-- Piper text-to-speech, with native libraries for Linux, macOS and Windows. GPL-3.0 as bundled. -->
-            <groupId>io.github.givimad</groupId>
+            <groupId>io.github.jvoice-project</groupId>
             <artifactId>piper-jni</artifactId>
-            <version>1.4.1</version>
+            <version>1.4.2</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
