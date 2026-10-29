@@ -36,8 +36,8 @@ Servers from before that setting send no language. For those, the runboard can f
 idispatch.speech.defaultLanguage=fi
 ```
 
-The language also picks the words added around the notification's text ("Tehtävä"/"Uppdrag" and
-"Yksiköt"/"Enheter").
+The language also picks the words added around the notification's text ("Hälytysilmoitus"/"Larmmeddelande" and
+"Tehtävä"/"Uppdrag") and the radio words for urgencies.
 
 The runboard picks the engine in `runboard.properties` (or as system properties):
 

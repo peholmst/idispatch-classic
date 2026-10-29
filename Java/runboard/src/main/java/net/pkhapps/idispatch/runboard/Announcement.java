@@ -10,21 +10,23 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Builds the text that is read out loud for a notification: the assignment, where it is and the units dispatched to
- * it. The free-text description is left out, as it can be long and is shown on the screen.
+ * Builds the text that is read out loud for a notification: the units dispatched, the assignment code and urgency,
+ * and the address. The assignment type's description and the free-text description are left out, as they are shown on
+ * the screen.
  */
 final class Announcement {
 
     /**
+     * @param alert     the label of the units dispatched, which opens the announcement
      * @param urgencies the words that urgency letters are read as, the way they are said over the radio
      */
-    private record Phrases(String assignment, String resources, Map<String, String> urgencies) {
+    private record Phrases(String alert, String assignment, Map<String, String> urgencies) {
     }
 
     private static final Map<String, Phrases> PHRASES = Map.of(
-            "fi", new Phrases("Tehtävä", "Yksiköt",
+            "fi", new Phrases("Hälytysilmoitus", "Tehtävä",
                     Map.of("A", "Aarne", "B", "Bertta", "C", "Celsius", "D", "David", "N", "Nilo")),
-            "sv", new Phrases("Uppdrag", "Enheter",
+            "sv", new Phrases("Larmmeddelande", "Uppdrag",
                     Map.of("A", "Arne", "B", "Berta", "C", "Celsius", "D", "David", "N", "Niklas")));
     private static final Phrases NO_PHRASES = new Phrases("", "", Map.of());
     private static final Pattern CALL_SIGN = Pattern.compile("(\\p{Lu}+)(\\d*)");
@@ -40,18 +42,14 @@ final class Announcement {
     static String text(Notification notification, String language) {
         final Phrases phrases = PHRASES.getOrDefault(language, NO_PHRASES);
         final List<String> sentences = new ArrayList<>();
-        final String urgency = notification.getUrgency();
-        sentences.add(join(" ", phrases.assignment(), spellDigits(notification.getAssignmentTypeCode()),
-                phrases.urgencies().getOrDefault(urgency, urgency)));
-        sentences.add(notification.getAssignmentTypeDescription());
-        sentences.add(join(", ", notification.getMunicipality(), notification.getAddress()));
-        final String resources = notification.getResources().stream()
+        sentences.add(labelled(phrases.alert(), notification.getResources().stream()
                 .sorted()
                 .map(Announcement::spellCallSign)
-                .collect(Collectors.joining(", "));
-        if (!resources.isEmpty()) {
-            sentences.add(phrases.resources().isEmpty() ? resources : phrases.resources() + ": " + resources);
-        }
+                .collect(Collectors.joining(", "))));
+        final String urgency = notification.getUrgency();
+        sentences.add(labelled(phrases.assignment(), join(" ", spellDigits(notification.getAssignmentTypeCode()),
+                phrases.urgencies().getOrDefault(urgency, urgency))));
+        sentences.add(join(", ", notification.getAddress(), notification.getMunicipality()));
         return sentences.stream()
                 .map(String::strip)
                 .filter(sentence -> !sentence.isEmpty())
@@ -77,6 +75,13 @@ final class Announcement {
      */
     static String spellDigits(String text) {
         return DIGIT_BOUNDARY.matcher(text).replaceAll(" ");
+    }
+
+    private static String labelled(String label, String text) {
+        if (text.isBlank()) {
+            return "";
+        }
+        return label.isEmpty() ? text : label + ": " + text;
     }
 
     private static String join(String delimiter, String... parts) {

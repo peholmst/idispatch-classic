@@ -11,60 +11,62 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class AnnouncementTest {
 
     @Test
-    void finnishNotification_isReadWithFinnishPhrases_withoutTheDescription() {
+    void finnishNotification_isReadWithFinnishPhrases() {
         var notification = new Notification(Map.of(
                 "language", "fi",
-                "assignment_type_code", "203",
+                "assignment_type_code", "103",
                 "urgency", "B",
                 "assignment_type_descr", "Rakennuspalo: keskisuuri",
                 "municipality", "Parainen",
-                "address", "Kauppiaskatu 5",
+                "address", "Kauppiaskatu 1",
                 "description", "Savua näkyy ikkunoista.",
-                "resources", List.of("RVS201", "PAR11")));
+                "resources", List.of("RVS911", "PAR11")));
 
-        assertEquals("Tehtävä 2 0 3 Bertta. Rakennuspalo: keskisuuri. Parainen, Kauppiaskatu 5. "
-                + "Yksiköt: P A R 1 1, R V S 2 0 1.", Announcement.text(notification, notification.getLanguage()));
+        assertEquals("Hälytysilmoitus: P A R 1 1, R V S 9 1 1. Tehtävä: 1 0 3 Bertta. Kauppiaskatu 1, Parainen.",
+                Announcement.text(notification, notification.getLanguage()));
     }
 
     @Test
     void swedishNotification_isReadWithSwedishPhrases() {
         var notification = new Notification(Map.of(
                 "language", "sv",
-                "assignment_type_code", "203",
+                "assignment_type_code", "103",
                 "urgency", "B",
                 "municipality", "Pargas",
-                "resources", List.of("RVS201")));
+                "address", "Köpmansgatan 1",
+                "resources", List.of("RVS911")));
 
-        assertEquals("Uppdrag 2 0 3 Berta. Pargas. Enheter: R V S 2 0 1.", Announcement.text(notification, notification.getLanguage()));
+        assertEquals("Larmmeddelande: R V S 9 1 1. Uppdrag: 1 0 3 Berta. Köpmansgatan 1, Pargas.",
+                Announcement.text(notification, notification.getLanguage()));
     }
 
     @Test
     void unknownLanguage_isReadWithoutPhrases() {
         var notification = new Notification(Map.of(
-                "assignment_type_code", "203",
-                "address", "Storgatan 5",
-                "resources", List.of("RVS201")));
+                "assignment_type_code", "103",
+                "address", "Storgatan 1",
+                "resources", List.of("RVS911")));
 
-        assertEquals("2 0 3. Storgatan 5. R V S 2 0 1.", Announcement.text(notification, notification.getLanguage()));
+        assertEquals("R V S 9 1 1. 1 0 3. Storgatan 1.", Announcement.text(notification, notification.getLanguage()));
     }
 
     @Test
-    void givenLanguage_decidesThePhrases() {
-        var notification = new Notification(Map.of("assignment_type_code", "203"));
+    void missingParts_areLeftOut() {
+        var notification = new Notification(Map.of("assignment_type_code", "103"));
 
-        assertEquals("Tehtävä 2 0 3.", Announcement.text(notification, "fi"));
+        assertEquals("Tehtävä: 1 0 3.", Announcement.text(notification, "fi"));
     }
 
     @Test
     void urgency_isReadWithTheRadioWordOfTheLanguage() {
-        assertEquals("Tehtävä 1 Aarne.", urgencyText("fi", "A"));
-        assertEquals("Tehtävä 1 Celsius.", urgencyText("fi", "C"));
-        assertEquals("Tehtävä 1 David.", urgencyText("fi", "D"));
-        assertEquals("Tehtävä 1 Nilo.", urgencyText("fi", "N"));
-        assertEquals("Uppdrag 1 Arne.", urgencyText("sv", "A"));
-        assertEquals("Uppdrag 1 Niklas.", urgencyText("sv", "N"));
+        assertEquals("Tehtävä: 1 Aarne.", urgencyText("fi", "A"));
+        assertEquals("Tehtävä: 1 Celsius.", urgencyText("fi", "C"));
+        assertEquals("Tehtävä: 1 David.", urgencyText("fi", "D"));
+        assertEquals("Tehtävä: 1 Nilo.", urgencyText("fi", "N"));
+        assertEquals("Uppdrag: 1 Arne.", urgencyText("sv", "A"));
+        assertEquals("Uppdrag: 1 Niklas.", urgencyText("sv", "N"));
         assertEquals("1 B.", urgencyText("", "B"));
-        assertEquals("Tehtävä 1 X.", urgencyText("fi", "X"));
+        assertEquals("Tehtävä: 1 X.", urgencyText("fi", "X"));
     }
 
     private static String urgencyText(String language, String urgency) {
