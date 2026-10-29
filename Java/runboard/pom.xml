@@ -65,6 +65,32 @@
                         </executions>
                     </plugin>
                     <plugin>
+                        <!-- Copies the bundled libraries' NOTICE files, and the licenses of code they embed, to
+                             licenses/notices/<artifactId> of the zip. The fat jar keeps only one of each. -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>notices</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>unpack-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <includeScope>runtime</includeScope>
+                                    <includes>META-INF/*NOTICE*,META-INF/*-LICENSE*</includes>
+                                    <outputDirectory>${project.build.directory}/notices</outputDirectory>
+                                    <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact>
+                                    <stripVersion>true</stripVersion>
+                                    <stripType>true</stripType>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <version>3.6.0</version>

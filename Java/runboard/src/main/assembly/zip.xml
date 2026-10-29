@@ -51,5 +51,12 @@
             <directory>src/main/dist/licenses</directory>
             <outputDirectory>licenses</outputDirectory>
         </fileSet>
+        <fileSet>
+            <directory>target/notices</directory>
+            <outputDirectory>licenses/notices</outputDirectory>
+            <includes>
+                <include>*/*</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>

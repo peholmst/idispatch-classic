@@ -51,6 +51,7 @@ The runboard bundles Piper text-to-speech (piper-jni, with piper1-gpl and espeak
 GNU General Public License, version 3 (licenses/GPL-3.0.txt). Section 13 of the AGPL-3.0 permits combining the two;
 the GPL-3.0 still applies to those parts of the combined work.
 
-licenses/THIRD-PARTY.txt lists every bundled library and its license. The license texts are in the licenses folder.
+licenses/THIRD-PARTY.txt lists every bundled library and its license. The license texts are in the licenses folder,
+and licenses/notices has each library's NOTICE files and the licenses of code embedded in it.
 The voices are not part of this package; check each voice's MODEL_CARD at
 https://huggingface.co/rhasspy/piper-voices for its license.
