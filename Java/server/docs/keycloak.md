@@ -146,7 +146,8 @@ are simply not created, or are created with **Enabled** off.
 
 ### 6. Configure the application
 
-Set the Keycloak connection in the `application.yml` next to `idispatch-server.jar`:
+Set the Keycloak connection in the `application.yml` next to `idispatch-server.jar`. (When running in Docker,
+set it in `deploy/.env` instead; see [deployment.md](deployment.md).)
 
 ```yaml
 spring:

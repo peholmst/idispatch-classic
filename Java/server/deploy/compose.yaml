@@ -1,0 +1,67 @@
+# Production deployment: the server on its own LAN address, PostgreSQL on a private network, and an external Keycloak.
+# Copy .env.example to .env and fill it in. See docs/deployment.md.
+services:
+  idispatch:
+    build:
+      context: ../..
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Europe/Helsinki}
+      SERVER_SERVLET_CONTEXT_PATH: ${IDISPATCH_CONTEXT_PATH-/idispatch}
+      # NGINX terminates TLS; trust its X-Forwarded-* headers when building redirect URIs.
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/idispatch
+      SPRING_DATASOURCE_USERNAME: idispatch
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: ${KEYCLOAK_ISSUER_URI:?Set KEYCLOAK_ISSUER_URI in .env, for example https://keycloak.example.com/realms/idispatch}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-idispatch}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Set KEYCLOAK_CLIENT_SECRET in .env}
+      ASPSMS_USERKEY: ${ASPSMS_USER_KEY:-}
+      ASPSMS_PASSWORD: ${ASPSMS_PASSWORD:-}
+      ASPSMS_ORIGINATOR: ${ASPSMS_ORIGINATOR:-iDispatch}
+      LOGGING_LEVEL_NET_PKHAPPS: info
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: info
+    networks:
+      lan_apps:
+        ipv4_address: ${IDISPATCH_IP:?Set IDISPATCH_IP in .env to an unused LAN address}
+      backend:
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080${IDISPATCH_CONTEXT_PATH-/idispatch}/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # Flyway migrations and the Keycloak discovery request run before the server answers.
+      start_period: 60s
+
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: idispatch
+      POSTGRES_USER: idispatch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "idispatch", "-d", "idispatch"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  lan_apps:
+    external: true
+    name: lan_apps
+  # Only the server can reach PostgreSQL; it is not on the LAN.
+  backend:
+    internal: true
+
+volumes:
+  postgres-data:
