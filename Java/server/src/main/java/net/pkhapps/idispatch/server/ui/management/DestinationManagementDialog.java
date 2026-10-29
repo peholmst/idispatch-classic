@@ -96,6 +96,15 @@ public class DestinationManagementDialog extends AbstractManagementDialog<Destin
         public abstract String getLabel();
 
         public abstract Binder<? extends Destination> getBinder();
+
+        protected <D extends Destination> void addDescriptionField(Binder<D> binder) {
+            var description = new TextField("Description");
+            description.setHelperText("Only shown here, to tell destinations apart");
+            add(description);
+            binder.forField(description)
+                    .withNullRepresentation("")
+                    .bind(Destination::getDescription, Destination::setDescription);
+        }
     }
 
     private class SmsDestinationLayout extends DestinationLayout {
@@ -104,6 +113,8 @@ public class DestinationManagementDialog extends AbstractManagementDialog<Destin
 
         SmsDestinationLayout(SmsDestination entity) {
             binder.setBean(entity);
+            addDescriptionField(binder);
+
             var phoneNumbers = new TextArea("Phone numbers");
             final var info = new Span("Use commas or line breaks to separate numbers. Remember to add the +358 prefix!");
             add(new Div(phoneNumbers, info));
@@ -135,6 +146,8 @@ public class DestinationManagementDialog extends AbstractManagementDialog<Destin
 
         RunboardDestinationLayout(RunboardDestination entity) {
             binder.setBean(entity);
+            addDescriptionField(binder);
+
             var runboardKey = new TextField("Runboard Key");
             add(runboardKey);
             binder.bind(runboardKey, RunboardDestination::getRunboardKey, RunboardDestination::setRunboardKey);
