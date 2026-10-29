@@ -9,6 +9,14 @@ vaadin:
   allowed-packages: net.pkhapps, com.vaadin
 
 spring:
+  docker:
+    compose:
+      # Always run `docker compose up`, which starts whichever of PostgreSQL and Keycloak is missing (the default skips
+      # it if any service is running). Leave both running when the app stops, so dev loop restarts don't wait for
+      # Keycloak; `docker compose stop` in this directory stops them together.
+      lifecycle-management: start-only
+      start:
+        skip: never
   security:
     oauth2:
       client:
