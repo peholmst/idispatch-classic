@@ -9,6 +9,7 @@ Maven reactor: `server` (Spring Boot 4.1 + Vaadin 25.3 Flow app, Java 25), `asps
 - Database is PostgreSQL from `server/compose.yaml`. Spring Boot's Docker Compose support starts it with the app and supplies the datasource; data persists in the `postgres-data` volume (`docker compose down -v` in `server/` wipes it).
 - Keycloak (http://localhost:8180, admin console `admin` / `admin`) is in the same `compose.yaml` and imports the `idispatch` realm from `server/keycloak/idispatch-realm.json` on every start, keeping no other state. Spring Boot skips `docker compose up` if any service is already running, so start a missing one with `docker compose up -d --wait keycloak`. The app fails to start if Keycloak is down. Production setup: `server/docs/keycloak.md`.
 - Schema changes go in a new Flyway migration in `server/src/main/resources/db/migration` (never edit an applied one). Hibernate runs with `ddl-auto: validate`, so the app fails to start if the entities and the schema disagree.
+- Production runs in Docker behind NGINX: `server/Dockerfile` (build context is this directory) and `server/deploy/compose.yaml`, documented in `server/docs/deployment.md`.
 - Tests: `mvn test` in `server/`; needs Docker, as `TestcontainersConfiguration` starts a PostgreSQL container per Spring context. Running Maven while the dev loop owns the app rewrites `target/classes` under it; run `.vaadin/vaadin-dev restart` afterwards.
 
 ## Conventions

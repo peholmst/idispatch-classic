@@ -1,0 +1,9 @@
+**/target
+**/node_modules
+**/.vaadin
+**/.idea
+**/.DS_Store
+**/*.iml
+.git
+server/deploy
+server/src/main/frontend/generated
