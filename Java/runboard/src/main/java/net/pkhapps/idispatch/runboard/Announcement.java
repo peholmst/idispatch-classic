@@ -26,8 +26,12 @@ final class Announcement {
     private Announcement() {
     }
 
-    static String text(Notification notification) {
-        final Phrases phrases = PHRASES.getOrDefault(notification.getLanguage(), NO_PHRASES);
+    /**
+     * Returns the text to read for the notification in the given language, which decides the words added around the
+     * notification's own text.
+     */
+    static String text(Notification notification, String language) {
+        final Phrases phrases = PHRASES.getOrDefault(language, NO_PHRASES);
         final List<String> sentences = new ArrayList<>();
         sentences.add(join(" ", phrases.assignment(), notification.getAssignmentTypeCode(), notification.getUrgency()));
         sentences.add(notification.getAssignmentTypeDescription());

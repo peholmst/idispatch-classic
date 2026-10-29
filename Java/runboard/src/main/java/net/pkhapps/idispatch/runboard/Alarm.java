@@ -81,11 +81,15 @@ class Alarm implements Observer {
     private void alert(List<Notification> notifications) {
         try {
             // Synthesize while the alarm plays, so that the speech is ready when it ends.
-            final boolean speechExpected = notifications.stream().anyMatch(n -> speech.supportsLanguage(n.getLanguage()));
+            final boolean speechExpected = notifications.stream()
+                    .anyMatch(n -> speech.supportsLanguage(speech.languageOf(n)));
             final int alarmPlays = speechExpected ? timings.alarmPlaysBeforeSpeech() : timings.alarmPlays();
             final AlarmPlayback alarm = startAlarm(alarmPlays);
             final List<SpeechAudio> announcements = notifications.stream()
-                    .flatMap(n -> speech.synthesize(n.getLanguage(), Announcement.text(n)).stream())
+                    .flatMap(n -> {
+                        final String language = speech.languageOf(n);
+                        return speech.synthesize(language, Announcement.text(n, language)).stream();
+                    })
                     .toList();
             alarm.await();
             if (announcements.isEmpty()) {

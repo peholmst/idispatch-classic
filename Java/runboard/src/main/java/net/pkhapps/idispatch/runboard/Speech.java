@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.runboard;
 
+import net.pkhapps.idispatch.runboard.client.Notification;
 import net.pkhapps.idispatch.runboard.speech.SpeechAudio;
 import net.pkhapps.idispatch.runboard.speech.SpeechEngine;
 import net.pkhapps.idispatch.runboard.speech.SpeechEngineProvider;
@@ -27,15 +28,26 @@ class Speech {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String engineName;
     private final SpeechSettings settings;
+    private final String defaultLanguage;
     private SpeechEngine engine;
 
     Speech(Configuration configuration) {
-        this(configuration.getSpeechEngine(), configuration.getSpeechSettings());
+        this(configuration.getSpeechEngine(), configuration.getSpeechSettings(),
+                configuration.getSpeechDefaultLanguage());
     }
 
-    Speech(String engineName, SpeechSettings settings) {
+    Speech(String engineName, SpeechSettings settings, String defaultLanguage) {
         this.engineName = engineName;
         this.settings = settings;
+        this.defaultLanguage = defaultLanguage;
+    }
+
+    /**
+     * Returns the language to read the notification in: its own, or the default language if the server did not say,
+     * as servers from before the language setting don't.
+     */
+    String languageOf(Notification notification) {
+        return notification.getLanguage().isBlank() ? defaultLanguage : notification.getLanguage();
     }
 
     /**

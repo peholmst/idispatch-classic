@@ -23,7 +23,7 @@ class AnnouncementTest {
                 "resources", List.of("RVS201", "PAR11")));
 
         assertEquals("Tehtävä 203 B. Rakennuspalo: keskisuuri. Parainen, Kauppiaskatu 5. Savua näkyy ikkunoista. "
-                + "Yksiköt: P A R 11, R V S 201.", Announcement.text(notification));
+                + "Yksiköt: P A R 11, R V S 201.", Announcement.text(notification, notification.getLanguage()));
     }
 
     @Test
@@ -35,7 +35,7 @@ class AnnouncementTest {
                 "municipality", "Pargas",
                 "resources", List.of("RVS201")));
 
-        assertEquals("Uppdrag 203 B. Pargas. Enheter: R V S 201.", Announcement.text(notification));
+        assertEquals("Uppdrag 203 B. Pargas. Enheter: R V S 201.", Announcement.text(notification, notification.getLanguage()));
     }
 
     @Test
@@ -45,7 +45,14 @@ class AnnouncementTest {
                 "address", "Storgatan 5",
                 "resources", List.of("RVS201")));
 
-        assertEquals("203. Storgatan 5. R V S 201.", Announcement.text(notification));
+        assertEquals("203. Storgatan 5. R V S 201.", Announcement.text(notification, notification.getLanguage()));
+    }
+
+    @Test
+    void givenLanguage_decidesThePhrases() {
+        var notification = new Notification(Map.of("assignment_type_code", "203"));
+
+        assertEquals("Tehtävä 203.", Announcement.text(notification, "fi"));
     }
 
     @Test

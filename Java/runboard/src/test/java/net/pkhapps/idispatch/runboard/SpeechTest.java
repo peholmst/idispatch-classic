@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.runboard;
 
+import net.pkhapps.idispatch.runboard.client.Notification;
 import net.pkhapps.idispatch.runboard.speech.SpeechSettings;
 import org.junit.jupiter.api.Test;
 
@@ -54,8 +55,23 @@ class SpeechTest {
         assertTrue(speech.synthesize("fi", "fail").isEmpty());
     }
 
+    @Test
+    void notificationWithoutLanguage_isReadInTheDefaultLanguage() {
+        var speech = new Speech("fake", FINNISH_ONLY, "fi");
+
+        assertEquals("fi", speech.languageOf(new Notification(Map.of())));
+        assertEquals("sv", speech.languageOf(new Notification(Map.of("language", "sv"))));
+    }
+
+    @Test
+    void withoutDefaultLanguage_notificationWithoutLanguageHasNone() {
+        var speech = new Speech("fake", FINNISH_ONLY, "");
+
+        assertEquals("", speech.languageOf(new Notification(Map.of())));
+    }
+
     private static Speech initialized(String engineName, SpeechSettings settings) {
-        var speech = new Speech(engineName, settings);
+        var speech = new Speech(engineName, settings, "");
         speech.initialize();
         return speech;
     }

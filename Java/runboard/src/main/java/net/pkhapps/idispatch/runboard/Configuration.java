@@ -27,6 +27,13 @@ public class Configuration extends net.pkhapps.idispatch.runboard.client.Configu
     }
 
     /**
+     * Returns the language to read notifications in when the server does not say, or an empty string for none.
+     */
+    public String getSpeechDefaultLanguage() {
+        return getProperty("idispatch.speech.defaultLanguage", "").strip();
+    }
+
+    /**
      * Returns the settings of the {@linkplain #getSpeechEngine() speech engine}: the properties starting with
      * {@code idispatch.speech.<engine name>.}.
      */

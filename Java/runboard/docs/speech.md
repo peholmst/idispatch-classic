@@ -29,6 +29,16 @@ idispatch:
     language: fi   # ISO 639-1 code, default fi
 ```
 
+Servers from before that setting send no language. For those, the runboard can fall back to a language of its own:
+
+```properties
+# Leave empty (the default) to only play the alarm for notifications without a language.
+idispatch.speech.defaultLanguage=fi
+```
+
+The language also picks the words added around the notification's text ("Tehtävä"/"Uppdrag" and
+"Yksiköt"/"Enheter").
+
 The runboard picks the engine in `runboard.properties` (or as system properties):
 
 ```properties
@@ -57,6 +67,18 @@ Each value is the path of a voice's `.onnx` file, with its `.onnx.json` file nex
 Piper is used through [piper-jni](https://github.com/GiviMAD/piper-jni), which bundles the native libraries for Linux
 (x86_64, arm64), macOS and Windows. The native libraries load when the runboard starts, and each voice the first time
 a notification in its language arrives.
+
+## Trying it on a desktop
+
+`runboard/run-local.sh` builds the runboard and starts it in a window, connected to any server:
+
+1. Run it once. It creates `runboard/local/runboard.properties`, which isn't in Git, and stops.
+2. Set `idispatch.server.url` and `idispatch.runboardKey` in that file. Use a destination of its own for testing:
+   the runboard acknowledges what it receives, so sharing a real station's key can take notifications away from
+   that station.
+3. Run it again. It downloads the Finnish and Swedish voices to `runboard/local/voices` on the first run, then
+   builds and starts the runboard. `idispatch.speech.defaultLanguage` is set to `fi`, so speech also works with
+   servers that don't send a language yet.
 
 ## Plugging in a different engine
 
