@@ -22,6 +22,7 @@ Maven reactor: `server` (Spring Boot 4.1 + Vaadin 25.3 Flow app, Java 25), `asps
 - Theme is Lumo (dark), loaded with `@StyleSheet` on `AppShellConfiguratorImpl`. Style Grid cells with part name generators and `::part()`, not `themeFor`.
 - Use the Vaadin docs MCP server for Vaadin 25.3 APIs rather than recalled Vaadin 24 knowledge.
 - The runboard reads notifications out loud through the speech engine SPI in `runboard/.../speech` (Piper is the only engine). Engine code stays behind that SPI; see `runboard/docs/speech.md`.
+- The runboard switches the amplifier and the flashing light through the output driver SPI in `runboard/.../output`: `none` (default, desktops) or `gpio` (Linux GPIO character device through FFM, for the Raspberry Pi); see `runboard/docs/outputs.md`.
 
 ## Tests
 

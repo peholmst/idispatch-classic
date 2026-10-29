@@ -110,6 +110,10 @@
                                         <manifest>
                                             <mainClass>net.pkhapps.idispatch.runboard.App</mainClass>
                                         </manifest>
+                                        <manifestEntries>
+                                            <!-- The GPIO output driver calls the C library through the FFM API -->
+                                            <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+                                        </manifestEntries>
                                     </archive>
                                     <finalName>idispatch-runboard</finalName>
                                     <descriptorRefs>

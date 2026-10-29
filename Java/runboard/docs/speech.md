@@ -16,6 +16,7 @@ from a *speech engine*, plugged in through a small service provider interface (S
    `idispatch.speech.pause` milliseconds of silence (default 1000). If no speech came out after all, the alarm
    plays the rest of its `idispatch.alarm.plays` times instead.
 
+The amplifier is switched on before the alarm starts and off after the last reading (see [outputs.md](outputs.md)).
 Errors from the engine are logged and never stop the alarm. An engine that can't be found or created means alarm only.
 
 ## Configuration

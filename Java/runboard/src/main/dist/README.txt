@@ -48,7 +48,8 @@ A Raspberry Pi 4 or 5 with 64-bit Raspberry Pi OS runs the runboard. Install Jav
 (temurin-25-jre) and the fontconfig and fonts-dejavu-core packages, then install the runboard as above. To have it
 start full screen when the Pi starts, without a desktop, run it in the cage kiosk compositor.
 https://github.com/peholmst/idispatch-classic/blob/main/Java/runboard/docs/raspberry-pi.md has the step-by-step
-instructions, including sound output and starting on boot.
+instructions, including sound output, starting on boot, and switching an amplifier and a flashing light through the
+Pi's GPIO pins.
 
 
 Licenses

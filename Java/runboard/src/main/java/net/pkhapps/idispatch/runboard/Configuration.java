@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.runboard;
 
+import net.pkhapps.idispatch.runboard.output.OutputSettings;
 import net.pkhapps.idispatch.runboard.speech.SpeechSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +60,32 @@ public class Configuration extends net.pkhapps.idispatch.runboard.client.Configu
                 Math.min(alarmPlaysBeforeSpeech, alarmPlays),
                 getInt("idispatch.speech.repeats", 2, 1),
                 Duration.ofMillis(getInt("idispatch.speech.pause", 1000, 0)));
+    }
+
+    /**
+     * Returns the name of the driver that switches the amplifier and the flashing light, or {@link Outputs#NONE} (the
+     * default) for none.
+     */
+    public String getOutputDriver() {
+        return getProperty("idispatch.output.driver", Outputs.NONE).strip();
+    }
+
+    /**
+     * Returns the settings of the {@linkplain #getOutputDriver() output driver}: the properties starting with
+     * {@code idispatch.output.<driver name>.}.
+     */
+    public OutputSettings getOutputSettings() {
+        final String prefix = "idispatch.output." + getOutputDriver() + ".";
+        return name -> Optional.ofNullable(getProperty(prefix + name, null))
+                .map(String::strip)
+                .filter(value -> !value.isEmpty());
+    }
+
+    /**
+     * Returns how long to wait after switching the amplifier on before playing sound. Default: 500 ms.
+     */
+    public Duration getAmplifierWarmUp() {
+        return Duration.ofMillis(getInt("idispatch.output.amplifierWarmUp", 500, 0));
     }
 
     private int getInt(String property, int defaultValue, int minimum) {
