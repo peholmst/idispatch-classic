@@ -22,7 +22,7 @@ class AnnouncementTest {
                 "description", "Savua näkyy ikkunoista.",
                 "resources", List.of("RVS201", "PAR11")));
 
-        assertEquals("Tehtävä 203 Bertta. Rakennuspalo: keskisuuri. Parainen, Kauppiaskatu 5. Savua näkyy ikkunoista. "
+        assertEquals("Tehtävä 2 0 3 Bertta. Rakennuspalo: keskisuuri. Parainen, Kauppiaskatu 5. Savua näkyy ikkunoista. "
                 + "Yksiköt: P A R 1 1, R V S 2 0 1.", Announcement.text(notification, notification.getLanguage()));
     }
 
@@ -35,7 +35,7 @@ class AnnouncementTest {
                 "municipality", "Pargas",
                 "resources", List.of("RVS201")));
 
-        assertEquals("Uppdrag 203 Berta. Pargas. Enheter: R V S 2 0 1.", Announcement.text(notification, notification.getLanguage()));
+        assertEquals("Uppdrag 2 0 3 Berta. Pargas. Enheter: R V S 2 0 1.", Announcement.text(notification, notification.getLanguage()));
     }
 
     @Test
@@ -45,14 +45,14 @@ class AnnouncementTest {
                 "address", "Storgatan 5",
                 "resources", List.of("RVS201")));
 
-        assertEquals("203. Storgatan 5. R V S 2 0 1.", Announcement.text(notification, notification.getLanguage()));
+        assertEquals("2 0 3. Storgatan 5. R V S 2 0 1.", Announcement.text(notification, notification.getLanguage()));
     }
 
     @Test
     void givenLanguage_decidesThePhrases() {
         var notification = new Notification(Map.of("assignment_type_code", "203"));
 
-        assertEquals("Tehtävä 203.", Announcement.text(notification, "fi"));
+        assertEquals("Tehtävä 2 0 3.", Announcement.text(notification, "fi"));
     }
 
     @Test
@@ -69,6 +69,15 @@ class AnnouncementTest {
 
     private static String urgencyText(String language, String urgency) {
         return Announcement.text(new Notification(Map.of("assignment_type_code", "1", "urgency", urgency)), language);
+    }
+
+    @Test
+    void assignmentCodes_areReadDigitByDigit() {
+        assertEquals("1 0 3", Announcement.spellDigits("103"));
+        assertEquals("H 1 0 3", Announcement.spellDigits("H103"));
+        assertEquals("1 0 3 B", Announcement.spellDigits("103B"));
+        assertEquals("PALO", Announcement.spellDigits("PALO"));
+        assertEquals("", Announcement.spellDigits(""));
     }
 
     @Test

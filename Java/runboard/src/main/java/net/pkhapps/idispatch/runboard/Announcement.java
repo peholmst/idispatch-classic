@@ -27,6 +27,7 @@ final class Announcement {
                     Map.of("A", "Arne", "B", "Berta", "C", "Celsius", "D", "David", "N", "Niklas")));
     private static final Phrases NO_PHRASES = new Phrases("", "", Map.of());
     private static final Pattern CALL_SIGN = Pattern.compile("(\\p{Lu}+)(\\d*)");
+    private static final Pattern DIGIT_BOUNDARY = Pattern.compile("(?<=\\d)(?=\\S)|(?<=\\S)(?=\\d)");
 
     private Announcement() {
     }
@@ -39,7 +40,7 @@ final class Announcement {
         final Phrases phrases = PHRASES.getOrDefault(language, NO_PHRASES);
         final List<String> sentences = new ArrayList<>();
         final String urgency = notification.getUrgency();
-        sentences.add(join(" ", phrases.assignment(), notification.getAssignmentTypeCode(),
+        sentences.add(join(" ", phrases.assignment(), spellDigits(notification.getAssignmentTypeCode()),
                 phrases.urgencies().getOrDefault(urgency, urgency)));
         sentences.add(notification.getAssignmentTypeDescription());
         sentences.add(join(", ", notification.getMunicipality(), notification.getAddress()));
@@ -68,6 +69,14 @@ final class Announcement {
             return callSign;
         }
         return join(" ", String.join(" ", matcher.group(1).split("")), String.join(" ", matcher.group(2).split("")));
+    }
+
+    /**
+     * Separates every digit from the characters next to it, so that an assignment code such as {@code 103} is read
+     * digit by digit, as {@code 1 0 3}, and not as a number.
+     */
+    static String spellDigits(String text) {
+        return DIGIT_BOUNDARY.matcher(text).replaceAll(" ");
     }
 
     private static String join(String delimiter, String... parts) {
