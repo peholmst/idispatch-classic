@@ -214,5 +214,6 @@ See [keycloak.md](keycloak.md), "Troubleshooting", for login problems. Problems 
 | Pages load, but the UI says it lost the connection, or updates from other dispatchers arrive only after a click | Push can't use a WebSocket: the `Upgrade` and `Connection` headers are missing, or something between the browser and NGINX drops WebSockets. |
 | Runboards disconnect every 60 seconds | `proxy_read_timeout` isn't set in the `location` that serves `/idispatch/ws/`. |
 | 404 for everything, or redirect loops | `IDISPATCH_CONTEXT_PATH` doesn't match the path in the NGINX `location`, or `proxy_pass` has a URI after the upstream name, which makes NGINX rewrite the path. |
-| The server restarts over and over, and the log says *Unable to resolve the Configuration with the provided Issuer* | The container can't reach Keycloak at `KEYCLOAK_ISSUER_URI`; see "Reaching Keycloak from the container". |
+| The server stays in `health: starting` and uses all the CPU | It fails to start and Docker restarts it at once, again and again: each restart starts a new JVM and resets the health status. `docker compose logs idispatch` shows why it fails, usually one of the errors below. |
+| The server restarts over and over, and the log says *Unable to resolve the Configuration with the provided Issuer* | The container can't reach Keycloak at `KEYCLOAK_ISSUER_URI`: check the URL for typos, and see "Reaching Keycloak from the container". |
 | The log says *PKIX path building failed* | The JVM doesn't trust Keycloak's certificate; see "Reaching Keycloak from the container". |
