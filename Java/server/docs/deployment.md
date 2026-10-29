@@ -57,6 +57,7 @@ Fill in `.env`:
 | `KEYCLOAK_CLIENT_ID` | `idispatch`, unless you named the client differently. |
 | `KEYCLOAK_CLIENT_SECRET` | The client secret from step 1. |
 | `ASPSMS_USER_KEY`, `ASPSMS_PASSWORD`, `ASPSMS_ORIGINATOR` | ASPSMS credentials for sending dispatch SMS. |
+| `RUNBOARD_LANGUAGE` | The language runboards read notifications out loud in, as an ISO 639-1 code: `fi` (the default) or `sv`. Use the language that assignment types and municipalities are entered in. Each runboard needs a voice for it; see `runboard/docs/speech.md`. |
 
 `.env` holds secrets: keep it readable only by the user that runs Docker (`chmod 600 .env`).
 
@@ -196,6 +197,9 @@ In each runboard's `runboard.properties`, use `wss://` and the context path:
 ```properties
 idispatch.server.url=wss://idispatch.example.com/idispatch/ws/runboard
 ```
+
+To have notifications read out loud, also give each runboard a voice for `RUNBOARD_LANGUAGE`, for example
+`idispatch.speech.piper.voice.fi`. See `runboard/docs/speech.md`. Without one, the runboard only plays the alarm.
 
 ## 5. Check that it works
 
