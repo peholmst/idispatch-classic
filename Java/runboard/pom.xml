@@ -29,6 +29,17 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
+        <dependency>
+            <!-- Piper text-to-speech, with native libraries for Linux, macOS and Windows. GPL-3.0 as bundled. -->
+            <groupId>io.github.jvoice-project</groupId>
+            <artifactId>piper-jni</artifactId>
+            <version>1.4.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>

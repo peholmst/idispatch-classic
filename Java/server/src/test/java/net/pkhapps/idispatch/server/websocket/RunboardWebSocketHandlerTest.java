@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Talks to the runboard WebSocket endpoint of a running server, the way the runboard application does.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "idispatch.runboard.heartbeat-interval=200ms")
+        properties = {"idispatch.runboard.heartbeat-interval=200ms", "idispatch.runboard.language=sv"})
 @Import({TestData.class, TestcontainersConfiguration.class, TestSecurityConfiguration.class})
 class RunboardWebSocketHandlerTest {
 
@@ -84,6 +84,7 @@ class RunboardWebSocketHandlerTest {
         assertThat(sent.path("assignment_type_code").asString()).isEqualTo(notification.getAssignmentType().getCode());
         assertThat(sent.path("urgency").asString()).isEqualTo(notification.getUrgency().name());
         assertThat(sent.path("resources").get(0).asString()).isEqualTo(resource.getCallSign());
+        assertThat(sent.path("language").asString()).isEqualTo("sv");
 
         client.send("{\"type\":\"ack\",\"id\":" + notification.getId() + "}");
 

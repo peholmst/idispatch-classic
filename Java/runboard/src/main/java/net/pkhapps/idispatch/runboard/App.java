@@ -19,7 +19,10 @@ public class App {
         mainView.setModel(model);
         mainView.setUndecorated(configuration.isUndecorated());
         mainView.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        model.addObserver(new Alarm());
+        final Alarm alarm = new Alarm(new Speech(configuration), configuration.getAlertTimings());
+        model.addObserver(alarm);
+        // Release the speech engine's native resources before the JVM exits, or their destructors can crash it.
+        Runtime.getRuntime().addShutdownHook(Thread.ofPlatform().name("shutdown").unstarted(alarm::close));
     }
 
     public static void main(String[] args) throws Exception {

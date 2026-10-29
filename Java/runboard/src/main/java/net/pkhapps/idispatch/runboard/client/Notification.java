@@ -51,6 +51,14 @@ public class Notification {
         return (String) notificationData.getOrDefault("description", "");
     }
 
+    /**
+     * Returns the ISO 639-1 code of the language the notification is written in, or an empty string if the server
+     * did not say.
+     */
+    public String getLanguage() {
+        return (String) notificationData.getOrDefault("language", "");
+    }
+
     @Override
     public String toString() {
         return String.format("Notification[id = %s]", getId());
