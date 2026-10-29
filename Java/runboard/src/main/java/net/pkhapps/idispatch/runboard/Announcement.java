@@ -10,7 +10,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Builds the text that is read out loud for a notification.
+ * Builds the text that is read out loud for a notification: the assignment, where it is and the units dispatched to
+ * it. The free-text description is left out, as it can be long and is shown on the screen.
  */
 final class Announcement {
 
@@ -44,7 +45,6 @@ final class Announcement {
                 phrases.urgencies().getOrDefault(urgency, urgency)));
         sentences.add(notification.getAssignmentTypeDescription());
         sentences.add(join(", ", notification.getMunicipality(), notification.getAddress()));
-        sentences.add(notification.getDescription());
         final String resources = notification.getResources().stream()
                 .sorted()
                 .map(Announcement::spellCallSign)

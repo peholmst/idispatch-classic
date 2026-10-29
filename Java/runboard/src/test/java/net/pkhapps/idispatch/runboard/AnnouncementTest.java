@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class AnnouncementTest {
 
     @Test
-    void finnishNotification_isReadWithFinnishPhrases() {
+    void finnishNotification_isReadWithFinnishPhrases_withoutTheDescription() {
         var notification = new Notification(Map.of(
                 "language", "fi",
                 "assignment_type_code", "203",
@@ -22,7 +22,7 @@ class AnnouncementTest {
                 "description", "Savua näkyy ikkunoista.",
                 "resources", List.of("RVS201", "PAR11")));
 
-        assertEquals("Tehtävä 2 0 3 Bertta. Rakennuspalo: keskisuuri. Parainen, Kauppiaskatu 5. Savua näkyy ikkunoista. "
+        assertEquals("Tehtävä 2 0 3 Bertta. Rakennuspalo: keskisuuri. Parainen, Kauppiaskatu 5. "
                 + "Yksiköt: P A R 1 1, R V S 2 0 1.", Announcement.text(notification, notification.getLanguage()));
     }
 
