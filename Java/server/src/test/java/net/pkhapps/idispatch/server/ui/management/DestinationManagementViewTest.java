@@ -36,11 +36,13 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
     void add_createsRunboardDestinationForResources() {
         var key = unique("key-");
         var callSign = unique("CS");
+        var description = unique("Station hall ");
         testData.resource(callSign, ResourceState.AVAILABLE);
         navigate(DestinationManagementView.class);
 
         test(button("Add...")).click();
         test(typeField()).selectItem("Runboard Destination");
+        test(dialogTextField("Description")).setValue(description);
         test(dialogTextField("Runboard Key"))
                 .setValue(key);
         test(resourcesField()).selectItem(callSign);
@@ -49,7 +51,41 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
         var row = rowOf(this.<Destination>grid(), Destination::getId,
                 destinationId(d -> d instanceof RunboardDestination r && key.equals(r.getRunboardKey())));
         assertThat(test(this.<Destination>grid()).getCellText(row, 0)).isEqualTo("Runboard");
-        assertThat(test(this.<Destination>grid()).getCellText(row, 1)).isEqualTo(callSign);
+        assertThat(test(this.<Destination>grid()).getCellText(row, 1)).isEqualTo(description);
+        assertThat(test(this.<Destination>grid()).getCellText(row, 2)).isEqualTo(callSign);
+    }
+
+    @Test
+    void add_withoutDescription_storesNoDescription() {
+        var callSign = unique("CS");
+        testData.resource(callSign, ResourceState.AVAILABLE);
+        navigate(DestinationManagementView.class);
+
+        var key = addRunboardDestination(callSign);
+
+        var id = destinationId(d -> d instanceof RunboardDestination r && key.equals(r.getRunboardKey()));
+        var created = test(this.<Destination>grid()).getRow(rowOf(this.<Destination>grid(), Destination::getId, id));
+        assertThat(created.getDescription()).isNull();
+    }
+
+    @Test
+    void edit_showsAndUpdatesDescription_andSearchMatchesIt() {
+        var callSign = unique("CS");
+        testData.resource(callSign, ResourceState.AVAILABLE);
+        var description = unique("Garage ");
+        navigate(DestinationManagementView.class);
+        var key = addRunboardDestination(callSign);
+
+        var id = destinationId(d -> d instanceof RunboardDestination r && key.equals(r.getRunboardKey()));
+        test(this.<Destination>grid()).select(rowOf(this.<Destination>grid(), Destination::getId, id));
+        test(editButton()).click();
+        assertThat(dialogTextField("Description").getValue()).isEmpty();
+        test(dialogTextField("Description")).setValue(description);
+        test(buttonInDialog("Save")).click();
+
+        search(description.toLowerCase());
+        assertThat(items(this.<Destination>grid())).extracting(Destination::getDescription)
+                .containsExactly(description);
     }
 
     @Test

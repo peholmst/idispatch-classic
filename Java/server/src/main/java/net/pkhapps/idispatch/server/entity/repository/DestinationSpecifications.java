@@ -17,8 +17,10 @@ public final class DestinationSpecifications {
     public static Specification<Destination> searchTerm(@NonNull String term) {
         return (root, query, cb) -> {
             query.distinct(true);
+            var pattern = "%" + term.toLowerCase() + "%";
             var resources = root.join(Destination.PROP_RESOURCES, JoinType.LEFT);
-            return cb.like(cb.lower(resources.get("callSign")), "%" + term.toLowerCase() + "%");
+            return cb.or(cb.like(cb.lower(resources.get("callSign")), pattern),
+                    cb.like(cb.lower(root.get("description")), pattern));
         };
     }
 }
