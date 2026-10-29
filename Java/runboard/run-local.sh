@@ -7,7 +7,6 @@ set -euo pipefail
 cd "$(dirname "$0")"
 CONFIG=local/runboard.properties
 VOICES=local/voices
-VOICE_BASE_URL=https://huggingface.co/rhasspy/piper-voices/resolve/main
 
 if [[ ! -f $CONFIG ]]; then
     mkdir -p local
@@ -39,21 +38,7 @@ if grep -q '^idispatch.server.url=.*example\.com' "$CONFIG" || grep -q '^idispat
     exit 1
 fi
 
-# Downloads a voice, given its path under piper-voices, unless it is already there.
-download_voice() {
-    local name
-    name=$(basename "$1")
-    if [[ ! -f $VOICES/$name.onnx ]]; then
-        mkdir -p "$VOICES"
-        echo "Downloading voice $name (about 60 MB)"
-        curl -fL --progress-bar -o "$VOICES/$name.onnx.json" "$VOICE_BASE_URL/$1.onnx.json"
-        curl -fL --progress-bar -o "$VOICES/$name.onnx.part" "$VOICE_BASE_URL/$1.onnx"
-        mv "$VOICES/$name.onnx.part" "$VOICES/$name.onnx"
-    fi
-}
-
-download_voice fi/fi_FI/harri/medium/fi_FI-harri-medium
-download_voice sv/sv_SE/nst/medium/sv_SE-nst-medium
+src/main/dist/download-voices.command "$(pwd)/$VOICES"
 
 echo "Building the runboard"
 (cd .. && mvn -q -pl runboard -Passemble package -DskipTests)

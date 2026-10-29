@@ -9,7 +9,7 @@
 
     <artifactId>idispatch-runboard</artifactId>
     <name>iDispatch Runboard</name>
-    <version>2.3.0-SNAPSHOT</version>
+    <version>3.0.0</version>
 
     <dependencies>
         <dependency>
@@ -48,6 +48,23 @@
             <build>
                 <plugins>
                     <plugin>
+                        <!-- Lists the bundled libraries and their licenses in licenses/THIRD-PARTY.txt of the zip. -->
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>license-maven-plugin</artifactId>
+                        <version>2.4.0</version>
+                        <executions>
+                            <execution>
+                                <id>third-party</id>
+                                <goals>
+                                    <goal>add-third-party</goal>
+                                </goals>
+                                <configuration>
+                                    <excludedScopes>test,provided</excludedScopes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <version>3.6.0</version>
@@ -81,7 +98,7 @@
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
-                                    <finalName>iDispatchRunboard</finalName>
+                                    <finalName>iDispatchRunboard-${project.version}</finalName>
                                     <descriptors>
                                         <descriptor>src/main/assembly/zip.xml</descriptor>
                                     </descriptors>

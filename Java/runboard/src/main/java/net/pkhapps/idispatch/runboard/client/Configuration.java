@@ -45,7 +45,7 @@ public class Configuration {
     }
 
     public String getServerUrl() {
-        return getProperty("idispatch.server.url", "ws://localhost:8080/ws/runboard");
+        return getProperty("idispatch.server.url", "ws://localhost:8080/idispatch/ws/runboard");
     }
 
     public String getRunboardKey() {

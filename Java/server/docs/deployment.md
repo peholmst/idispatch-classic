@@ -192,6 +192,10 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## 4. Point the runboards at the server
 
+Build the runboard package with `mvn -pl runboard -Passemble package` in this directory. It is
+`runboard/target/iDispatchRunboard-<version>.zip`, for Windows, macOS and Linux, and needs Java 25 on the runboard
+computer. The `README.txt` inside it explains how to install it.
+
 In each runboard's `runboard.properties`, use `wss://` and the context path:
 
 ```properties
@@ -199,7 +203,9 @@ idispatch.server.url=wss://idispatch.example.com/idispatch/ws/runboard
 ```
 
 To have notifications read out loud, also give each runboard a voice for `RUNBOARD_LANGUAGE`, for example
-`idispatch.speech.piper.voice.fi`. See `runboard/docs/speech.md`. Without one, the runboard only plays the alarm.
+`idispatch.speech.piper.voice.fi`. The package's `download-voices` script downloads the Finnish and Swedish voices
+that its `runboard.properties` refers to. See `runboard/docs/speech.md`. Without a voice, the runboard only plays the
+alarm.
 
 ## 5. Check that it works
 
