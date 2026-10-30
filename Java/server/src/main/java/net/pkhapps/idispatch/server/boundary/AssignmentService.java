@@ -49,11 +49,6 @@ public interface AssignmentService {
      */
     List<Assignment> findOpenAssignments();
 
-    /**
-     * Finds all closed assignments.
-     */
-    List<Assignment> findClosedAssignments();
-
     List<Municipality> findApplicableMunicipalities();
 
     List<AssignmentType> findApplicableAssignmentTypes();

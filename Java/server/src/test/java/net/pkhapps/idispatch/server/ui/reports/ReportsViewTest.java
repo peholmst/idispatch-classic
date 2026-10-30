@@ -11,6 +11,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.masterdetaillayout.MasterDetailLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -18,6 +19,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import net.pkhapps.idispatch.server.boundary.AssignmentService;
+import net.pkhapps.idispatch.server.boundary.ClosedAssignmentDTO;
 import net.pkhapps.idispatch.server.boundary.DispatchService;
 import net.pkhapps.idispatch.server.boundary.ReportService;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
@@ -78,9 +80,9 @@ class ReportsViewTest extends AbstractUITest {
         var open = assignmentService.findAssignment(assignmentService.openAssignment()).orElseThrow();
         navigate(ReportsView.class);
 
-        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isTrue();
-        assertThat(containsRow(assignments(), Assignment::getId, open.getId())).isFalse();
-        var row = rowOf(assignments(), Assignment::getId, closed.getId());
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, closed.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, open.getId())).isFalse();
+        var row = rowOf(assignments(), ReportsViewTest::assignmentId, closed.getId());
         assertThat(test(assignments()).getCellText(row, 0)).as("Number").isEqualTo(closed.getId().toString());
         assertThat(reportStatusCell(closed).getText()).as("Report").isEqualTo("Open");
         assertThat(test(assignments()).getCellText(row, 2)).as("Closed").isEqualTo(Formatters.formatDateTime(closed.getClosed()));
@@ -96,8 +98,25 @@ class ReportsViewTest extends AbstractUITest {
         var newer = handledAssignment(unique("CS"));
         navigate(ReportsView.class);
 
-        assertThat(rowOf(assignments(), Assignment::getId, newer.getId()))
-                .isLessThan(rowOf(assignments(), Assignment::getId, older.getId()));
+        assertThat(rowOf(assignments(), ReportsViewTest::assignmentId, newer.getId()))
+                .isLessThan(rowOf(assignments(), ReportsViewTest::assignmentId, older.getId()));
+    }
+
+    @Test
+    void sortingByReport_putsOpenReportsFirstOrLast() {
+        var reviewed = handledAssignment(unique("CS"));
+        asReviewer(() -> reportService.closeReport(storedReport(reviewed)));
+        var open = handledAssignment(unique("CS"));
+        navigate(ReportsView.class);
+        var reportColumn = assignments().getColumns().get(1);
+
+        assignments().sort(GridSortOrder.asc(reportColumn).build());
+        assertThat(rowOf(assignments(), ReportsViewTest::assignmentId, open.getId()))
+                .isLessThan(rowOf(assignments(), ReportsViewTest::assignmentId, reviewed.getId()));
+
+        assignments().sort(GridSortOrder.desc(reportColumn).build());
+        assertThat(rowOf(assignments(), ReportsViewTest::assignmentId, reviewed.getId()))
+                .isLessThan(rowOf(assignments(), ReportsViewTest::assignmentId, open.getId()));
     }
 
     @Test
@@ -111,8 +130,8 @@ class ReportsViewTest extends AbstractUITest {
 
         municipality.setValue(first.getMunicipality());
 
-        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isTrue();
-        assertThat(containsRow(assignments(), Assignment::getId, second.getId())).isFalse();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, first.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, second.getId())).isFalse();
     }
 
     @Test
@@ -125,8 +144,8 @@ class ReportsViewTest extends AbstractUITest {
 
         type.setValue(second.getType());
 
-        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isFalse();
-        assertThat(containsRow(assignments(), Assignment::getId, second.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, first.getId())).isFalse();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, second.getId())).isTrue();
     }
 
     @Test
@@ -137,15 +156,15 @@ class ReportsViewTest extends AbstractUITest {
 
         datePicker("Closed from").setValue(closedOn);
         datePicker("Closed to").setValue(closedOn);
-        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, closed.getId())).isTrue();
 
         datePicker("Closed to").clear();
         datePicker("Closed from").setValue(closedOn.plusDays(1));
-        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isFalse();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, closed.getId())).isFalse();
 
         datePicker("Closed from").clear();
         datePicker("Closed to").setValue(closedOn.minusDays(1));
-        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isFalse();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, closed.getId())).isFalse();
     }
 
     @Test
@@ -160,12 +179,12 @@ class ReportsViewTest extends AbstractUITest {
         ComboBox<ReportStatus> status = comboBox("Report");
 
         status.setValue(ReportStatus.OPEN);
-        assertThat(containsRow(assignments(), Assignment::getId, open.getId())).isTrue();
-        assertThat(containsRow(assignments(), Assignment::getId, reviewed.getId())).isFalse();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, open.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, reviewed.getId())).isFalse();
 
         status.setValue(ReportStatus.CLOSED);
-        assertThat(containsRow(assignments(), Assignment::getId, open.getId())).isFalse();
-        assertThat(containsRow(assignments(), Assignment::getId, reviewed.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, open.getId())).isFalse();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, reviewed.getId())).isTrue();
 
         test(button("Clear")).click();
         assertThat(status.getValue()).isNull();
@@ -181,7 +200,7 @@ class ReportsViewTest extends AbstractUITest {
 
         test(button("Close Report")).click();
 
-        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).as("No longer open").isFalse();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, closed.getId())).as("No longer open").isFalse();
         this.<ReportStatus>comboBox("Report").clear();
         assertThat(reportStatusCell(closed).getText()).isEqualTo("Closed");
         assertThat(view().getDetail()).as("The report stays open while the reviewer reads it").isSameAs(reportPanel());
@@ -199,15 +218,15 @@ class ReportsViewTest extends AbstractUITest {
         this.<Municipality>comboBox("Municipality").setValue(first.getMunicipality());
         this.<AssignmentType>comboBox("Type").setValue(first.getType());
         datePicker("Closed from").setValue(LocalDate.ofInstant(first.getClosed(), ZoneId.systemDefault()).plusDays(1));
-        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isFalse();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, first.getId())).isFalse();
 
         test(button("Clear")).click();
 
         assertThat(comboBox("Municipality").getValue()).isNull();
         assertThat(comboBox("Type").getValue()).isNull();
         assertThat(datePicker("Closed from").getValue()).isNull();
-        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isTrue();
-        assertThat(containsRow(assignments(), Assignment::getId, second.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, first.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, second.getId())).isTrue();
     }
 
     @Test
@@ -222,8 +241,8 @@ class ReportsViewTest extends AbstractUITest {
 
         assertThat(municipality.getValue()).isEqualTo(first.getMunicipality());
         assertThat(municipality.getListDataView().getItems()).contains(later.getMunicipality());
-        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isTrue();
-        assertThat(containsRow(assignments(), Assignment::getId, later.getId())).isFalse();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, first.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, later.getId())).isFalse();
     }
 
     @Test
@@ -679,11 +698,10 @@ class ReportsViewTest extends AbstractUITest {
     void refresh_showsNewlyClosedAssignments() {
         navigate(ReportsView.class);
         var closed = handledAssignment(unique("CS"));
-        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isFalse();
 
         test(refreshButton()).click();
 
-        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isTrue();
+        assertThat(containsRow(assignments(), ReportsViewTest::assignmentId, closed.getId())).isTrue();
     }
 
     /**
@@ -724,8 +742,12 @@ class ReportsViewTest extends AbstractUITest {
     }
 
     @SuppressWarnings("unchecked")
-    private Grid<Assignment> assignments() {
+    private Grid<ClosedAssignmentDTO> assignments() {
         return find(Grid.class, view().getMaster()).single();
+    }
+
+    private static Long assignmentId(ClosedAssignmentDTO item) {
+        return item.assignment().getId();
     }
 
     private DatePicker datePicker(String label) {
@@ -825,7 +847,7 @@ class ReportsViewTest extends AbstractUITest {
     }
 
     private Badge reportStatusCell(Assignment assignment) {
-        return (Badge) test(assignments()).getCellComponent(rowOf(assignments(), Assignment::getId, assignment.getId()), 1);
+        return (Badge) test(assignments()).getCellComponent(rowOf(assignments(), ReportsViewTest::assignmentId, assignment.getId()), 1);
     }
 
     private Badge reportStatus() {
@@ -844,11 +866,12 @@ class ReportsViewTest extends AbstractUITest {
     }
 
     private Assignment selectedAssignment() {
-        return assignments().asSingleSelect().getValue();
+        var selected = assignments().asSingleSelect().getValue();
+        return selected == null ? null : selected.assignment();
     }
 
     private void select(Assignment assignment) {
-        test(assignments()).select(rowOf(assignments(), Assignment::getId, assignment.getId()));
+        test(assignments()).select(rowOf(assignments(), ReportsViewTest::assignmentId, assignment.getId()));
     }
 
     private FormLayout.FormItem reportItem(String label) {

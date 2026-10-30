@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -20,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class MethodSecurityTest {
 
     private static final DefaultFilter ALL = new DefaultFilter(true, null);
+    private static final ClosedAssignmentFilter NO_FILTER = new ClosedAssignmentFilter(null, null, null, null, null);
+    private static final PageRequest FIRST_PAGE = PageRequest.of(0, 10);
 
     @Autowired
     MunicipalityManagementService municipalityManagementService;
@@ -35,6 +38,7 @@ class MethodSecurityTest {
     void dispatcher_cannotUseManagementOrReportServices() {
         assertThatThrownBy(() -> municipalityManagementService.findAll(ALL)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.findReportByAssignmentId(1L)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> reportService.findClosedAssignments(NO_FILTER, FIRST_PAGE)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
     }
 
@@ -43,7 +47,6 @@ class MethodSecurityTest {
     void dispatcher_canUseDispatchServices() {
         assertThatCode(() -> assignmentService.findOpenAssignments()).doesNotThrowAnyException();
         assertThatCode(() -> resourceStatusService.getStatusOfAllResources()).doesNotThrowAnyException();
-        assertThatCode(() -> assignmentService.findClosedAssignments()).doesNotThrowAnyException();
     }
 
     @Test
@@ -58,7 +61,7 @@ class MethodSecurityTest {
     @Test
     @WithMockUser(roles = "REPORT_READER")
     void reportReader_canReadClosedAssignmentsAndReportsOnly() {
-        assertThatCode(() -> assignmentService.findClosedAssignments()).doesNotThrowAnyException();
+        assertThatCode(() -> reportService.findClosedAssignments(NO_FILTER, FIRST_PAGE)).doesNotThrowAnyException();
         assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
         assertThatThrownBy(() -> assignmentService.findOpenAssignments()).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
@@ -69,7 +72,7 @@ class MethodSecurityTest {
     @Test
     @WithMockUser(roles = "REPORT_REVIEWER")
     void reportReviewer_canReadReportsButNotWriteThem() {
-        assertThatCode(() -> assignmentService.findClosedAssignments()).doesNotThrowAnyException();
+        assertThatCode(() -> reportService.findClosedAssignments(NO_FILTER, FIRST_PAGE)).doesNotThrowAnyException();
         assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
         assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> assignmentService.findOpenAssignments()).isInstanceOf(AccessDeniedException.class);
@@ -78,7 +81,7 @@ class MethodSecurityTest {
     @Test
     @WithMockUser(roles = "REPORT_WRITER")
     void reportWriter_canReadClosedAssignmentsAndReports() {
-        assertThatCode(() -> assignmentService.findClosedAssignments()).doesNotThrowAnyException();
+        assertThatCode(() -> reportService.findClosedAssignments(NO_FILTER, FIRST_PAGE)).doesNotThrowAnyException();
         assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
         assertThatThrownBy(() -> reportService.closeReport(null)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.reopenReport(null)).isInstanceOf(AccessDeniedException.class);

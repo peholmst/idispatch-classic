@@ -4,6 +4,8 @@ import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.ArchivedResourceStatus;
 import net.pkhapps.idispatch.server.entity.Assignment;
 import net.pkhapps.idispatch.server.entity.AssignmentReport;
+import net.pkhapps.idispatch.server.entity.AssignmentType;
+import net.pkhapps.idispatch.server.entity.Municipality;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.UnitReport;
 import net.pkhapps.idispatch.server.entity.UserStamp;
@@ -11,11 +13,15 @@ import net.pkhapps.idispatch.server.entity.ValidationFailedException;
 import net.pkhapps.idispatch.server.entity.repository.ArchivedResourceStatusRepository;
 import net.pkhapps.idispatch.server.entity.repository.AssignmentReportRepository;
 import net.pkhapps.idispatch.server.entity.repository.AssignmentRepository;
+import net.pkhapps.idispatch.server.entity.repository.AssignmentSpecifications;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.util.UpdateResult;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -23,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -60,8 +67,54 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
     }
 
     @Override
-    public Set<Long> findAssignmentIdsWithClosedReports() {
-        return assignmentReportRepository.findAssignmentIdsOfClosedReports();
+    public List<ClosedAssignmentDTO> findClosedAssignments(ClosedAssignmentFilter filter, Pageable pageable) {
+        logger.debug("Looking up closed assignments matching {}, {}", filter, pageable);
+        var spec = toSpecification(filter).and(AssignmentSpecifications.orderedBy(pageable.getSort()));
+        // The specification sorts, since the page request can't sort by report status
+        var unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        var assignments = assignmentRepository.findBy(spec, query -> query.slice(unsorted)).getContent();
+        var withClosedReports = assignments.isEmpty() ? Set.<Long>of()
+                : assignmentReportRepository.findAssignmentIdsOfClosedReports(assignments.stream().map(Assignment::getId).toList());
+        return assignments.stream()
+                .map(assignment -> new ClosedAssignmentDTO(assignment, withClosedReports.contains(assignment.getId())))
+                .toList();
+    }
+
+    @Override
+    public int countClosedAssignments(ClosedAssignmentFilter filter) {
+        return Math.toIntExact(assignmentRepository.count(toSpecification(filter)));
+    }
+
+    private static Specification<Assignment> toSpecification(ClosedAssignmentFilter filter) {
+        var zone = ZoneId.systemDefault();
+        var specs = new ArrayList<Specification<Assignment>>();
+        specs.add(AssignmentSpecifications.closedOnly());
+        if (filter.closedFrom() != null) {
+            specs.add(AssignmentSpecifications.closedAtOrAfter(filter.closedFrom().atStartOfDay(zone).toInstant()));
+        }
+        if (filter.closedTo() != null) {
+            specs.add(AssignmentSpecifications.closedBefore(filter.closedTo().plusDays(1).atStartOfDay(zone).toInstant()));
+        }
+        if (filter.municipality() != null) {
+            specs.add(AssignmentSpecifications.municipality(filter.municipality()));
+        }
+        if (filter.type() != null) {
+            specs.add(AssignmentSpecifications.type(filter.type()));
+        }
+        if (filter.reportClosed() != null) {
+            specs.add(AssignmentSpecifications.reportClosed(filter.reportClosed()));
+        }
+        return Specification.allOf(specs);
+    }
+
+    @Override
+    public List<Municipality> findMunicipalitiesOfClosedAssignments() {
+        return assignmentRepository.findMunicipalitiesOfClosedAssignments();
+    }
+
+    @Override
+    public List<AssignmentType> findTypesOfClosedAssignments() {
+        return assignmentRepository.findTypesOfClosedAssignments();
     }
 
     @Override
