@@ -1,0 +1,4 @@
+/* Server-side validation errors that Binder could not show next to a field */
+.management-editor .form-errors {
+    color: var(--aura-red-text);
+}

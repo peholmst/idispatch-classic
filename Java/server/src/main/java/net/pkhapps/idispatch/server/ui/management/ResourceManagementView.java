@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.ui.management;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.Route;
@@ -25,7 +26,19 @@ public class ResourceManagementView extends AbstractManagementView<Resource, Res
     }
 
     @Override
-    protected AbstractManagementDialog<Resource> newDialog() {
-        return new ResourceManagementDialog(getService());
+    protected Component createAddButton() {
+        return addButton(Resource::new);
+    }
+
+    @Override
+    protected ManagementForm<Resource> createForm(Resource entity) {
+        var form = new ResourceForm(getService());
+        form.setFormDataObject(entity);
+        return form;
+    }
+
+    @Override
+    protected String getTitle(Resource entity) {
+        return getTranslation(entity.isNew() ? "management.resource.add" : "management.resource.edit");
     }
 }

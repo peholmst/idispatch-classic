@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.ui.management;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.Route;
@@ -25,7 +26,19 @@ public class MunicipalityManagementView extends AbstractManagementView<Municipal
     }
 
     @Override
-    protected AbstractManagementDialog<Municipality> newDialog() {
-        return new MunicipalityManagementDialog(getService());
+    protected Component createAddButton() {
+        return addButton(Municipality::new);
+    }
+
+    @Override
+    protected ManagementForm<Municipality> createForm(Municipality entity) {
+        var form = new MunicipalityForm();
+        form.setFormDataObject(entity);
+        return form;
+    }
+
+    @Override
+    protected String getTitle(Municipality entity) {
+        return getTranslation(entity.isNew() ? "management.municipality.add" : "management.municipality.edit");
     }
 }

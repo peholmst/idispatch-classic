@@ -18,6 +18,7 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Destination extends AbstractLockableEntity implements Deactivatable {
 
+    public static final String PROP_DESCRIPTION = "description";
     public static final String PROP_RESOURCES = "resources";
 
     @Column(name = "active", nullable = false)

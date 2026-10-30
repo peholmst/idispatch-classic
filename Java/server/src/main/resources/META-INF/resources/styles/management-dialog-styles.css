@@ -1,5 +1,0 @@
-ul.validation-errors {
-    list-style: none;
-    padding: var(--vaadin-padding-xs) 0;
-    color: var(--aura-red-text)
-}

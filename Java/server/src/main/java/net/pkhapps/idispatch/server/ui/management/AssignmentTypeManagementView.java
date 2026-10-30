@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.ui.management;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.Route;
@@ -25,7 +26,19 @@ public class AssignmentTypeManagementView extends AbstractManagementView<Assignm
     }
 
     @Override
-    protected AbstractManagementDialog<AssignmentType> newDialog() {
-        return new AssignmentTypeManagementDialog(getService());
+    protected Component createAddButton() {
+        return addButton(AssignmentType::new);
+    }
+
+    @Override
+    protected ManagementForm<AssignmentType> createForm(AssignmentType entity) {
+        var form = new CodeAndDescriptionForm<>(AssignmentType.class);
+        form.setFormDataObject(entity);
+        return form;
+    }
+
+    @Override
+    protected String getTitle(AssignmentType entity) {
+        return getTranslation(entity.isNew() ? "management.assignment-type.add" : "management.assignment-type.edit");
     }
 }
