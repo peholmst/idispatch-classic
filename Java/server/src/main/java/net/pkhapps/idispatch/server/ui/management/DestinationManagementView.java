@@ -1,11 +1,16 @@
 package net.pkhapps.idispatch.server.ui.management;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.menubar.MenuBar;
+import com.vaadin.flow.component.menubar.MenuBarVariant;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.DestinationManagementService;
 import net.pkhapps.idispatch.server.entity.Destination;
 import net.pkhapps.idispatch.server.entity.Resource;
+import net.pkhapps.idispatch.server.entity.RunboardDestination;
 import net.pkhapps.idispatch.server.entity.SmsDestination;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.RootLayout;
@@ -33,7 +38,42 @@ public class DestinationManagementView extends AbstractManagementView<Destinatio
     }
 
     @Override
-    protected AbstractManagementDialog<Destination> newDialog() {
-        return new DestinationManagementDialog(getService());
+    protected Component createAddButton() {
+        var menuBar = new MenuBar();
+        menuBar.addThemeVariants(MenuBarVariant.PRIMARY);
+        var add = menuBar.addItem(VaadinIcon.PLUS_CIRCLE.create());
+        add.add(getTranslation("management.add"));
+        var types = add.getSubMenu();
+        types.addItem(getTranslation("management.destination.type.runboard"),
+                event -> addNew(new RunboardDestination()));
+        types.addItem(getTranslation("management.destination.type.sms"), event -> addNew(new SmsDestination()));
+        return menuBar;
+    }
+
+    @Override
+    protected ManagementForm<? extends Destination> createForm(Destination entity) {
+        return switch (entity) {
+            case SmsDestination sms -> {
+                var form = new DestinationForm.Sms(getService());
+                form.setFormDataObject(sms);
+                yield form;
+            }
+            case RunboardDestination runboard -> {
+                var form = new DestinationForm.Runboard(getService());
+                form.setFormDataObject(runboard);
+                yield form;
+            }
+            default -> throw new IllegalStateException("Unknown destination type");
+        };
+    }
+
+    @Override
+    protected String getTitle(Destination entity) {
+        var sms = entity instanceof SmsDestination;
+        if (entity.isNew()) {
+            return getTranslation(sms ? "management.destination.add-sms" : "management.destination.add-runboard");
+        } else {
+            return getTranslation(sms ? "management.destination.edit-sms" : "management.destination.edit-runboard");
+        }
     }
 }

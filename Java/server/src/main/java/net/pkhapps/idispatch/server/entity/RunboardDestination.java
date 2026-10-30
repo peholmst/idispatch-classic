@@ -12,6 +12,8 @@ import java.util.UUID;
 @Table(name = "runboard_destinations")
 public class RunboardDestination extends Destination {
 
+    public static final String PROP_RUNBOARD_KEY = "runboardKey";
+
     @Column(name = "runboard_key", nullable = false, unique = true)
     @NotBlank(message = "{idispatch.runboard-destination.runboard-key.required}")
     private String runboardKey = UUID.randomUUID().toString();

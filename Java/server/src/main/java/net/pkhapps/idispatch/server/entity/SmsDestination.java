@@ -10,6 +10,8 @@ import java.util.Set;
 @Table(name = "sms_destinations")
 public class SmsDestination extends Destination {
 
+    public static final String PROP_PHONE_NUMBERS = "phoneNumbers";
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "sms_destination_phone_numbers")
     @NotEmpty(message = "{idispatch.sms-destination.phone-numbers.required}")

@@ -20,11 +20,11 @@ class ResourceManagementViewTest extends AbstractManagementViewTest {
         var callSign = unique("CS");
         navigate(ResourceManagementView.class);
 
-        test(button("Add...")).click();
-        assertThat(openDialog().getHeaderTitle()).isEqualTo("Add Resource");
-        test(dialogTextField("Call sign")).setValue(callSign);
+        add();
+        assertThat(editorTitle()).isEqualTo("Add Resource");
+        test(editorTextField("Call sign")).setValue(callSign);
         test(typeField()).selectItem(typeCode + " - Ambulance");
-        test(buttonInDialog("Save")).click();
+        save();
 
         var row = rowOf(this.<Resource>grid(), Resource::getCallSign, callSign);
         assertThat(test(this.<Resource>grid()).getCellText(row, 1)).isEqualTo("Ambulance");
@@ -40,7 +40,7 @@ class ResourceManagementViewTest extends AbstractManagementViewTest {
         testData.deletedResourceType(inactive, "Inactive type");
 
         navigate(ResourceManagementView.class);
-        test(button("Add...")).click();
+        add();
 
         assertThat(test(typeField()).getSuggestions())
                 .contains(active + " - Active type")
@@ -55,10 +55,9 @@ class ResourceManagementViewTest extends AbstractManagementViewTest {
         navigate(ResourceManagementView.class);
 
         test(this.<Resource>grid()).select(rowOf(this.<Resource>grid(), Resource::getCallSign, original));
-        test(editButton()).click();
-        assertThat(openDialog().getHeaderTitle()).isEqualTo("Edit Resource");
-        test(dialogTextField("Call sign")).setValue(renamed);
-        test(buttonInDialog("Save")).click();
+        assertThat(editorTitle()).isEqualTo("Edit Resource");
+        test(editorTextField("Call sign")).setValue(renamed);
+        save();
 
         assertThat(containsRow(this.<Resource>grid(), Resource::getCallSign, renamed)).isTrue();
         assertThat(containsRow(this.<Resource>grid(), Resource::getCallSign, original)).isFalse();
@@ -85,13 +84,13 @@ class ResourceManagementViewTest extends AbstractManagementViewTest {
         navigate(ResourceManagementView.class);
 
         test(this.<Resource>grid()).select(rowOf(this.<Resource>grid(), Resource::getCallSign, callSign));
-        test(deleteButton()).click();
+        test(editorButton("Delete")).click();
 
         assertThat(containsRow(this.<Resource>grid(), Resource::getCallSign, callSign)).isFalse();
     }
 
     @SuppressWarnings("unchecked")
     private ComboBox<ResourceType> typeField() {
-        return find(ComboBox.class, openDialog()).withLabel("Type").single();
+        return find(ComboBox.class, editor()).withLabel("Type").single();
     }
 }

@@ -1,6 +1,5 @@
 package net.pkhapps.idispatch.server.ui.management;
 
-import com.vaadin.flow.component.html.ListItem;
 import net.pkhapps.idispatch.server.entity.AssignmentType;
 import net.pkhapps.idispatch.server.entity.ResourceType;
 import org.junit.jupiter.api.Test;
@@ -20,11 +19,11 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
         var code = unique("AT");
         navigate(AssignmentTypeManagementView.class);
 
-        test(button("Add...")).click();
-        assertThat(openDialog().getHeaderTitle()).isEqualTo("Add Assignment Type");
-        test(dialogTextField("Code")).setValue(code);
-        test(dialogTextField("Description")).setValue("Structure fire");
-        test(buttonInDialog("Save")).click();
+        add();
+        assertThat(editorTitle()).isEqualTo("Add Assignment Type");
+        test(editorTextField("Code")).setValue(code);
+        test(editorTextField("Description")).setValue("Structure fire");
+        save();
 
         var row = rowOf(this.<AssignmentType>grid(), AssignmentType::getCode, code);
         assertThat(test(this.<AssignmentType>grid()).getCellText(row, 1)).isEqualTo("Structure fire");
@@ -34,11 +33,11 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
     void assignmentTypes_addWithoutCodeAndDescription_showsBothValidationErrors() {
         navigate(AssignmentTypeManagementView.class);
 
-        test(button("Add...")).click();
-        test(buttonInDialog("Save")).click();
+        add();
+        save();
 
-        assertThat(find(ListItem.class, openDialog()).all().stream().map(ListItem::getText))
-                .containsExactlyInAnyOrder("Please enter a code", "Please enter a description");
+        assertThat(editorTextField("Code").getErrorMessage()).isEqualTo("Please enter a code");
+        assertThat(editorTextField("Description").getErrorMessage()).isEqualTo("Please enter a description");
     }
 
     @Test
@@ -48,16 +47,15 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
         navigate(AssignmentTypeManagementView.class);
 
         test(this.<AssignmentType>grid()).select(rowOf(this.<AssignmentType>grid(), AssignmentType::getCode, code));
-        test(editButton()).click();
-        assertThat(openDialog().getHeaderTitle()).isEqualTo("Edit Assignment Type");
-        test(dialogTextField("Description")).setValue("Changed");
-        test(buttonInDialog("Save")).click();
+        assertThat(editorTitle()).isEqualTo("Edit Assignment Type");
+        test(editorTextField("Description")).setValue("Changed");
+        save();
 
         var row = rowOf(this.<AssignmentType>grid(), AssignmentType::getCode, code);
         assertThat(test(this.<AssignmentType>grid()).getCellText(row, 1)).isEqualTo("Changed");
 
         test(this.<AssignmentType>grid()).select(row);
-        test(deleteButton()).click();
+        test(editorButton("Delete")).click();
         assertThat(containsRow(this.<AssignmentType>grid(), AssignmentType::getCode, code)).isFalse();
 
         includeDeleted();
@@ -100,11 +98,11 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
         var code = unique("RT");
         navigate(ResourceTypeManagementView.class);
 
-        test(button("Add...")).click();
-        assertThat(openDialog().getHeaderTitle()).isEqualTo("Add Resource Type");
-        test(dialogTextField("Code")).setValue(code);
-        test(dialogTextField("Description")).setValue("Rescue unit");
-        test(buttonInDialog("Save")).click();
+        add();
+        assertThat(editorTitle()).isEqualTo("Add Resource Type");
+        test(editorTextField("Code")).setValue(code);
+        test(editorTextField("Description")).setValue("Rescue unit");
+        save();
 
         var row = rowOf(this.<ResourceType>grid(), ResourceType::getCode, code);
         assertThat(test(this.<ResourceType>grid()).getCellText(row, 1)).isEqualTo("Rescue unit");
@@ -117,18 +115,17 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
         navigate(ResourceTypeManagementView.class);
 
         test(this.<ResourceType>grid()).select(rowOf(this.<ResourceType>grid(), ResourceType::getCode, code));
-        test(editButton()).click();
-        assertThat(openDialog().getHeaderTitle()).isEqualTo("Edit Resource Type");
-        test(dialogTextField("Description")).setValue("Changed");
-        test(buttonInDialog("Save")).click();
+        assertThat(editorTitle()).isEqualTo("Edit Resource Type");
+        test(editorTextField("Description")).setValue("Changed");
+        save();
 
         test(this.<ResourceType>grid()).select(rowOf(this.<ResourceType>grid(), ResourceType::getCode, code));
-        test(deleteButton()).click();
+        test(editorButton("Delete")).click();
         assertThat(containsRow(this.<ResourceType>grid(), ResourceType::getCode, code)).isFalse();
 
         includeDeleted();
         test(this.<ResourceType>grid()).select(rowOf(this.<ResourceType>grid(), ResourceType::getCode, code));
-        test(restoreButton()).click();
+        test(editorButton("Restore")).click();
 
         var restored = test(this.<ResourceType>grid()).getRow(rowOf(this.<ResourceType>grid(), ResourceType::getCode, code));
         assertThat(restored.isActive()).isTrue();

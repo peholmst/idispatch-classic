@@ -1,8 +1,8 @@
 package net.pkhapps.idispatch.server.ui.management;
 
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
-import com.vaadin.flow.component.html.ListItem;
-import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
+import com.vaadin.flow.component.menubar.MenuBar;
+import com.vaadin.flow.component.menubar.MenuBarTester;
 import com.vaadin.flow.component.textfield.TextArea;
 import net.pkhapps.idispatch.server.entity.Destination;
 import net.pkhapps.idispatch.server.entity.Resource;
@@ -24,12 +24,13 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
     void add_offersRunboardAndSmsDestinations() {
         navigate(DestinationManagementView.class);
 
-        test(button("Add...")).click();
-
-        assertThat(openDialog().getHeaderTitle()).isEqualTo("Add Destination");
-        var type = typeField();
-        assertThat(type.getListDataView().getItems().map(item -> type.getItemLabelGenerator().apply(item)))
+        assertThat(test(MenuBarTester.class, addMenu()).getItemTexts("Add..."))
                 .containsExactly("Runboard Destination", "SMS Destination");
+
+        addDestination("SMS Destination");
+        assertThat(editorTitle()).isEqualTo("Add SMS Destination");
+        addDestination("Runboard Destination");
+        assertThat(editorTitle()).isEqualTo("Add Runboard Destination");
     }
 
     @Test
@@ -40,13 +41,12 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
         testData.resource(callSign, ResourceState.AVAILABLE);
         navigate(DestinationManagementView.class);
 
-        test(button("Add...")).click();
-        test(typeField()).selectItem("Runboard Destination");
-        test(dialogTextField("Description")).setValue(description);
-        test(dialogTextField("Runboard Key"))
+        addDestination("Runboard Destination");
+        test(editorTextField("Description")).setValue(description);
+        test(editorTextField("Runboard Key"))
                 .setValue(key);
         test(resourcesField()).selectItem(callSign);
-        test(buttonInDialog("Save")).click();
+        save();
 
         var row = rowOf(this.<Destination>grid(), Destination::getId,
                 destinationId(d -> d instanceof RunboardDestination r && key.equals(r.getRunboardKey())));
@@ -78,10 +78,9 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
 
         var id = destinationId(d -> d instanceof RunboardDestination r && key.equals(r.getRunboardKey()));
         test(this.<Destination>grid()).select(rowOf(this.<Destination>grid(), Destination::getId, id));
-        test(editButton()).click();
-        assertThat(dialogTextField("Description").getValue()).isEmpty();
-        test(dialogTextField("Description")).setValue(description);
-        test(buttonInDialog("Save")).click();
+        assertThat(editorTextField("Description").getValue()).isEmpty();
+        test(editorTextField("Description")).setValue(description);
+        save();
 
         search(description.toLowerCase());
         assertThat(items(this.<Destination>grid())).extracting(Destination::getDescription)
@@ -95,12 +94,11 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
         var number = "+358" + Math.abs(callSign.hashCode());
         navigate(DestinationManagementView.class);
 
-        test(button("Add...")).click();
-        test(typeField()).selectItem("SMS Destination");
-        test(find(TextArea.class, openDialog()).withLabel("Phone numbers").single())
+        addDestination("SMS Destination");
+        test(find(TextArea.class, editor()).withLabel("Phone numbers").single())
                 .setValue(number + "1, " + number + "2\n" + number + "3");
         test(resourcesField()).selectItem(callSign);
-        test(buttonInDialog("Save")).click();
+        save();
 
         var id = destinationId(d -> d instanceof SmsDestination s && s.getPhoneNumbers().contains(number + "1"));
         var created = (SmsDestination) test(this.<Destination>grid())
@@ -115,19 +113,16 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
         testData.resource(callSign, ResourceState.AVAILABLE);
         var number = "+358" + Math.abs(callSign.hashCode());
         navigate(DestinationManagementView.class);
-        test(button("Add...")).click();
-        test(typeField()).selectItem("SMS Destination");
-        test(find(TextArea.class, openDialog()).withLabel("Phone numbers").single()).setValue(number);
+        addDestination("SMS Destination");
+        test(find(TextArea.class, editor()).withLabel("Phone numbers").single()).setValue(number);
         test(resourcesField()).selectItem(callSign);
-        test(buttonInDialog("Save")).click();
+        save();
 
         var id = destinationId(d -> d instanceof SmsDestination s && s.getPhoneNumbers().contains(number));
         test(this.<Destination>grid()).select(rowOf(this.<Destination>grid(), Destination::getId, id));
-        test(editButton()).click();
 
-        assertThat(openDialog().getHeaderTitle()).isEqualTo("Edit SMS Destination");
-        assertThat(find(RadioButtonGroup.class, openDialog()).exists()).isFalse();
-        assertThat(find(TextArea.class, openDialog()).withLabel("Phone numbers").single().getValue()).isEqualTo(number);
+        assertThat(editorTitle()).isEqualTo("Edit SMS Destination");
+        assertThat(find(TextArea.class, editor()).withLabel("Phone numbers").single().getValue()).isEqualTo(number);
         assertThat(resourcesField().getValue()).extracting(Resource::getCallSign).containsExactly(callSign);
     }
 
@@ -135,13 +130,11 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
     void add_smsDestinationWithoutNumbersOrResources_showsValidationErrors() {
         navigate(DestinationManagementView.class);
 
-        test(button("Add...")).click();
-        test(typeField()).selectItem("SMS Destination");
-        test(buttonInDialog("Save")).click();
+        addDestination("SMS Destination");
+        save();
 
-        assertThat(findOpenDialog()).isPresent();
-        assertThat(find(ListItem.class, openDialog()).all().stream().map(ListItem::getText))
-                .contains("Please select at least one resource");
+        assertThat(resourcesField().getErrorMessage()).isEqualTo("Please select at least one resource");
+        assertThat(isEditorOpen()).isTrue();
     }
 
     @Test
@@ -160,7 +153,7 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
                 .containsExactly(matchKey);
 
         test(this.<Destination>grid()).select(0);
-        test(deleteButton()).click();
+        test(editorButton("Delete")).click();
         assertThat(items(this.<Destination>grid())).isEmpty();
 
         includeDeleted();
@@ -169,22 +162,27 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
 
     private String addRunboardDestination(String callSign) {
         var key = unique("key-");
-        test(button("Add...")).click();
-        test(typeField()).selectItem("Runboard Destination");
-        test(dialogTextField("Runboard Key")).setValue(key);
+        addDestination("Runboard Destination");
+        test(editorTextField("Runboard Key")).setValue(key);
         test(resourcesField()).selectItem(callSign);
-        test(buttonInDialog("Save")).click();
+        save();
         return key;
     }
 
-    @SuppressWarnings("unchecked")
-    private RadioButtonGroup<Object> typeField() {
-        return find(RadioButtonGroup.class, openDialog()).single();
+    private MenuBar addMenu() {
+        return find(MenuBar.class, currentView()).all().stream()
+                .filter(menuBar -> !menuBar.hasClassName("view-options"))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private void addDestination(String type) {
+        test(MenuBarTester.class, addMenu()).clickItem("Add...", type);
     }
 
     @SuppressWarnings("unchecked")
     private MultiSelectComboBox<Resource> resourcesField() {
-        return find(MultiSelectComboBox.class, openDialog()).withLabel("Resources").single();
+        return find(MultiSelectComboBox.class, editor()).withLabel("Resources").single();
     }
 
     private Long destinationId(Predicate<Destination> predicate) {

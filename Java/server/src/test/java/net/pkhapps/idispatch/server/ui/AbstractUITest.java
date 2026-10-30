@@ -50,11 +50,6 @@ public abstract class AbstractUITest extends SpringBrowserlessTest {
                 .toList();
     }
 
-    protected <T> List<String> columnTexts(Grid<T> grid, int column) {
-        var tester = test(grid);
-        return IntStream.range(0, tester.size()).mapToObj(row -> tester.getCellText(row, column)).toList();
-    }
-
     protected <T> List<T> items(Grid<T> grid) {
         var tester = test(grid);
         var items = new ArrayList<T>();
