@@ -12,6 +12,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.i18n.I18NProvider;
 import com.vaadin.flow.server.ErrorEvent;
 import com.vaadin.flow.server.ErrorHandler;
 import org.slf4j.Logger;
@@ -50,7 +51,7 @@ public class CustomErrorHandler implements ErrorHandler {
     private void showAccessDenied(String additionalMessage) {
         var notification = createNotification(
                 VaadinIcon.KEY.create(),
-                "Access has been denied",
+                I18NProvider.translate("error.access-denied"),
                 new Div(new Text(additionalMessage)),
                 NotificationVariant.LUMO_WARNING
         );
@@ -64,12 +65,12 @@ public class CustomErrorHandler implements ErrorHandler {
                 .set("background-color", "var(--lumo-contrast-20pct)")
                 .set("border-radius", "var(--lumo-border-radius-s)")
                 .set("padding", "var(--lumo-space-xs)");
-        var text = new Div(new Text("Please contact the administrator and give them this error ID: "), errorSpan);
+        var text = new Div(new Text(I18NProvider.translate("error.unexpected.contact-admin") + " "), errorSpan);
         text.getStyle().set("font-size", "var(--lumo-font-size-s)");
 
         var notification = createNotification(
                 VaadinIcon.WARNING.create(),
-                "An unexpected error has occurred",
+                I18NProvider.translate("error.unexpected"),
                 text,
                 NotificationVariant.LUMO_ERROR
         );

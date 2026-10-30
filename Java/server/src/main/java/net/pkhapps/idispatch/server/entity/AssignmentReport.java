@@ -32,19 +32,19 @@ public class AssignmentReport extends AbstractLockableEntity {
     @JoinColumn(name = "assignment_id", nullable = false, unique = true)
     private Assignment assignment;
     @Column(name = "situation_development", nullable = false, length = MAX_TEXT_LENGTH)
-    @Size(max = MAX_TEXT_LENGTH, message = "Please describe how the situation developed in at most 4000 characters")
+    @Size(max = MAX_TEXT_LENGTH, message = "{idispatch.report.situation-development.size}")
     private String situationDevelopment = "";
     @Column(name = "people_involved")
-    @Min(value = 0, message = "The number of people involved cannot be negative")
+    @Min(value = 0, message = "{idispatch.report.people-involved.min}")
     private Integer peopleInvolved;
     @Column(name = "lightly_injured")
-    @Min(value = 0, message = "The number of lightly injured cannot be negative")
+    @Min(value = 0, message = "{idispatch.report.lightly-injured.min}")
     private Integer lightlyInjured;
     @Column(name = "seriously_injured")
-    @Min(value = 0, message = "The number of seriously injured cannot be negative")
+    @Min(value = 0, message = "{idispatch.report.seriously-injured.min}")
     private Integer seriouslyInjured;
     @Column(name = "deceased")
-    @Min(value = 0, message = "The number of deceased cannot be negative")
+    @Min(value = 0, message = "{idispatch.report.deceased.min}")
     private Integer deceased;
     @Embedded
     @AttributeOverride(name = "subject", column = @Column(name = "last_edited_by_subject"))
@@ -169,7 +169,7 @@ public class AssignmentReport extends AbstractLockableEntity {
         return unitReports.computeIfAbsent(checkNotNull(resource), r -> new UnitReport());
     }
 
-    @AssertTrue(message = "The injured and deceased cannot add up to more than the number of people involved")
+    @AssertTrue(message = "{idispatch.report.casualties.consistent}")
     public boolean isCasualtiesWithinPeopleInvolved() {
         if (peopleInvolved == null) {
             return true;

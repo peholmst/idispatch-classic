@@ -27,6 +27,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.dom.ElementFactory;
 import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.function.ValueProvider;
+import com.vaadin.flow.i18n.I18NProvider;
 import com.vaadin.flow.data.binder.Setter;
 import com.vaadin.flow.signals.Signal;
 import net.pkhapps.idispatch.server.boundary.ReportDTO;
@@ -46,7 +47,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -92,7 +92,7 @@ class AssignmentReportPanel extends VerticalLayout {
 
         var number = new TextField();
         number.setWidthFull();
-        formLayout.addFormItem(number, "Number");
+        formLayout.addFormItem(number, getTranslation("report.number"));
         binder.forField(number)
                 .withConverter(this::noConverter, Objects::toString)
                 .bindReadOnly(ReportDTO::getNumber);
@@ -100,49 +100,49 @@ class AssignmentReportPanel extends VerticalLayout {
 
         var opened = new TextField();
         opened.setWidthFull();
-        formLayout.addFormItem(opened, "Opened");
+        formLayout.addFormItem(opened, getTranslation("report.opened"));
         binder.forField(opened)
                 .withConverter(this::noConverter, Formatters::formatDateTime)
                 .bindReadOnly(ReportDTO::getOpened);
 
         var closed = new TextField();
         closed.setWidthFull();
-        formLayout.addFormItem(closed, "Closed");
+        formLayout.addFormItem(closed, getTranslation("report.closed"));
         binder.forField(closed)
                 .withConverter(this::noConverter, Formatters::formatDateTime)
                 .bindReadOnly(ReportDTO::getClosed);
 
         var urgency = new TextField();
         urgency.setWidthFull();
-        formLayout.addFormItem(urgency, "Urgency");
+        formLayout.addFormItem(urgency, getTranslation("assignment.urgency"));
         binder.forField(urgency)
                 .withConverter(this::noConverter, AssignmentUrgency::toString)
                 .bindReadOnly(ReportDTO::getUrgency);
 
         var type = new TextField();
         type.setWidthFull();
-        formLayout.addFormItem(type, "Type");
+        formLayout.addFormItem(type, getTranslation("assignment.type"));
         binder.forField(type)
                 .withConverter(this::noConverter, Formatters::formatAssignmentType)
                 .bindReadOnly(ReportDTO::getType);
 
         var description = new TextArea();
         description.setWidthFull();
-        var descriptionItem = formLayout.addFormItem(description, "Description");
+        var descriptionItem = formLayout.addFormItem(description, getTranslation("assignment.description"));
         formLayout.setColspan(descriptionItem, 2);
         binder.forField(description)
                 .bindReadOnly(ReportDTO::getDescription);
 
         var municipality = new TextField();
         municipality.setWidthFull();
-        formLayout.addFormItem(municipality, "Municipality");
+        formLayout.addFormItem(municipality, getTranslation("assignment.municipality"));
         binder.forField(municipality)
                 .withConverter(this::noConverter, Formatters::formatMunicipality)
                 .bindReadOnly(ReportDTO::getMunicipality);
 
         var address = new TextField();
         address.setWidthFull();
-        formLayout.addFormItem(address, "Address");
+        formLayout.addFormItem(address, getTranslation("assignment.address"));
         binder.forField(address)
                 .bindReadOnly(ReportDTO::getAddress);
 
@@ -152,28 +152,28 @@ class AssignmentReportPanel extends VerticalLayout {
         resourcesGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
         resourcesGrid.setSelectionMode(Grid.SelectionMode.NONE);
 
-        resourcesGrid.addColumn(ReportResourceDTO::getCallSign).setHeader("Resource");
-        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getDispatched())).setHeader("Dispatched");
-        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getEnRoute())).setHeader("En route");
-        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getOnScene())).setHeader("On scene");
-        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getAvailable())).setHeader("Available");
-        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getAtStation())).setHeader("At station");
+        resourcesGrid.addColumn(ReportResourceDTO::getCallSign).setHeader(getTranslation("dispatch.resource"));
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getDispatched())).setHeader(getTranslation("resource-state.DISPATCHED"));
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getEnRoute())).setHeader(getTranslation("resource-state.EN_ROUTE"));
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getOnScene())).setHeader(getTranslation("resource-state.ON_SCENE"));
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getAvailable())).setHeader(getTranslation("resource-state.AVAILABLE"));
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getAtStation())).setHeader(getTranslation("resource-state.AT_STATION"));
 
         sceneBinder = new Binder<>();
         var sceneForm = new FormLayout();
         sceneForm.setWidthFull();
         sceneForm.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2), new FormLayout.ResponsiveStep("600px", 4));
 
-        var situationDevelopment = createTextArea("How did the situation develop?");
+        var situationDevelopment = createTextArea(getTranslation("report.situation-development"));
         sceneForm.add(situationDevelopment, 4);
         sceneBinder.forField(situationDevelopment)
                 .bind(AssignmentReport::getSituationDevelopment, AssignmentReport::setSituationDevelopment);
 
         sceneForm.add(
-                createCountField("How many people were involved?", AssignmentReport::getPeopleInvolved, AssignmentReport::setPeopleInvolved),
-                createCountField("How many lightly injured?", AssignmentReport::getLightlyInjured, AssignmentReport::setLightlyInjured),
-                createCountField("How many seriously injured?", AssignmentReport::getSeriouslyInjured, AssignmentReport::setSeriouslyInjured),
-                createCountField("How many deceased?", AssignmentReport::getDeceased, AssignmentReport::setDeceased)
+                createCountField(getTranslation("report.people-involved"), AssignmentReport::getPeopleInvolved, AssignmentReport::setPeopleInvolved),
+                createCountField(getTranslation("report.lightly-injured"), AssignmentReport::getLightlyInjured, AssignmentReport::setLightlyInjured),
+                createCountField(getTranslation("report.seriously-injured"), AssignmentReport::getSeriouslyInjured, AssignmentReport::setSeriouslyInjured),
+                createCountField(getTranslation("report.deceased"), AssignmentReport::getDeceased, AssignmentReport::setDeceased)
         );
 
         sceneBinder.addValueChangeListener(event -> markChanged());
@@ -187,15 +187,15 @@ class AssignmentReportPanel extends VerticalLayout {
         var statusRow = new HorizontalLayout(reportStatus, closedBy);
         statusRow.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
 
-        save = new Button("Save Report", event -> save());
+        save = new Button(getTranslation("report.save"), event -> save());
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        close = new Button("Close Report", VaadinIcon.LOCK.create(), event -> close());
+        close = new Button(getTranslation("report.close"), VaadinIcon.LOCK.create(), event -> close());
         close.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
-        reopen = new Button("Re-open Report", VaadinIcon.UNLOCK.create(), event -> reopen());
+        reopen = new Button(getTranslation("report.reopen"), VaadinIcon.UNLOCK.create(), event -> reopen());
         var actions = new HorizontalLayout(save, close, reopen);
 
-        var contentLayout = new VerticalLayout(statusRow, formLayout, resourcesGrid, new H3("What happened on scene"),
-                sceneLastEdit, sceneForm, new H3("Responding units"), units, actions);
+        var contentLayout = new VerticalLayout(statusRow, formLayout, resourcesGrid, new H3(getTranslation("report.on-scene")),
+                sceneLastEdit, sceneForm, new H3(getTranslation("report.responding-units")), units, actions);
         content = new Scroller(contentLayout);
         content.setSizeFull();
         add(content);
@@ -210,8 +210,9 @@ class AssignmentReportPanel extends VerticalLayout {
     }
 
     private static String formatLastEdit(UserStamp lastEdit) {
-        return lastEdit == null ? "Not filled in yet"
-                : "Last edited by " + lastEdit.getDisplayName() + " on " + Formatters.formatDateTime(lastEdit.getTimestamp());
+        return lastEdit == null ? I18NProvider.translate("report.not-filled-in-yet")
+                : I18NProvider.translate("report.last-edited", lastEdit.getDisplayName(),
+                Formatters.formatDateTime(lastEdit.getTimestamp()));
     }
 
     private void markChanged() {
@@ -252,7 +253,7 @@ class AssignmentReportPanel extends VerticalLayout {
         field.setMin(0);
         field.setStepButtonsVisible(true);
         sceneBinder.forField(field)
-                .withValidator(value -> value == null || value >= 0, "Cannot be negative")
+                .withValidator(value -> value == null || value >= 0, getTranslation("report.cannot-be-negative"))
                 .bind(getter, setter);
         return field;
     }
@@ -296,8 +297,8 @@ class AssignmentReportPanel extends VerticalLayout {
         close.setVisible(canReview && bean != null && !reportClosed);
         reopen.setVisible(canReview && reportClosed);
         ReportStatus.of(reportClosed).applyTo(reportStatus);
-        closedBy.setText(reportClosed ? "Closed by " + bean.getReport().getClosed().getDisplayName() + " on "
-                + Formatters.formatDateTime(bean.getReport().getClosed().getTimestamp()) : "");
+        closedBy.setText(reportClosed ? getTranslation("report.closed-by", bean.getReport().getClosed().getDisplayName(),
+                Formatters.formatDateTime(bean.getReport().getClosed().getTimestamp())) : "");
 
         binder.setBean(bean);
         resourcesGrid.setItems(bean == null ? Collections.emptyList() : bean.getResources());
@@ -314,7 +315,7 @@ class AssignmentReportPanel extends VerticalLayout {
         if (bean != null) {
             var respondingResources = bean.getRespondingResources();
             if (respondingResources.isEmpty()) {
-                units.add(new Span("No units responded to this assignment"));
+                units.add(new Span(getTranslation("report.no-responding-units")));
             }
             respondingResources.forEach(resource -> {
                 var unitReport = bean.getReport().getUnitReport(resource);
@@ -366,18 +367,18 @@ class AssignmentReportPanel extends VerticalLayout {
             var result = reportService.saveReport(bean.getReport());
             if (result instanceof UpdateResult.NoChange<AssignmentReport> noChange) {
                 noChange.getData().ifPresent(this::showChangedReport);
-                showNotification("A reviewer closed this report while you were writing, so your changes couldn't be saved.",
+                showNotification(getTranslation("report.save.closed-meanwhile"),
                         NotificationVariant.LUMO_WARNING);
             } else if (result instanceof UpdateResult.Conflict<AssignmentReport> conflict && conflict.getConflictingData() != null) {
                 showChangedReport(conflict.getConflictingData());
-                showNotification("Someone else saved this report while you were writing yours. Their version is shown now, so add your changes again.",
+                showNotification(getTranslation("report.save.conflict"),
                         NotificationVariant.LUMO_WARNING);
             } else {
                 result.getData().ifPresent(this::showChangedReport);
-                showNotification("Report saved", NotificationVariant.LUMO_SUCCESS);
+                showNotification(getTranslation("report.saved"), NotificationVariant.LUMO_SUCCESS);
             }
         } catch (ValidationFailedException ex) {
-            showNotification(String.join("\n", ex.getViolationMessages(Locale.getDefault())), NotificationVariant.LUMO_ERROR);
+            showNotification(String.join("\n", ex.getViolationMessages(getLocale())), NotificationVariant.LUMO_ERROR);
         }
     }
 
@@ -387,17 +388,17 @@ class AssignmentReportPanel extends VerticalLayout {
         }
         if (unsavedChanges) {
             // Only possible for a reviewer who also writes reports
-            showNotification("Save or throw away your changes before closing the report.", NotificationVariant.LUMO_WARNING);
+            showNotification(getTranslation("report.close.unsaved-changes"), NotificationVariant.LUMO_WARNING);
             return;
         }
-        showReviewResult(reportService.closeReport(bean.getReport()), "Report closed");
+        showReviewResult(reportService.closeReport(bean.getReport()), getTranslation("report.closed-notification"));
     }
 
     private void reopen() {
         if (bean == null || !canReview) {
             return;
         }
-        showReviewResult(reportService.reopenReport(bean.getReport()), "Report re-opened");
+        showReviewResult(reportService.reopenReport(bean.getReport()), getTranslation("report.reopened-notification"));
     }
 
     private void showReviewResult(UpdateResult<AssignmentReport> result, String successText) {
@@ -405,7 +406,7 @@ class AssignmentReportPanel extends VerticalLayout {
             if (conflict.getConflictingData() != null) {
                 showChangedReport(conflict.getConflictingData());
             }
-            showNotification("This report has changed since you opened it. The latest version is shown now, so check it again.",
+            showNotification(getTranslation("report.review.conflict"),
                     NotificationVariant.LUMO_WARNING);
         } else {
             result.getData().ifPresent(this::showChangedReport);
@@ -435,18 +436,18 @@ class AssignmentReportPanel extends VerticalLayout {
      * How much of a unit's report has been answered, judging by what is in the form right now, saved or not.
      */
     enum UnitReportStatus {
-        NOT_FILLED_IN("Not filled in"),
-        PARTLY_FILLED_IN("Partly filled in"),
-        FILLED_IN("Filled in");
+        NOT_FILLED_IN("report.unit.not-filled-in"),
+        PARTLY_FILLED_IN("report.unit.partly-filled-in"),
+        FILLED_IN("report.unit.filled-in");
 
-        private final String label;
+        private final String labelKey;
 
-        UnitReportStatus(String label) {
-            this.label = label;
+        UnitReportStatus(String labelKey) {
+            this.labelKey = labelKey;
         }
 
         String getLabel() {
-            return label;
+            return I18NProvider.translate(labelKey);
         }
 
         static UnitReportStatus of(String situationOnArrival, String actionsTaken) {
@@ -471,8 +472,8 @@ class AssignmentReportPanel extends VerticalLayout {
             setPadding(false);
             setSpacing(false);
 
-            var situationOnArrival = new TextArea("What was the situation like when you arrived?");
-            var actionsTaken = new TextArea("What actions did you take?");
+            var situationOnArrival = new TextArea(getTranslation("report.unit.situation-on-arrival"));
+            var actionsTaken = new TextArea(getTranslation("report.unit.actions-taken"));
             for (var textArea : List.of(situationOnArrival, actionsTaken)) {
                 textArea.setWidthFull();
                 textArea.setMinRows(3);

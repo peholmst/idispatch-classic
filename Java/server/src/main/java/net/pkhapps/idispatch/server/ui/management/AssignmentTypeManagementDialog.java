@@ -15,7 +15,7 @@ public class AssignmentTypeManagementDialog extends AbstractManagementDialog<Ass
 
     @Override
     protected String getTitle(@Nullable AssignmentType entity) {
-        return entity == null ? "Add Assignment Type" : "Edit Assignment Type";
+        return entity == null ? getTranslation("management.assignment-type.add") : getTranslation("management.assignment-type.edit");
     }
 
     @Override
@@ -25,10 +25,10 @@ public class AssignmentTypeManagementDialog extends AbstractManagementDialog<Ass
             protected void initForm(Binder<AssignmentType> binder, FormLayout formLayout) {
                 binder.setBean(entity == null ? new AssignmentType() : entity);
 
-                var code = new TextField("Code");
+                var code = new TextField(getTranslation("management.code"));
                 formLayout.add(code);
 
-                var description = new TextField("Description");
+                var description = new TextField(getTranslation("management.description"));
                 formLayout.add(description);
 
                 binder.bind(code, AssignmentType::getCode, AssignmentType::setCode);

@@ -15,7 +15,7 @@ public class ResourceTypeManagementDialog extends AbstractManagementDialog<Resou
 
     @Override
     protected String getTitle(@Nullable ResourceType entity) {
-        return entity == null ? "Add Resource Type" : "Edit Resource Type";
+        return entity == null ? getTranslation("management.resource-type.add") : getTranslation("management.resource-type.edit");
     }
 
     @Override
@@ -25,10 +25,10 @@ public class ResourceTypeManagementDialog extends AbstractManagementDialog<Resou
             protected void initForm(Binder<ResourceType> binder, FormLayout formLayout) {
                 binder.setBean(entity == null ? new ResourceType() : entity);
 
-                var code = new TextField("Code");
+                var code = new TextField(getTranslation("management.code"));
                 formLayout.add(code);
 
-                var description = new TextField("Description");
+                var description = new TextField(getTranslation("management.description"));
                 formLayout.add(description);
 
                 binder.bind(code, ResourceType::getCode, ResourceType::setCode);

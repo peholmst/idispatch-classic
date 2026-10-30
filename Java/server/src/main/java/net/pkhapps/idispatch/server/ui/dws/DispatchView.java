@@ -10,7 +10,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
-import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.Lumo;
 import jakarta.annotation.security.RolesAllowed;
@@ -26,11 +26,10 @@ import java.util.Optional;
 
 @Route(value = "dws", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_DISPATCHER)
-@PageTitle("iDispatch | Dispatcher")
 @StyleSheet(Lumo.COMPACT_STYLESHEET)
 @CssImport("./styles/dispatch-view-styles.css")
 @CssImport("./styles/dispatch-view-grid-styles.css")
-public class DispatchView extends VerticalLayout implements HasNavbarContent {
+public class DispatchView extends VerticalLayout implements HasNavbarContent, HasDynamicTitle {
 
     private final AssignmentService assignmentService;
     private final AssignmentPanel assignmentPanel;
@@ -56,7 +55,7 @@ public class DispatchView extends VerticalLayout implements HasNavbarContent {
         toolbar.getStyle().set("margin-left", "var(--lumo-space-m)");
         toolbar.setSizeUndefined();
 
-        var newAssignment = new Button("New Assignment", event -> newAssignment());
+        var newAssignment = new Button(getTranslation("dispatch.new-assignment"), event -> newAssignment());
         newAssignment.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         toolbar.add(newAssignment);
 
@@ -89,6 +88,11 @@ public class DispatchView extends VerticalLayout implements HasNavbarContent {
 
     @Override
     public String getTitle() {
-        return "Dispatcher";
+        return getTranslation("nav.dispatcher");
+    }
+
+    @Override
+    public String getPageTitle() {
+        return "iDispatch | " + getTitle();
     }
 }

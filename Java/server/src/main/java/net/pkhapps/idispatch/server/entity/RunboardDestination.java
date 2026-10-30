@@ -13,7 +13,7 @@ import java.util.UUID;
 public class RunboardDestination extends Destination {
 
     @Column(name = "runboard_key", nullable = false, unique = true)
-    @NotBlank(message = "Please enter a unique runboard key")
+    @NotBlank(message = "{idispatch.runboard-destination.runboard-key.required}")
     private String runboardKey = UUID.randomUUID().toString();
 
     public String getRunboardKey() {

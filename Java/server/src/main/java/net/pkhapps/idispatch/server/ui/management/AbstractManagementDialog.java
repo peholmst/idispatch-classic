@@ -19,7 +19,6 @@ import net.pkhapps.idispatch.server.entity.ValidationFailedException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.lang.Nullable;
 
-import java.util.Locale;
 
 import static java.util.Objects.requireNonNull;
 
@@ -38,11 +37,11 @@ public abstract class AbstractManagementDialog<E extends AbstractEntity> extends
         validationErrors.addClassName("validation-errors"); // TODO Make styles for this
         add(validationErrors);
 
-        var save = new Button("Save", event -> saveAndClose());
+        var save = new Button(getTranslation("common.save"), event -> saveAndClose());
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         save.addClickShortcut(Key.ENTER);
 
-        var cancel = new Button("Cancel", event -> close());
+        var cancel = new Button(getTranslation("common.cancel"), event -> close());
 
         setCloseOnEsc(true);
         setCloseOnOutsideClick(true);
@@ -66,9 +65,9 @@ public abstract class AbstractManagementDialog<E extends AbstractEntity> extends
             close();
         } catch (ValidationFailedException ex) {
             validationErrors.setVisible(true);
-            ex.getViolationMessages(Locale.getDefault()).forEach(message -> validationErrors.add(new ListItem(message)));
+            ex.getViolationMessages(getLocale()).forEach(message -> validationErrors.add(new ListItem(message)));
         } catch (DataIntegrityViolationException ex) {
-            var notification = new Notification("A data integrity violation has been detected. You may have entered something that already exists. Check the form and try again.");
+            var notification = new Notification(getTranslation("management.data-integrity-violation"));
             notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
             notification.setPosition(Notification.Position.MIDDLE);
             notification.setDuration(3000);

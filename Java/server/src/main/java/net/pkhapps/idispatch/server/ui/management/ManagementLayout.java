@@ -23,11 +23,11 @@ import java.util.Optional;
 public class ManagementLayout extends VerticalLayout implements RouterLayout, HasNavbarContent {
 
     private static final List<Section> SECTIONS = List.of(
-            new Section("Municipalities", MunicipalityManagementView.class),
-            new Section("Assignment Types", AssignmentTypeManagementView.class),
-            new Section("Resources", ResourceManagementView.class),
-            new Section("Resource Types", ResourceTypeManagementView.class),
-            new Section("Destinations", DestinationManagementView.class)
+            new Section("management.municipalities", MunicipalityManagementView.class),
+            new Section("management.assignment-types", AssignmentTypeManagementView.class),
+            new Section("management.resources", ResourceManagementView.class),
+            new Section("management.resource-types", ResourceTypeManagementView.class),
+            new Section("management.destinations", DestinationManagementView.class)
     );
 
     private final Tabs views;
@@ -36,7 +36,7 @@ public class ManagementLayout extends VerticalLayout implements RouterLayout, Ha
         views = new Tabs();
         views.setOrientation(Tabs.Orientation.HORIZONTAL);
         views.addThemeVariants(TabsVariant.LUMO_MINIMAL);
-        SECTIONS.forEach(section -> views.add(TabUtils.createNavigationTab(section.label(), section.view())));
+        SECTIONS.forEach(section -> views.add(TabUtils.createNavigationTab(getTranslation(section.labelKey()), section.view())));
 
         getStyle().set("background-color", "var(--lumo-shade-10pct)");
 
@@ -51,6 +51,17 @@ public class ManagementLayout extends VerticalLayout implements RouterLayout, Ha
         return SECTIONS.stream().<Class<? extends Component>>map(Section::view).toList();
     }
 
+    /**
+     * Returns the translation key of the label of the section that the given view shows.
+     */
+    static String getSectionLabelKey(Class<? extends Component> view) {
+        return SECTIONS.stream()
+                .filter(section -> section.view().equals(view))
+                .map(Section::labelKey)
+                .findFirst()
+                .orElseThrow();
+    }
+
     @Override
     public Optional<Component> getNavbarContent() {
         return Optional.of(views);
@@ -58,9 +69,9 @@ public class ManagementLayout extends VerticalLayout implements RouterLayout, Ha
 
     @Override
     public String getTitle() {
-        return "Management Console";
+        return getTranslation("management.title");
     }
 
-    private record Section(String label, Class<? extends Component> view) {
+    private record Section(String labelKey, Class<? extends Component> view) {
     }
 }

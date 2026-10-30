@@ -18,11 +18,11 @@ public class Resource extends AbstractLockableEntity implements Comparable<Resou
     public static final String PROP_TYPE = "type";
 
     @Column(name = "call_sign", unique = true, nullable = false)
-    @NotBlank(message = "Please enter a call sign")
+    @NotBlank(message = "{idispatch.resource.call-sign.required}")
     private String callSign = "";
     @ManyToOne(optional = false)
     @JoinColumn(name = "type_id", nullable = false)
-    @NotNull(message = "Please select a type")
+    @NotNull(message = "{idispatch.resource.type.required}")
     private ResourceType type;
     @Column(name = "active", nullable = false)
     private boolean active = true;

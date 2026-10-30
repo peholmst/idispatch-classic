@@ -19,10 +19,10 @@ public class ResourceType extends AbstractLockableEntity implements Deactivatabl
     public static final String PROP_DESCRIPTION = "description";
 
     @Column(name = "code", unique = true, nullable = false)
-    @NotBlank(message = "Please enter a code")
+    @NotBlank(message = "{idispatch.resource-type.code.required}")
     private String code = "";
     @Column(name = "description", nullable = false)
-    @NotBlank(message = "Please enter a description")
+    @NotBlank(message = "{idispatch.resource-type.description.required}")
     private String description = "";
     @Column(name = "active", nullable = false)
     private boolean active = true;

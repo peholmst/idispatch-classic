@@ -20,10 +20,10 @@ public class AssignmentType extends AbstractLockableEntity implements Deactivata
     public static final String PROP_FORMATTED_DESCRIPTION = "formattedDescription";
 
     @Column(name = "code", unique = true, nullable = false)
-    @NotBlank(message = "Please enter a code")
+    @NotBlank(message = "{idispatch.assignment-type.code.required}")
     private String code = "";
     @Column(name = "description", nullable = false)
-    @NotBlank(message = "Please enter a description")
+    @NotBlank(message = "{idispatch.assignment-type.description.required}")
     private String description = "";
     @Column(name = "active", nullable = false)
     private boolean active = true;

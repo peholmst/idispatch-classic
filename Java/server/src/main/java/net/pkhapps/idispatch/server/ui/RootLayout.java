@@ -103,39 +103,39 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
 
     private SideNav createViewNavigation() {
         var nav = new SideNav();
-        nav.addItem(new SideNavItem("Home", RootView.class, VaadinIcon.HOME.create()));
+        nav.addItem(new SideNavItem(getTranslation("nav.home"), RootView.class, VaadinIcon.HOME.create()));
         if (isUserInRole(Roles.ROLE_DISPATCHER)) {
-            nav.addItem(new SideNavItem("Dispatcher", DispatchView.class, VaadinIcon.HEADSET.create()));
+            nav.addItem(new SideNavItem(getTranslation("nav.dispatcher"), DispatchView.class, VaadinIcon.HEADSET.create()));
         }
         if (isUserInRole(Roles.ROLE_REPORT_READER) || isUserInRole(Roles.ROLE_REPORT_WRITER)
                 || isUserInRole(Roles.ROLE_REPORT_REVIEWER)) {
-            nav.addItem(new SideNavItem("Reports", ReportsView.class, VaadinIcon.CHART.create()));
+            nav.addItem(new SideNavItem(getTranslation("nav.reports"), ReportsView.class, VaadinIcon.CHART.create()));
         }
         return nav;
     }
 
     private SideNav createAdministrationNavigation() {
-        var management = new SideNavItem("Management", MunicipalityManagementView.class, VaadinIcon.COG.create());
+        var management = new SideNavItem(getTranslation("nav.management"), MunicipalityManagementView.class, VaadinIcon.COG.create());
         // Highlight the item in every section of the management console, not only in the one it opens
         var routes = RouteConfiguration.forApplicationScope();
         management.setPathAliases(ManagementLayout.getSectionViews().stream()
                 .map(routes::getUrl)
                 .collect(Collectors.toSet()));
 
-        var nav = new SideNav("Administration");
+        var nav = new SideNav(getTranslation("nav.administration"));
         nav.addItem(management);
         return nav;
     }
 
     private SideNav createAccountNavigation(AuthenticationContext authenticationContext) {
-        var nav = new SideNav("Account");
+        var nav = new SideNav(getTranslation("nav.account"));
         // Users are managed in Keycloak, and change their password in the Keycloak account console of the realm
         // that issued their ID token
         authenticationContext.getAuthenticatedUser(Object.class)
                 .filter(OidcUser.class::isInstance)
                 .map(OidcUser.class::cast)
                 .ifPresent(user -> {
-                    var account = new SideNavItem("My Account", user.getIssuer() + "/account",
+                    var account = new SideNavItem(getTranslation("nav.my-account"), user.getIssuer() + "/account",
                             VaadinIcon.USER.create());
                     account.setOpenInNewBrowserTab(true);
                     nav.addItem(account);
@@ -143,7 +143,7 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
 
         // Logging out is an action, not a link. The item still gets a path so that it is a focusable link like the
         // others, but the router ignores it and the click never follows it.
-        var logout = new SideNavItem("Log Out", "logout", VaadinIcon.SIGN_OUT.create());
+        var logout = new SideNavItem(getTranslation("nav.log-out"), "logout", VaadinIcon.SIGN_OUT.create());
         logout.setRouterIgnore(true);
         logout.getElement().addEventListener("click", event -> authenticationContext.logout()).preventDefault();
         nav.addItem(logout);

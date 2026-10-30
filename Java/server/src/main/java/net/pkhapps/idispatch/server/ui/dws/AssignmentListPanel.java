@@ -42,12 +42,12 @@ public class AssignmentListPanel extends VerticalLayout {
         );
         grid.setSizeFull();
 
-        grid.addColumn(Assignment::getId).setHeader("ID");
-        grid.addColumn(assignment -> Formatters.formatDateTime(assignment.getOpened())).setHeader("Date");
-        grid.addColumn(assignment -> Formatters.formatAssignmentType(assignment.getType())).setHeader("Type");
-        grid.addColumn(Assignment::getUrgency).setHeader("Urgency").setPartNameGenerator((assignment -> Formatters.assignmentUrgencyClassName(assignment.getUrgency())));
-        grid.addColumn(assignment -> Formatters.formatMunicipality(assignment.getMunicipality())).setHeader("Municipality");
-        grid.addColumn(Assignment::getAddress).setHeader("Address");
+        grid.addColumn(Assignment::getId).setHeader(getTranslation("assignment.id"));
+        grid.addColumn(assignment -> Formatters.formatDateTime(assignment.getOpened())).setHeader(getTranslation("assignment.date"));
+        grid.addColumn(assignment -> Formatters.formatAssignmentType(assignment.getType())).setHeader(getTranslation("assignment.type"));
+        grid.addColumn(Assignment::getUrgency).setHeader(getTranslation("assignment.urgency")).setPartNameGenerator((assignment -> Formatters.assignmentUrgencyClassName(assignment.getUrgency())));
+        grid.addColumn(assignment -> Formatters.formatMunicipality(assignment.getMunicipality())).setHeader(getTranslation("assignment.municipality"));
+        grid.addColumn(Assignment::getAddress).setHeader(getTranslation("assignment.address"));
 
         if (onAssignmentSelected != null) {
             grid.addSelectionListener(event -> onAssignmentSelected.accept(

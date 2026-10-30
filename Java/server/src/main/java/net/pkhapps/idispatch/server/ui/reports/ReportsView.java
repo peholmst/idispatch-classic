@@ -23,7 +23,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.function.SerializableRunnable;
 import com.vaadin.flow.router.BeforeLeaveEvent;
 import com.vaadin.flow.router.BeforeLeaveObserver;
-import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.Lumo;
 import jakarta.annotation.security.RolesAllowed;
@@ -39,11 +39,15 @@ import net.pkhapps.idispatch.server.ui.RootLayout;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.ZoneId;
+import java.time.format.TextStyle;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -51,9 +55,8 @@ import java.util.stream.Stream;
 
 @Route(value = "reports", layout = RootLayout.class)
 @RolesAllowed({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER})
-@PageTitle("iDispatch | Reports")
 @StyleSheet(Lumo.COMPACT_STYLESHEET)
-public class ReportsView extends MasterDetailLayout implements HasNavbarContent, BeforeLeaveObserver {
+public class ReportsView extends MasterDetailLayout implements HasNavbarContent, HasDynamicTitle, BeforeLeaveObserver {
 
     private final AssignmentService assignmentService;
     private final ReportService reportService;
@@ -77,19 +80,19 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
         this.reportService = reportService;
 
         assignmentsGrid = new Grid<>();
-        assignmentsGrid.addColumn(Assignment::getId).setHeader("Number")
+        assignmentsGrid.addColumn(Assignment::getId).setHeader(getTranslation("report.number"))
                 .setSortable(true).setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setFlexGrow(0);
-        assignmentsGrid.addComponentColumn(assignment -> reportStatus(assignment).createBadge()).setHeader("Report")
+        assignmentsGrid.addComponentColumn(assignment -> reportStatus(assignment).createBadge()).setHeader(getTranslation("report.report"))
                 .setComparator(this::reportStatus).setAutoWidth(true).setFlexGrow(0);
         var closedColumn = assignmentsGrid.addColumn(assignment -> Formatters.formatDateTime(assignment.getClosed()))
-                .setHeader("Closed").setComparator(Assignment::getClosed).setAutoWidth(true).setFlexGrow(0);
-        assignmentsGrid.addColumn(Assignment::getUrgency).setHeader("Urgency")
+                .setHeader(getTranslation("report.closed")).setComparator(Assignment::getClosed).setAutoWidth(true).setFlexGrow(0);
+        assignmentsGrid.addColumn(Assignment::getUrgency).setHeader(getTranslation("assignment.urgency"))
                 .setComparator(Assignment::getUrgency).setAutoWidth(true).setFlexGrow(0);
-        assignmentsGrid.addColumn(assignment -> Formatters.formatAssignmentType(assignment.getType())).setHeader("Type")
+        assignmentsGrid.addColumn(assignment -> Formatters.formatAssignmentType(assignment.getType())).setHeader(getTranslation("assignment.type"))
                 .setSortable(true).setResizable(true);
         assignmentsGrid.addColumn(assignment -> Formatters.formatMunicipality(assignment.getMunicipality()))
-                .setHeader("Municipality").setSortable(true).setResizable(true);
-        assignmentsGrid.addColumn(Assignment::getAddress).setHeader("Address")
+                .setHeader(getTranslation("assignment.municipality")).setSortable(true).setResizable(true);
+        assignmentsGrid.addColumn(Assignment::getAddress).setHeader(getTranslation("assignment.address"))
                 .setSortable(true).setResizable(true);
         assignmentsGrid.sort(GridSortOrder.desc(closedColumn).build());
         assignmentsGrid.setSizeFull();
@@ -135,20 +138,20 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
             setDetail(report == null ? null : reportPanel);
         });
 
-        closedFrom = createDatePicker("Closed from");
-        closedTo = createDatePicker("Closed to");
+        closedFrom = createDatePicker(getTranslation("report.filter.closed-from"));
+        closedTo = createDatePicker(getTranslation("report.filter.closed-to"));
         closedFrom.addValueChangeListener(event -> closedTo.setMin(event.getValue()));
         closedTo.addValueChangeListener(event -> closedFrom.setMax(event.getValue()));
 
-        municipalityFilter = new ComboBox<>("Municipality");
+        municipalityFilter = new ComboBox<>(getTranslation("assignment.municipality"));
         municipalityFilter.setItemLabelGenerator(Formatters::formatMunicipality);
-        typeFilter = new ComboBox<>("Type");
+        typeFilter = new ComboBox<>(getTranslation("assignment.type"));
         typeFilter.setItemLabelGenerator(Formatters::formatAssignmentType);
         for (var comboBox : List.of(municipalityFilter, typeFilter)) {
             comboBox.setClearButtonVisible(true);
             comboBox.setWidth("12em");
         }
-        reportStatusFilter = new ComboBox<>("Report");
+        reportStatusFilter = new ComboBox<>(getTranslation("report.report"));
         reportStatusFilter.setItems(ReportStatus.values());
         reportStatusFilter.setItemLabelGenerator(ReportStatus::getLabel);
         reportStatusFilter.setClearButtonVisible(true);
@@ -162,7 +165,7 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
             });
         }
 
-        var clearFilters = new Button("Clear", VaadinIcon.CLOSE_SMALL.create(), event -> {
+        var clearFilters = new Button(getTranslation("report.filter.clear"), VaadinIcon.CLOSE_SMALL.create(), event -> {
             closedFrom.clear();
             closedTo.clear();
             municipalityFilter.clear();
@@ -188,7 +191,7 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
         setDetailSize("40em");
         setExpandMaster(true);
         setMaster(master);
-        setDetailPlaceholder(new Span("No assignment selected"));
+        setDetailPlaceholder(new Span(getTranslation("assignment.none-selected")));
 
         // When the report is shown on top of the list, closing it deselects the assignment, which asks first if there
         // are unsaved changes
@@ -211,11 +214,11 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
             return;
         }
         discardDialog = new ConfirmDialog();
-        discardDialog.setHeader("Unsaved changes");
-        discardDialog.setText("You have not saved this report. Do you want to throw away your changes?");
+        discardDialog.setHeader(getTranslation("report.discard.title"));
+        discardDialog.setText(getTranslation("report.discard.text"));
         discardDialog.setCancelable(true);
-        discardDialog.setCancelText("Keep Editing");
-        discardDialog.setConfirmText("Throw Away");
+        discardDialog.setCancelText(getTranslation("report.discard.keep-editing"));
+        discardDialog.setConfirmText(getTranslation("report.discard.throw-away"));
         discardDialog.setConfirmButtonTheme("error primary");
         discardDialog.addConfirmListener(event -> {
             var actionToRun = actionAfterDiscard;
@@ -248,15 +251,33 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
         }
     }
 
-    private static DatePicker createDatePicker(String label) {
+    private DatePicker createDatePicker(String label) {
         var datePicker = new DatePicker(label);
+        var locale = getLocale();
         var i18n = new DatePicker.DatePickerI18n();
         i18n.setDateFormat("dd.MM.yyyy");
         i18n.setFirstDayOfWeek(1);
+        i18n.setMonthNames(Stream.of(Month.values())
+                .map(month -> capitalize(month.getDisplayName(TextStyle.FULL_STANDALONE, locale), locale))
+                .toList());
+        // The date picker starts the week on Sunday
+        var weekdays = Stream.concat(Stream.of(DayOfWeek.SUNDAY), Stream.of(DayOfWeek.values()).limit(6)).toList();
+        i18n.setWeekdays(weekdays.stream()
+                .map(day -> capitalize(day.getDisplayName(TextStyle.FULL_STANDALONE, locale), locale))
+                .toList());
+        i18n.setWeekdaysShort(weekdays.stream()
+                .map(day -> capitalize(day.getDisplayName(TextStyle.SHORT_STANDALONE, locale), locale))
+                .toList());
+        i18n.setToday(getTranslation("date-picker.today"));
+        i18n.setCancel(getTranslation("common.cancel"));
         datePicker.setI18n(i18n);
         datePicker.setClearButtonVisible(true);
         datePicker.setWidth("10em");
         return datePicker;
+    }
+
+    private static String capitalize(String text, Locale locale) {
+        return text.isEmpty() ? text : text.substring(0, 1).toUpperCase(locale) + text.substring(1);
     }
 
     private void refresh() {
@@ -300,6 +321,11 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
     }
 
     @Override
+    public String getPageTitle() {
+        return "iDispatch | " + getTitle();
+    }
+
+    @Override
     public Optional<Component> getNavbarContent() {
         var toolbar = new HorizontalLayout(refreshButton);
         toolbar.getStyle().set("margin-left", "var(--lumo-space-m)");
@@ -309,6 +335,6 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
 
     @Override
     public String getTitle() {
-        return "Reports";
+        return getTranslation("nav.reports");
     }
 }

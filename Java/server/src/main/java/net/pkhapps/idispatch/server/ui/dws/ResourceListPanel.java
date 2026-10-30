@@ -43,10 +43,10 @@ public class ResourceListPanel extends VerticalLayout {
         grid.setSelectionMode(Grid.SelectionMode.NONE);
         add(grid);
 
-        grid.addColumn(rs -> Formatters.formatResource(rs.getResource())).setHeader("Resource");
-        grid.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader("State");
-        grid.addColumn(rs -> Formatters.formatDateTime(rs.getTimestamp())).setHeader("Timestamp");
-        grid.addColumn(rs -> Formatters.formatAssignment(rs.getAssignment())).setHeader("Assignment");
+        grid.addColumn(rs -> Formatters.formatResource(rs.getResource())).setHeader(getTranslation("dispatch.resource"));
+        grid.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
+        grid.addColumn(rs -> Formatters.formatDateTime(rs.getTimestamp())).setHeader(getTranslation("dispatch.timestamp"));
+        grid.addColumn(rs -> Formatters.formatAssignment(rs.getAssignment())).setHeader(getTranslation("dispatch.assignment"));
     }
 
     private Button createStatusButton(ResourceStatus resourceStatus) {
