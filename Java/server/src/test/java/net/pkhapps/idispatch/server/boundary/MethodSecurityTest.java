@@ -35,6 +35,7 @@ class MethodSecurityTest {
     void dispatcher_cannotUseManagementOrReportServices() {
         assertThatThrownBy(() -> municipalityManagementService.findAll(ALL)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.findReportByAssignmentId(1L)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
@@ -57,6 +58,15 @@ class MethodSecurityTest {
     @Test
     @WithMockUser(roles = "REPORT_READER")
     void reportReader_canReadClosedAssignmentsAndReportsOnly() {
+        assertThatCode(() -> assignmentService.findClosedAssignments()).doesNotThrowAnyException();
+        assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> assignmentService.findOpenAssignments()).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @WithMockUser(roles = "REPORT_WRITER")
+    void reportWriter_canReadClosedAssignmentsAndReports() {
         assertThatCode(() -> assignmentService.findClosedAssignments()).doesNotThrowAnyException();
         assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
         assertThatThrownBy(() -> assignmentService.findOpenAssignments()).isInstanceOf(AccessDeniedException.class);

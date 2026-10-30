@@ -107,7 +107,7 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         if (isUserInRole(Roles.ROLE_DISPATCHER)) {
             nav.addItem(new SideNavItem("Dispatcher", DispatchView.class, VaadinIcon.HEADSET.create()));
         }
-        if (isUserInRole(Roles.ROLE_REPORT_READER)) {
+        if (isUserInRole(Roles.ROLE_REPORT_READER) || isUserInRole(Roles.ROLE_REPORT_WRITER)) {
             nav.addItem(new SideNavItem("Reports", ReportsView.class, VaadinIcon.CHART.create()));
         }
         return nav;

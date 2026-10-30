@@ -45,7 +45,8 @@
       "idispatch": [
         {"name": "ADMIN", "description": "Manages municipalities, assignment types, resources and destinations"},
         {"name": "DISPATCHER", "description": "Uses the dispatcher workstation"},
-        {"name": "REPORT_READER", "description": "Reads reports of closed assignments"}
+        {"name": "REPORT_READER", "description": "Reads reports of closed assignments"},
+        {"name": "REPORT_WRITER", "description": "Fills in what happened on scene in reports of closed assignments"}
       ]
     }
   },
@@ -59,7 +60,7 @@
       "enabled": true,
       "realmRoles": ["default-roles-idispatch"],
       "credentials": [{"type": "password", "value": "changeme", "temporary": false}],
-      "clientRoles": {"idispatch": ["ADMIN", "DISPATCHER", "REPORT_READER"]}
+      "clientRoles": {"idispatch": ["ADMIN", "DISPATCHER", "REPORT_READER", "REPORT_WRITER"]}
     },
     {
       "username": "dispatcher",
@@ -82,6 +83,17 @@
       "realmRoles": ["default-roles-idispatch"],
       "credentials": [{"type": "password", "value": "reports", "temporary": false}],
       "clientRoles": {"idispatch": ["REPORT_READER"]}
+    },
+    {
+      "username": "reporter",
+      "firstName": "Report",
+      "lastName": "Writer",
+      "email": "reporter@idispatch.local",
+      "emailVerified": true,
+      "enabled": true,
+      "realmRoles": ["default-roles-idispatch"],
+      "credentials": [{"type": "password", "value": "reporter", "temporary": false}],
+      "clientRoles": {"idispatch": ["REPORT_WRITER"]}
     }
   ]
 }
