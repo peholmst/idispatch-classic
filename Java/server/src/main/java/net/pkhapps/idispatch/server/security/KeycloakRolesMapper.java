@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Grants the application roles that Keycloak puts in the {@value #ROLES_CLAIM} claim of the ID token. The claim is
  * added by a "User Client Role" mapper on the {@code idispatch} client, so it holds the client roles {@code ADMIN},
- * {@code DISPATCHER}, {@code REPORT_READER} and {@code REPORT_WRITER}, which become {@link Roles#ROLE_ADMIN} and so on. Roles that the
+ * {@code DISPATCHER}, {@code REPORT_READER}, {@code REPORT_WRITER} and {@code REPORT_REVIEWER}, which become {@link Roles#ROLE_ADMIN} and so on. Roles that the
  * application does not know are ignored.
  */
 class KeycloakRolesMapper implements GrantedAuthoritiesMapper {
@@ -20,7 +20,7 @@ class KeycloakRolesMapper implements GrantedAuthoritiesMapper {
     static final String ROLES_CLAIM = "roles";
 
     private static final Set<String> KNOWN_ROLES = Set.of(Roles.ROLE_ADMIN, Roles.ROLE_DISPATCHER,
-            Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER);
+            Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER);
 
     @Override
     public Collection<? extends GrantedAuthority> mapAuthorities(Collection<? extends GrantedAuthority> authorities) {

@@ -105,6 +105,16 @@ class AccessControlTest extends AbstractUITest {
     }
 
     @Test
+    @WithMockUser(username = "report-reviewer", roles = "REPORT_REVIEWER")
+    void reportReviewer_seesReportsEntryAndCanOpenReports() {
+        navigate(RootView.class);
+        assertThat(navigationItems()).containsExactly("Home", "Reports", "Log Out");
+        navigate(ReportsView.class);
+        assertThat(navbarTitle()).isEqualTo("Reports");
+        navigate("dws", RouteNotFoundError.class);
+    }
+
+    @Test
     @WithMockUser(username = "admin-only", roles = "ADMIN")
     void admin_seesManagementEntryAndCanOpenManagement() {
         navigate(RootView.class);

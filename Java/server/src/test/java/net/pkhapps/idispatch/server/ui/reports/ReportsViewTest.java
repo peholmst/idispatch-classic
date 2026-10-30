@@ -22,6 +22,7 @@ import net.pkhapps.idispatch.server.boundary.DispatchService;
 import net.pkhapps.idispatch.server.boundary.ReportService;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
 import net.pkhapps.idispatch.server.entity.Assignment;
+import net.pkhapps.idispatch.server.entity.AssignmentReport;
 import net.pkhapps.idispatch.server.entity.AssignmentType;
 import net.pkhapps.idispatch.server.entity.AssignmentUrgency;
 import net.pkhapps.idispatch.server.entity.Municipality;
@@ -81,11 +82,12 @@ class ReportsViewTest extends AbstractUITest {
         assertThat(containsRow(assignments(), Assignment::getId, open.getId())).isFalse();
         var row = rowOf(assignments(), Assignment::getId, closed.getId());
         assertThat(test(assignments()).getCellText(row, 0)).as("Number").isEqualTo(closed.getId().toString());
-        assertThat(test(assignments()).getCellText(row, 1)).as("Closed").isEqualTo(Formatters.formatDateTime(closed.getClosed()));
-        assertThat(test(assignments()).getCellText(row, 2)).as("Urgency").isEqualTo("B");
-        assertThat(test(assignments()).getCellText(row, 3)).as("Type").isEqualTo(closed.getType().getFormattedDescription());
-        assertThat(test(assignments()).getCellText(row, 4)).as("Municipality").isEqualTo(closed.getMunicipality().getName());
-        assertThat(test(assignments()).getCellText(row, 5)).as("Address").isEqualTo("Report Road 7");
+        assertThat(reportStatusCell(closed).getText()).as("Report").isEqualTo("Open");
+        assertThat(test(assignments()).getCellText(row, 2)).as("Closed").isEqualTo(Formatters.formatDateTime(closed.getClosed()));
+        assertThat(test(assignments()).getCellText(row, 3)).as("Urgency").isEqualTo("B");
+        assertThat(test(assignments()).getCellText(row, 4)).as("Type").isEqualTo(closed.getType().getFormattedDescription());
+        assertThat(test(assignments()).getCellText(row, 5)).as("Municipality").isEqualTo(closed.getMunicipality().getName());
+        assertThat(test(assignments()).getCellText(row, 6)).as("Address").isEqualTo("Report Road 7");
     }
 
     @Test
@@ -144,6 +146,49 @@ class ReportsViewTest extends AbstractUITest {
         datePicker("Closed from").clear();
         datePicker("Closed to").setValue(closedOn.minusDays(1));
         assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isFalse();
+    }
+
+    @Test
+    void filteringByReportStatus_separatesOpenAndClosedReports() {
+        var open = handledAssignment(unique("CS"));
+        var reviewed = handledAssignment(unique("CS"));
+        asReviewer(() -> reportService.closeReport(storedReport(reviewed)));
+        navigate(ReportsView.class);
+        assertThat(reportStatusCell(open).getText()).isEqualTo("Open");
+        assertThat(reportStatusCell(reviewed).getText()).isEqualTo("Closed");
+        assertThat(reportStatusCell(reviewed).getThemeNames()).contains("success");
+        ComboBox<ReportStatus> status = comboBox("Report");
+
+        status.setValue(ReportStatus.OPEN);
+        assertThat(containsRow(assignments(), Assignment::getId, open.getId())).isTrue();
+        assertThat(containsRow(assignments(), Assignment::getId, reviewed.getId())).isFalse();
+
+        status.setValue(ReportStatus.CLOSED);
+        assertThat(containsRow(assignments(), Assignment::getId, open.getId())).isFalse();
+        assertThat(containsRow(assignments(), Assignment::getId, reviewed.getId())).isTrue();
+
+        test(button("Clear")).click();
+        assertThat(status.getValue()).isNull();
+    }
+
+    @Test
+    void closingAndReopeningInTheReport_updatesTheListRightAway() {
+        loginAsWriter();
+        var closed = handledAssignment(unique("CS"));
+        openReportsViewAs(this::loginAsReviewer);
+        this.<ReportStatus>comboBox("Report").setValue(ReportStatus.OPEN);
+        select(closed);
+
+        test(button("Close Report")).click();
+
+        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).as("No longer open").isFalse();
+        this.<ReportStatus>comboBox("Report").clear();
+        assertThat(reportStatusCell(closed).getText()).isEqualTo("Closed");
+        assertThat(view().getDetail()).as("The report stays open while the reviewer reads it").isSameAs(reportPanel());
+
+        test(button("Re-open Report")).click();
+
+        assertThat(reportStatusCell(closed).getText()).isEqualTo("Open");
     }
 
     @Test
@@ -517,6 +562,117 @@ class ReportsViewTest extends AbstractUITest {
         unitDetails(callSign).setOpened(true);
         assertThat(textArea(unitForm(callSign), "What actions did you take?").isReadOnly()).isTrue();
         assertThat(find(Button.class).withText("Save Report").exists()).isFalse();
+        assertThat(reportStatus().getText()).isEqualTo("Open");
+        assertThat(find(Button.class).withText("Close Report").exists()).isFalse();
+        assertThat(find(Button.class).withText("Re-open Report").exists()).isFalse();
+    }
+
+    @Test
+    void reviewer_closesTheReport_andThenNobodyCanChangeIt() {
+        var callSign = unique("CS");
+        loginAsWriter();
+        var closed = handledAssignment(callSign);
+        writeReport(closed, "The fire spread to the attic");
+
+        openReportsViewAs(this::loginAsReviewer);
+        select(closed);
+        assertThat(reportStatus().getText()).isEqualTo("Open");
+        assertThat(textArea(reportPanel(), "How did the situation develop?").isReadOnly()).as("Reviewers only read").isTrue();
+        assertThat(find(Button.class).withText("Save Report").exists()).isFalse();
+        assertThat(find(Button.class).withText("Re-open Report").exists()).isFalse();
+
+        test(button("Close Report")).click();
+
+        assertThat(notificationTexts()).contains("Report closed");
+        assertThat(reportStatus().getText()).isEqualTo("Closed");
+        assertThat(reportStatus().getThemeNames()).contains("success");
+        assertThat(find(Span.class, reportPanel()).withCondition(span -> span.getText().startsWith("Closed by Rita Reviewer on ")).exists()).isTrue();
+        assertThat(find(Button.class).withText("Close Report").exists()).isFalse();
+        assertThat(find(Button.class).withText("Re-open Report").exists()).isTrue();
+        var stored = storedReport(closed);
+        assertThat(stored.isClosed()).isTrue();
+        assertThat(stored.getClosed().getSubject()).isEqualTo("subject-rita");
+        assertThat(stored.getLastEdit().getSubject()).as("Closing isn't editing").isEqualTo("subject-erik");
+
+        openReportsViewAs(this::loginAsWriter);
+        select(closed);
+        assertThat(reportStatus().getText()).isEqualTo("Closed");
+        assertThat(textArea(reportPanel(), "How did the situation develop?").isReadOnly()).isTrue();
+        unitDetails(callSign).setOpened(true);
+        assertThat(textArea(unitForm(callSign), "What actions did you take?").isReadOnly()).isTrue();
+        assertThat(find(Button.class).withText("Save Report").exists()).isFalse();
+    }
+
+    @Test
+    void writer_cannotSaveAReportThatWasClosedWhileTheyWereWriting() {
+        loginAsWriter();
+        var closed = handledAssignment(unique("CS"));
+        writeReport(closed, "Before closing");
+        navigate(ReportsView.class);
+        select(closed);
+        textArea(reportPanel(), "How did the situation develop?").setValue("After closing");
+
+        asReviewer(() -> reportService.closeReport(storedReport(closed)));
+        test(button("Save Report")).click();
+
+        assertThat(notificationTexts()).anyMatch(text -> text.startsWith("A reviewer closed this report"));
+        assertThat(storedReport(closed).getSituationDevelopment()).isEqualTo("Before closing");
+        assertThat(textArea(reportPanel(), "How did the situation develop?").getValue()).isEqualTo("Before closing");
+        assertThat(textArea(reportPanel(), "How did the situation develop?").isReadOnly()).isTrue();
+        assertThat(find(Button.class).withText("Save Report").exists()).isFalse();
+    }
+
+    @Test
+    void reviewer_reopensTheReport_andWritersCanChangeItAgain() {
+        loginAsWriter();
+        var closed = handledAssignment(unique("CS"));
+        writeReport(closed, "First version");
+        asReviewer(() -> reportService.closeReport(storedReport(closed)));
+
+        openReportsViewAs(this::loginAsReviewer);
+        select(closed);
+        test(button("Re-open Report")).click();
+
+        assertThat(notificationTexts()).contains("Report re-opened");
+        assertThat(reportStatus().getText()).isEqualTo("Open");
+        assertThat(storedReport(closed).isClosed()).isFalse();
+
+        openReportsViewAs(this::loginAsWriter);
+        select(closed);
+        textArea(reportPanel(), "How did the situation develop?").setValue("Second version");
+        test(button("Save Report")).click();
+        assertThat(storedReport(closed).getSituationDevelopment()).isEqualTo("Second version");
+    }
+
+    @Test
+    void reviewer_cannotCloseAReportThatChangedSinceTheyReadIt() {
+        loginAsWriter();
+        var closed = handledAssignment(unique("CS"));
+        writeReport(closed, "What the reviewer read");
+
+        openReportsViewAs(this::loginAsReviewer);
+        select(closed);
+        asWriter(() -> writeReport(closed, "Written after the reviewer read it"));
+
+        test(button("Close Report")).click();
+
+        assertThat(notificationTexts()).anyMatch(text -> text.startsWith("This report has changed since you opened it"));
+        assertThat(storedReport(closed).isClosed()).isFalse();
+        assertThat(textArea(reportPanel(), "How did the situation develop?").getValue()).isEqualTo("Written after the reviewer read it");
+        assertThat(reportStatus().getText()).isEqualTo("Open");
+    }
+
+    @Test
+    void reviewer_canCloseAReportThatNobodyHasWrittenIn() {
+        loginAsWriter();
+        var closed = handledAssignment(unique("CS"));
+
+        openReportsViewAs(this::loginAsReviewer);
+        select(closed);
+        test(button("Close Report")).click();
+
+        assertThat(storedReport(closed).isClosed()).isTrue();
+        assertThat(reportStatus().getText()).isEqualTo("Closed");
     }
 
     @Test
@@ -593,7 +749,14 @@ class ReportsViewTest extends AbstractUITest {
         return find(AssignmentReportPanel.class).single();
     }
 
+    /**
+     * Logs in a report writer, who may also dispatch, so that tests can create their assignments.
+     */
     private void loginWithIdToken(String subject, String givenName, String familyName) {
+        loginWithIdToken(subject, givenName, familyName, Roles.ROLE_REPORT_WRITER, Roles.ROLE_DISPATCHER);
+    }
+
+    private void loginWithIdToken(String subject, String givenName, String familyName, String... roles) {
         var idToken = OidcIdToken.withTokenValue("id-token")
                 .issuer("http://keycloak.invalid/realms/idispatch")
                 .subject(subject)
@@ -601,11 +764,72 @@ class ReportsViewTest extends AbstractUITest {
                 .claim("given_name", givenName)
                 .claim("family_name", familyName)
                 .build();
-        var user = new DefaultOidcUser(List.of(new SimpleGrantedAuthority(Roles.ROLE_REPORT_WRITER),
-                new SimpleGrantedAuthority(Roles.ROLE_DISPATCHER)), idToken, "preferred_username");
+        var user = new DefaultOidcUser(Stream.of(roles).map(SimpleGrantedAuthority::new).toList(), idToken,
+                "preferred_username");
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(new OAuth2AuthenticationToken(user, user.getAuthorities(), "keycloak"));
         SecurityContextHolder.setContext(context);
+    }
+
+    /**
+     * Logs in as another user and opens a new reports view, like logging in does. Navigating from the reports view to
+     * itself would keep the view of the previous user, with that user's permissions.
+     */
+    private void openReportsViewAs(Runnable login) {
+        navigate(RootView.class);
+        login.run();
+        navigate(ReportsView.class);
+    }
+
+    private void loginAsWriter() {
+        loginWithIdToken("subject-erik", "Erik", "Explorer");
+    }
+
+    private void loginAsReviewer() {
+        loginWithIdToken("subject-rita", "Rita", "Reviewer", Roles.ROLE_REPORT_REVIEWER);
+    }
+
+    private void asWriter(Runnable action) {
+        runAs(this::loginAsWriter, action);
+    }
+
+    private void asReviewer(Runnable action) {
+        runAs(this::loginAsReviewer, action);
+    }
+
+    private void runAs(Runnable login, Runnable action) {
+        var previous = SecurityContextHolder.getContext();
+        login.run();
+        try {
+            action.run();
+        } finally {
+            SecurityContextHolder.setContext(previous);
+        }
+    }
+
+    /**
+     * Saves the situation through the service, as a writer in another session would.
+     */
+    private void writeReport(Assignment assignment, String situationDevelopment) {
+        var report = storedReport(assignment);
+        report.setSituationDevelopment(situationDevelopment);
+        try {
+            assertThat(reportService.saveReport(report)).isInstanceOf(UpdateResult.Success.class);
+        } catch (ValidationFailedException ex) {
+            throw new AssertionError(ex);
+        }
+    }
+
+    private AssignmentReport storedReport(Assignment assignment) {
+        return reportService.findReportByAssignmentId(assignment.getId()).orElseThrow().getReport();
+    }
+
+    private Badge reportStatusCell(Assignment assignment) {
+        return (Badge) test(assignments()).getCellComponent(rowOf(assignments(), Assignment::getId, assignment.getId()), 1);
+    }
+
+    private Badge reportStatus() {
+        return find(Badge.class, reportPanel()).withCondition(badge -> List.of("Open", "Closed").contains(badge.getText())).single();
     }
 
     private List<String> lastEditTexts(Component container) {

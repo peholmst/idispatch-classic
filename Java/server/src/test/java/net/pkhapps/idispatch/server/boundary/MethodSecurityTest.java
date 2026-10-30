@@ -62,6 +62,17 @@ class MethodSecurityTest {
         assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
         assertThatThrownBy(() -> assignmentService.findOpenAssignments()).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> reportService.closeReport(null)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> reportService.reopenReport(null)).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @WithMockUser(roles = "REPORT_REVIEWER")
+    void reportReviewer_canReadReportsButNotWriteThem() {
+        assertThatCode(() -> assignmentService.findClosedAssignments()).doesNotThrowAnyException();
+        assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> assignmentService.findOpenAssignments()).isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
@@ -69,6 +80,8 @@ class MethodSecurityTest {
     void reportWriter_canReadClosedAssignmentsAndReports() {
         assertThatCode(() -> assignmentService.findClosedAssignments()).doesNotThrowAnyException();
         assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> reportService.closeReport(null)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> reportService.reopenReport(null)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> assignmentService.findOpenAssignments()).isInstanceOf(AccessDeniedException.class);
     }
 }

@@ -18,7 +18,9 @@ import static com.google.common.base.Strings.nullToEmpty;
 /**
  * Entity describing what happened on scene of a closed {@link Assignment}, as told by the people who were there. The
  * casualty counts are {@code null} until someone fills them in. The report as a whole and each {@link UnitReport}
- * remember who last changed them; the report's {@link LastEdit} covers the situation and the counts only.
+ * remember who last changed them; the report's last edit covers the situation and the counts only.
+ * <p>
+ * Once a reviewer has checked the report, they close it, and nobody can change it until it is re-opened.
  */
 @Entity
 @Table(name = "assignment_reports")
@@ -45,7 +47,17 @@ public class AssignmentReport extends AbstractLockableEntity {
     @Min(value = 0, message = "The number of deceased cannot be negative")
     private Integer deceased;
     @Embedded
-    private LastEdit lastEdit;
+    @AttributeOverride(name = "subject", column = @Column(name = "last_edited_by_subject"))
+    @AttributeOverride(name = "firstName", column = @Column(name = "last_edited_by_first_name"))
+    @AttributeOverride(name = "lastName", column = @Column(name = "last_edited_by_last_name"))
+    @AttributeOverride(name = "timestamp", column = @Column(name = "last_edited_at"))
+    private UserStamp lastEdit;
+    @Embedded
+    @AttributeOverride(name = "subject", column = @Column(name = "closed_by_subject"))
+    @AttributeOverride(name = "firstName", column = @Column(name = "closed_by_first_name"))
+    @AttributeOverride(name = "lastName", column = @Column(name = "closed_by_last_name"))
+    @AttributeOverride(name = "timestamp", column = @Column(name = "closed_at"))
+    private UserStamp closed;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "assignment_report_units", joinColumns = @JoinColumn(name = "report_id"))
     @MapKeyJoinColumn(name = "resource_id")
@@ -105,12 +117,31 @@ public class AssignmentReport extends AbstractLockableEntity {
     /**
      * Returns who last changed the situation or the counts, or {@code null} if nobody has.
      */
-    public LastEdit getLastEdit() {
+    public UserStamp getLastEdit() {
         return lastEdit;
     }
 
-    public void setLastEdit(LastEdit lastEdit) {
+    public void setLastEdit(UserStamp lastEdit) {
         this.lastEdit = lastEdit;
+    }
+
+    /**
+     * Returns who closed the report, or {@code null} if it is open.
+     */
+    public UserStamp getClosed() {
+        return closed;
+    }
+
+    public boolean isClosed() {
+        return closed != null;
+    }
+
+    public void close(UserStamp closed) {
+        this.closed = checkNotNull(closed);
+    }
+
+    public void reopen() {
+        this.closed = null;
     }
 
     /**

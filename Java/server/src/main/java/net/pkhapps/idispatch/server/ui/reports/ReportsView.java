@@ -36,29 +36,35 @@ import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import net.pkhapps.idispatch.server.ui.HasNavbarContent;
 import net.pkhapps.idispatch.server.ui.RootLayout;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @Route(value = "reports", layout = RootLayout.class)
-@RolesAllowed({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER})
+@RolesAllowed({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER})
 @PageTitle("iDispatch | Reports")
 @StyleSheet(Lumo.COMPACT_STYLESHEET)
 public class ReportsView extends MasterDetailLayout implements HasNavbarContent, BeforeLeaveObserver {
 
     private final AssignmentService assignmentService;
+    private final ReportService reportService;
     private final Button refreshButton;
     private final Grid<Assignment> assignmentsGrid;
     private final DatePicker closedFrom;
     private final DatePicker closedTo;
     private final ComboBox<Municipality> municipalityFilter;
     private final ComboBox<AssignmentType> typeFilter;
+    private final ComboBox<ReportStatus> reportStatusFilter;
+    private Set<Long> closedReports = new HashSet<>();
     private GridListDataView<Assignment> assignmentsDataView;
 
     private final AssignmentReportPanel reportPanel;
@@ -68,10 +74,13 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
 
     public ReportsView(AssignmentService assignmentService, ReportService reportService) {
         this.assignmentService = assignmentService;
+        this.reportService = reportService;
 
         assignmentsGrid = new Grid<>();
         assignmentsGrid.addColumn(Assignment::getId).setHeader("Number")
                 .setSortable(true).setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setFlexGrow(0);
+        assignmentsGrid.addComponentColumn(assignment -> reportStatus(assignment).createBadge()).setHeader("Report")
+                .setComparator(this::reportStatus).setAutoWidth(true).setFlexGrow(0);
         var closedColumn = assignmentsGrid.addColumn(assignment -> Formatters.formatDateTime(assignment.getClosed()))
                 .setHeader("Closed").setComparator(Assignment::getClosed).setAutoWidth(true).setFlexGrow(0);
         assignmentsGrid.addColumn(Assignment::getUrgency).setHeader("Urgency")
@@ -86,10 +95,21 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
         assignmentsGrid.setSizeFull();
         assignmentsGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER, GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
 
-        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
-        reportPanel = new AssignmentReportPanel(reportService, authorities.stream()
-                .anyMatch(authority -> Roles.ROLE_REPORT_WRITER.equals(authority.getAuthority())));
+        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+        reportPanel = new AssignmentReportPanel(reportService, authorities.contains(Roles.ROLE_REPORT_WRITER),
+                authorities.contains(Roles.ROLE_REPORT_REVIEWER));
         reportPanel.setSizeFull();
+        // Keeps the Report column and the status filter up to date when the user closes or re-opens a report
+        reportPanel.setReportChangeListener(report -> {
+            if (report.isClosed()) {
+                closedReports.add(report.getAssignment().getId());
+            } else {
+                closedReports.remove(report.getAssignment().getId());
+            }
+            assignmentsDataView.refreshAll();
+        });
 
         refreshButton = new Button(VaadinIcon.REFRESH.create(), event -> discardChangesThen(this::refresh));
 
@@ -128,7 +148,13 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
             comboBox.setClearButtonVisible(true);
             comboBox.setWidth("12em");
         }
-        for (var filter : List.<HasValue<?, ?>>of(closedFrom, closedTo, municipalityFilter, typeFilter)) {
+        reportStatusFilter = new ComboBox<>("Report");
+        reportStatusFilter.setItems(ReportStatus.values());
+        reportStatusFilter.setItemLabelGenerator(ReportStatus::getLabel);
+        reportStatusFilter.setClearButtonVisible(true);
+        reportStatusFilter.setWidth("9em");
+
+        for (var filter : List.<HasValue<?, ?>>of(closedFrom, closedTo, municipalityFilter, typeFilter, reportStatusFilter)) {
             filter.addValueChangeListener(event -> {
                 if (assignmentsDataView != null) {
                     assignmentsDataView.refreshAll();
@@ -141,10 +167,12 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
             closedTo.clear();
             municipalityFilter.clear();
             typeFilter.clear();
+            reportStatusFilter.clear();
         });
         clearFilters.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        var filterBar = new HorizontalLayout(closedFrom, closedTo, municipalityFilter, typeFilter, clearFilters);
+        var filterBar = new HorizontalLayout(closedFrom, closedTo, municipalityFilter, typeFilter, reportStatusFilter,
+                clearFilters);
         filterBar.setWrap(true);
         filterBar.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
         filterBar.getStyle().set("padding", "0 var(--lumo-space-m) var(--lumo-space-s)");
@@ -234,6 +262,7 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
     private void refresh() {
         assignmentsGrid.deselectAll();
         var assignments = assignmentService.findClosedAssignments();
+        closedReports = new HashSet<>(reportService.findAssignmentIdsWithClosedReports());
         assignmentsDataView = assignmentsGrid.setItems(assignments);
         assignmentsDataView.setFilter(this::matchesFilters);
         // Offer only the municipalities and types that some closed assignment has, so every choice matches something
@@ -257,7 +286,12 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
         return (closedFrom.getValue() == null || !closedDate.isBefore(closedFrom.getValue()))
                 && (closedTo.getValue() == null || !closedDate.isAfter(closedTo.getValue()))
                 && (municipalityFilter.getValue() == null || municipalityFilter.getValue().equals(assignment.getMunicipality()))
-                && (typeFilter.getValue() == null || typeFilter.getValue().equals(assignment.getType()));
+                && (typeFilter.getValue() == null || typeFilter.getValue().equals(assignment.getType()))
+                && (reportStatusFilter.getValue() == null || reportStatusFilter.getValue() == reportStatus(assignment));
+    }
+
+    private ReportStatus reportStatus(Assignment assignment) {
+        return ReportStatus.of(closedReports.contains(assignment.getId()));
     }
 
     @Override

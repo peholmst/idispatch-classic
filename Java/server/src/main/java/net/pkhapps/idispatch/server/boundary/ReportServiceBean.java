@@ -4,9 +4,9 @@ import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.entity.ArchivedResourceStatus;
 import net.pkhapps.idispatch.server.entity.Assignment;
 import net.pkhapps.idispatch.server.entity.AssignmentReport;
-import net.pkhapps.idispatch.server.entity.LastEdit;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.UnitReport;
+import net.pkhapps.idispatch.server.entity.UserStamp;
 import net.pkhapps.idispatch.server.entity.ValidationFailedException;
 import net.pkhapps.idispatch.server.entity.repository.ArchivedResourceStatusRepository;
 import net.pkhapps.idispatch.server.entity.repository.AssignmentReportRepository;
@@ -24,9 +24,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Consumer;
 
 @Service
-@Secured({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER})
+@Secured({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER})
 class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
     private final ArchivedResourceStatusRepository archivedResourceStatusRepository;
@@ -59,18 +60,27 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
     }
 
     @Override
+    public Set<Long> findAssignmentIdsWithClosedReports() {
+        return assignmentReportRepository.findAssignmentIdsOfClosedReports();
+    }
+
+    @Override
     @Secured(Roles.ROLE_REPORT_WRITER)
     public UpdateResult<AssignmentReport> saveReport(AssignmentReport report) throws ValidationFailedException {
         logger.debug("Saving report {}", report);
         ValidationFailedException.throwIfNotEmpty(validator.validate(report));
         try {
-            final LastEdit edit = lastEditByCurrentUser();
-            final AssignmentReport savedReport = getTxTemplate().execute(status -> {
+            final UserStamp edit = stampForCurrentUser();
+            return getTxTemplate().execute(status -> {
                 var previous = report.isNew() ? null : assignmentReportRepository.findById(report.getId()).orElse(null);
+                // Decided by what is stored, not by the copy the user had open, which may be from before it was closed
+                if (previous != null && previous.isClosed()) {
+                    logger.debug("Report {} is closed, cannot save", report);
+                    return new UpdateResult.NoChange<>(previous);
+                }
                 stampChangedParts(report, previous, edit);
-                return assignmentReportRepository.saveAndFlush(report);
+                return new UpdateResult.Success<>(assignmentReportRepository.saveAndFlush(report));
             });
-            return new UpdateResult.Success<>(savedReport);
         } catch (OptimisticLockingFailureException | DataIntegrityViolationException ex) {
             // Either another user saved this report after we read it, or two users wrote the first report of the
             // same assignment at the same time and the other one won.
@@ -80,12 +90,52 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         }
     }
 
+    @Override
+    @Secured(Roles.ROLE_REPORT_REVIEWER)
+    public UpdateResult<AssignmentReport> closeReport(AssignmentReport report) {
+        logger.debug("Closing report {}", report);
+        final UserStamp closed = stampForCurrentUser();
+        return changeReviewedReport(report, current -> current.close(closed));
+    }
+
+    @Override
+    @Secured(Roles.ROLE_REPORT_REVIEWER)
+    public UpdateResult<AssignmentReport> reopenReport(AssignmentReport report) {
+        logger.debug("Re-opening report {}", report);
+        return changeReviewedReport(report, AssignmentReport::reopen);
+    }
+
+    /**
+     * Applies the change to the stored report, but only if it is still the version the reviewer saw. Works on the stored
+     * report rather than the reviewer's copy, so that nothing else the reviewer's copy might hold gets saved.
+     */
+    private UpdateResult<AssignmentReport> changeReviewedReport(AssignmentReport seen, Consumer<AssignmentReport> change) {
+        try {
+            return getTxTemplate().execute(status -> {
+                var current = assignmentReportRepository.findByAssignment(seen.getAssignment());
+                var unchanged = seen.isNew() ? current.isEmpty()
+                        : current.filter(stored -> stored.getVersion().equals(seen.getVersion())).isPresent();
+                if (!unchanged) {
+                    logger.debug("Report {} has changed since the reviewer read it", seen);
+                    return new UpdateResult.Conflict<>(seen, current.orElse(null));
+                }
+                // A reviewer may close a report that nobody has written anything in
+                var report = current.orElseGet(() -> new AssignmentReport(seen.getAssignment()));
+                change.accept(report);
+                return new UpdateResult.Success<>(assignmentReportRepository.saveAndFlush(report));
+            });
+        } catch (OptimisticLockingFailureException | DataIntegrityViolationException ex) {
+            logger.debug("Report {} was changed by another user at the same time", seen);
+            return new UpdateResult.Conflict<>(seen, assignmentReportRepository.findByAssignment(seen.getAssignment()).orElse(null));
+        }
+    }
+
     /**
      * Records the edit on the parts of the report whose content differs from the previously saved report, so that saving
      * a report doesn't claim the parts the user didn't touch. A part of a report that has not been saved before counts
      * as changed if it has any content.
      */
-    private void stampChangedParts(AssignmentReport report, AssignmentReport previous, LastEdit edit) {
+    private void stampChangedParts(AssignmentReport report, AssignmentReport previous, UserStamp edit) {
         var before = previous == null ? new AssignmentReport(report.getAssignment()) : previous;
         if (!report.hasSameSceneDetailsAs(before)) {
             report.setLastEdit(edit);
@@ -98,13 +148,13 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         });
     }
 
-    private LastEdit lastEditByCurrentUser() {
+    private UserStamp stampForCurrentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication.getPrincipal() instanceof OidcUser user) {
-            return new LastEdit(user.getSubject(), user.getGivenName(), user.getFamilyName(), Instant.now());
+            return new UserStamp(user.getSubject(), user.getGivenName(), user.getFamilyName(), Instant.now());
         }
         // Only when not logged in through Keycloak, such as in tests
-        return new LastEdit(authentication.getName(), null, null, Instant.now());
+        return new UserStamp(authentication.getName(), null, null, Instant.now());
     }
 
     @FunctionalInterface

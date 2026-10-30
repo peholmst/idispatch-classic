@@ -34,6 +34,15 @@ class KeycloakRolesMapperTest {
     }
 
     @Test
+    void reportReviewerRole_isMapped() {
+        var authorities = mapper.mapAuthorities(List.of(oidcAuthority(Map.of("roles", List.of("REPORT_REVIEWER")))));
+
+        assertThat(authorities).extracting(GrantedAuthority::getAuthority)
+                .contains(Roles.ROLE_REPORT_REVIEWER)
+                .doesNotContain(Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER);
+    }
+
+    @Test
     void unknownRoles_areIgnored() {
         var authorities = mapper.mapAuthorities(List.of(oidcAuthority(Map.of("roles", List.of("REPORT_READER", "uma_authorization")))));
 

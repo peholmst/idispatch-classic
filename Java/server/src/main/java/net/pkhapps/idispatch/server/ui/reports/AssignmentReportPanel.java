@@ -12,6 +12,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -24,17 +25,18 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.dom.ElementFactory;
+import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.function.ValueProvider;
-import com.vaadin.flow.signals.Signal;
 import com.vaadin.flow.data.binder.Setter;
+import com.vaadin.flow.signals.Signal;
 import net.pkhapps.idispatch.server.boundary.ReportDTO;
 import net.pkhapps.idispatch.server.boundary.ReportResourceDTO;
 import net.pkhapps.idispatch.server.boundary.ReportService;
 import net.pkhapps.idispatch.server.entity.AssignmentReport;
 import net.pkhapps.idispatch.server.entity.AssignmentUrgency;
-import net.pkhapps.idispatch.server.entity.LastEdit;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.UnitReport;
+import net.pkhapps.idispatch.server.entity.UserStamp;
 import net.pkhapps.idispatch.server.entity.ValidationFailedException;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import net.pkhapps.idispatch.server.util.UpdateResult;
@@ -51,7 +53,8 @@ import java.util.stream.Stream;
 class AssignmentReportPanel extends VerticalLayout {
 
     private final ReportService reportService;
-    private final boolean editable;
+    private final boolean canWrite;
+    private final boolean canReview;
     private final Binder<ReportDTO> binder;
     private final Binder<AssignmentReport> sceneBinder;
     private final List<UnitReportForm> unitForms = new ArrayList<>();
@@ -60,16 +63,26 @@ class AssignmentReportPanel extends VerticalLayout {
     private final Scroller content;
     private final VerticalLayout units;
     private final Span sceneLastEdit;
+    private final Badge reportStatus;
+    private final Span closedBy;
+    private final Button save;
+    private final Button close;
+    private final Button reopen;
     private ReportDTO bean;
+    private boolean editable;
+    private SerializableConsumer<AssignmentReport> reportChangeListener = report -> {
+    };
     private boolean loading;
     private boolean unsavedChanges;
 
     /**
-     * @param editable whether the user may fill in what happened on scene, or only read it
+     * @param canWrite  whether the user may fill in what happened on scene while the report is open
+     * @param canReview whether the user may close and re-open the report
      */
-    AssignmentReportPanel(ReportService reportService, boolean editable) {
+    AssignmentReportPanel(ReportService reportService, boolean canWrite, boolean canReview) {
         this.reportService = reportService;
-        this.editable = editable;
+        this.canWrite = canWrite;
+        this.canReview = canReview;
         setSizeFull();
         setPadding(false);
 
@@ -169,13 +182,20 @@ class AssignmentReportPanel extends VerticalLayout {
         units = new VerticalLayout();
         units.setPadding(false);
 
-        var save = new Button("Save Report", event -> save());
-        save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        save.setVisible(editable);
-        sceneBinder.setReadOnly(!editable);
+        reportStatus = new Badge();
+        closedBy = createLastEditSpan();
+        var statusRow = new HorizontalLayout(reportStatus, closedBy);
+        statusRow.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
 
-        var contentLayout = new VerticalLayout(formLayout, resourcesGrid, new H3("What happened on scene"), sceneLastEdit, sceneForm,
-                new H3("Responding units"), units, save);
+        save = new Button("Save Report", event -> save());
+        save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        close = new Button("Close Report", VaadinIcon.LOCK.create(), event -> close());
+        close.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+        reopen = new Button("Re-open Report", VaadinIcon.UNLOCK.create(), event -> reopen());
+        var actions = new HorizontalLayout(save, close, reopen);
+
+        var contentLayout = new VerticalLayout(statusRow, formLayout, resourcesGrid, new H3("What happened on scene"),
+                sceneLastEdit, sceneForm, new H3("Responding units"), units, actions);
         content = new Scroller(contentLayout);
         content.setSizeFull();
         add(content);
@@ -189,9 +209,9 @@ class AssignmentReportPanel extends VerticalLayout {
         return span;
     }
 
-    private static String formatLastEdit(LastEdit lastEdit) {
+    private static String formatLastEdit(UserStamp lastEdit) {
         return lastEdit == null ? "Not filled in yet"
-                : "Last edited by " + lastEdit.getDisplayName() + " on " + Formatters.formatDateTime(lastEdit.getEditedAt());
+                : "Last edited by " + lastEdit.getDisplayName() + " on " + Formatters.formatDateTime(lastEdit.getTimestamp());
     }
 
     private void markChanged() {
@@ -238,6 +258,19 @@ class AssignmentReportPanel extends VerticalLayout {
     }
 
     /**
+     * Sets the listener that is told when the report shown has been saved, closed or re-opened, or when a save or a
+     * review found that someone else had changed it.
+     */
+    void setReportChangeListener(SerializableConsumer<AssignmentReport> reportChangeListener) {
+        this.reportChangeListener = reportChangeListener;
+    }
+
+    private void showChangedReport(AssignmentReport report) {
+        setBean(bean.withReport(report));
+        reportChangeListener.accept(report);
+    }
+
+    /**
      * Shows the given report, throwing away any unsaved changes to the previous one.
      */
     public void setBean(ReportDTO bean) {
@@ -254,6 +287,17 @@ class AssignmentReportPanel extends VerticalLayout {
         var previousBean = this.bean;
         this.bean = bean;
         content.setVisible(bean != null);
+
+        // Nobody can change a closed report, not even a writer; only a reviewer can re-open it
+        var reportClosed = bean != null && bean.getReport().isClosed();
+        editable = canWrite && bean != null && !reportClosed;
+        sceneBinder.setReadOnly(!editable);
+        save.setVisible(editable);
+        close.setVisible(canReview && bean != null && !reportClosed);
+        reopen.setVisible(canReview && reportClosed);
+        ReportStatus.of(reportClosed).applyTo(reportStatus);
+        closedBy.setText(reportClosed ? "Closed by " + bean.getReport().getClosed().getDisplayName() + " on "
+                + Formatters.formatDateTime(bean.getReport().getClosed().getTimestamp()) : "");
 
         binder.setBean(bean);
         resourcesGrid.setItems(bean == null ? Collections.emptyList() : bean.getResources());
@@ -320,16 +364,52 @@ class AssignmentReportPanel extends VerticalLayout {
         }
         try {
             var result = reportService.saveReport(bean.getReport());
-            if (result instanceof UpdateResult.Conflict<AssignmentReport> conflict && conflict.getConflictingData() != null) {
-                setBean(bean.withReport(conflict.getConflictingData()));
+            if (result instanceof UpdateResult.NoChange<AssignmentReport> noChange) {
+                noChange.getData().ifPresent(this::showChangedReport);
+                showNotification("A reviewer closed this report while you were writing, so your changes couldn't be saved.",
+                        NotificationVariant.LUMO_WARNING);
+            } else if (result instanceof UpdateResult.Conflict<AssignmentReport> conflict && conflict.getConflictingData() != null) {
+                showChangedReport(conflict.getConflictingData());
                 showNotification("Someone else saved this report while you were writing yours. Their version is shown now, so add your changes again.",
                         NotificationVariant.LUMO_WARNING);
             } else {
-                result.getData().ifPresent(report -> setBean(bean.withReport(report)));
+                result.getData().ifPresent(this::showChangedReport);
                 showNotification("Report saved", NotificationVariant.LUMO_SUCCESS);
             }
         } catch (ValidationFailedException ex) {
             showNotification(String.join("\n", ex.getViolationMessages(Locale.getDefault())), NotificationVariant.LUMO_ERROR);
+        }
+    }
+
+    private void close() {
+        if (bean == null || !canReview) {
+            return;
+        }
+        if (unsavedChanges) {
+            // Only possible for a reviewer who also writes reports
+            showNotification("Save or throw away your changes before closing the report.", NotificationVariant.LUMO_WARNING);
+            return;
+        }
+        showReviewResult(reportService.closeReport(bean.getReport()), "Report closed");
+    }
+
+    private void reopen() {
+        if (bean == null || !canReview) {
+            return;
+        }
+        showReviewResult(reportService.reopenReport(bean.getReport()), "Report re-opened");
+    }
+
+    private void showReviewResult(UpdateResult<AssignmentReport> result, String successText) {
+        if (result instanceof UpdateResult.Conflict<AssignmentReport> conflict) {
+            if (conflict.getConflictingData() != null) {
+                showChangedReport(conflict.getConflictingData());
+            }
+            showNotification("This report has changed since you opened it. The latest version is shown now, so check it again.",
+                    NotificationVariant.LUMO_WARNING);
+        } else {
+            result.getData().ifPresent(this::showChangedReport);
+            showNotification(successText, NotificationVariant.LUMO_SUCCESS);
         }
     }
 

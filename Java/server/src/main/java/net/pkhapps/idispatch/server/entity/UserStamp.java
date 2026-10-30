@@ -1,6 +1,5 @@
 package net.pkhapps.idispatch.server.entity;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 import java.io.Serializable;
@@ -12,30 +11,26 @@ import java.util.stream.Stream;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Who last changed part of an {@link AssignmentReport}, and when. The subject is the user's ID in Keycloak, which
- * stays the same even if the user changes their name. The names are copied from the ID token at the time of the edit,
- * and are {@code null} if the token had none.
+ * Who did something to an {@link AssignmentReport}, such as editing or closing it, and when. The subject is the user's
+ * ID in Keycloak, which stays the same even if the user changes their name. The names are copied from the ID token at
+ * the time, and are {@code null} if the token had none. Each use names its own columns with {@code @AttributeOverride}.
  */
 @Embeddable
-public class LastEdit implements Serializable {
+public class UserStamp implements Serializable {
 
-    @Column(name = "last_edited_by_subject")
     private String subject;
-    @Column(name = "last_edited_by_first_name")
     private String firstName;
-    @Column(name = "last_edited_by_last_name")
     private String lastName;
-    @Column(name = "last_edited_at")
-    private Instant editedAt;
+    private Instant timestamp;
 
-    protected LastEdit() {
+    protected UserStamp() {
     }
 
-    public LastEdit(String subject, String firstName, String lastName, Instant editedAt) {
+    public UserStamp(String subject, String firstName, String lastName, Instant timestamp) {
         this.subject = checkNotNull(subject);
         this.firstName = firstName;
         this.lastName = lastName;
-        this.editedAt = checkNotNull(editedAt);
+        this.timestamp = checkNotNull(timestamp);
     }
 
     public String getSubject() {
@@ -50,8 +45,8 @@ public class LastEdit implements Serializable {
         return lastName;
     }
 
-    public Instant getEditedAt() {
-        return editedAt;
+    public Instant getTimestamp() {
+        return timestamp;
     }
 
     /**

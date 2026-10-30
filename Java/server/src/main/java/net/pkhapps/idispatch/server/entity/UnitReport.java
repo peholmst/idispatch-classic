@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.entity;
 
+import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
@@ -23,7 +24,11 @@ public class UnitReport implements Serializable {
     @Size(max = MAX_TEXT_LENGTH, message = "Please describe the actions taken in at most 4000 characters")
     private String actionsTaken = "";
     @Embedded
-    private LastEdit lastEdit;
+    @AttributeOverride(name = "subject", column = @Column(name = "last_edited_by_subject"))
+    @AttributeOverride(name = "firstName", column = @Column(name = "last_edited_by_first_name"))
+    @AttributeOverride(name = "lastName", column = @Column(name = "last_edited_by_last_name"))
+    @AttributeOverride(name = "timestamp", column = @Column(name = "last_edited_at"))
+    private UserStamp lastEdit;
 
     public String getSituationOnArrival() {
         return situationOnArrival;
@@ -44,11 +49,11 @@ public class UnitReport implements Serializable {
     /**
      * Returns who last changed this unit's report, or {@code null} if nobody has.
      */
-    public LastEdit getLastEdit() {
+    public UserStamp getLastEdit() {
         return lastEdit;
     }
 
-    public void setLastEdit(LastEdit lastEdit) {
+    public void setLastEdit(UserStamp lastEdit) {
         this.lastEdit = lastEdit;
     }
 

@@ -8,7 +8,8 @@ nothing about users or roles is stored in the iDispatch database.
 |---|---|
 | `DISPATCHER` | The dispatcher workstation (open and dispatch assignments, change resource statuses) |
 | `REPORT_READER` | Reports of closed assignments, read only |
-| `REPORT_WRITER` | Reports of closed assignments, and filling in what happened on scene |
+| `REPORT_WRITER` | Reports of closed assignments, and filling in what happened on scene while a report is open |
+| `REPORT_REVIEWER` | Reports of closed assignments, read only, and closing a report once it has been checked, or re-opening it. Nobody can change a closed report |
 | `ADMIN` | The management console (municipalities, assignment types, resources, resource types, destinations) |
 
 A user can have any combination of these roles. A user with none of them can log in, but only sees the home page.
@@ -36,10 +37,11 @@ application starts, and waits until Keycloak has imported the realm.
 
   | Username | Password | Roles |
   |---|---|---|
-  | `admin` | `changeme` | `ADMIN`, `DISPATCHER`, `REPORT_READER`, `REPORT_WRITER` |
+  | `admin` | `changeme` | `ADMIN`, `DISPATCHER`, `REPORT_READER`, `REPORT_WRITER`, `REPORT_REVIEWER` |
   | `dispatcher` | `dispatcher` | `DISPATCHER` |
   | `reports` | `reports` | `REPORT_READER` |
   | `reporter` | `reporter` | `REPORT_WRITER` |
+  | `reviewer` | `reviewer` | `REPORT_REVIEWER` |
 
 Spring Boot skips `docker compose up` entirely if *any* of the services is already running. If PostgreSQL was
 running before Keycloak was added to `compose.yaml`, start Keycloak once by hand:
@@ -94,12 +96,13 @@ your organization requires. iDispatch doesn't depend on any of it.
 
 ### 3. Create the roles
 
-On the `idispatch` client, open the **Roles** tab and create four roles, with exactly these names:
+On the `idispatch` client, open the **Roles** tab and create five roles, with exactly these names:
 
 * `ADMIN`
 * `DISPATCHER`
 * `REPORT_READER`
 * `REPORT_WRITER`
+* `REPORT_REVIEWER`
 
 These are *client* roles, not realm roles. The application only reads roles of the `idispatch` client.
 
@@ -139,7 +142,7 @@ select **Generated ID token**. The token must contain, for example, `"roles": ["
    the `idispatch` roles the user needs.
 
 With more than a few users, it's easier to give the roles to groups: create groups such as `Dispatchers`,
-`Report readers`, `Report writers` and `Administrators` under **Groups**, assign the client roles on each group's **Role mapping**
+`Report readers`, `Report writers`, `Report reviewers` and `Administrators` under **Groups**, assign the client roles on each group's **Role mapping**
 tab, and add users to the groups. Keycloak can also take users and groups from LDAP or Active Directory under
 **User federation**.
 
