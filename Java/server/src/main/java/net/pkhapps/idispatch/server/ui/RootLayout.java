@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.server.ui;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
@@ -42,6 +43,8 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         var toggle = new DrawerToggle();
 
         var navigation = new VerticalLayout(createViewNavigation());
+        navigation.setPadding(false);
+        navigation.setMinWidth(200, Unit.PIXELS);
         if (isUserInRole(Roles.ROLE_ADMIN)) {
             navigation.add(createAdministrationNavigation());
         }
@@ -111,6 +114,7 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
 
     private SideNav createViewNavigation() {
         var nav = new SideNav();
+        nav.setWidthFull();
         nav.addItem(new SideNavItem(getTranslation("nav.home"), RootView.class, VaadinIcon.HOME.create()));
         if (isUserInRole(Roles.ROLE_DISPATCHER)) {
             nav.addItem(new SideNavItem(getTranslation("nav.dispatcher"), DispatchView.class, VaadinIcon.HEADSET.create()));
@@ -131,12 +135,14 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
                 .collect(Collectors.toSet()));
 
         var nav = new SideNav(getTranslation("nav.administration"));
+        nav.setWidthFull();
         nav.addItem(management);
         return nav;
     }
 
     private SideNav createAccountNavigation(AuthenticationContext authenticationContext) {
         var nav = new SideNav(getTranslation("nav.account"));
+        nav.setWidthFull();
         // Users are managed in Keycloak, and change their password in the Keycloak account console of the realm
         // that issued their ID token
         authenticationContext.getAuthenticatedUser(Object.class)
