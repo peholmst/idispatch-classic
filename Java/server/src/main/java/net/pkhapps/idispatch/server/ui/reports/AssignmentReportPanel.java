@@ -52,7 +52,6 @@ class AssignmentReportPanel extends VerticalLayout {
     private final List<UnitReportForm> unitForms = new ArrayList<>();
     private final Map<Resource, Details> unitDetails = new HashMap<>();
     private final Grid<ReportResourceDTO> resourcesGrid;
-    private final Component noAssignmentSelected;
     private final Scroller content;
     private final VerticalLayout units;
     private final Span sceneLastEdit;
@@ -68,10 +67,6 @@ class AssignmentReportPanel extends VerticalLayout {
         this.editable = editable;
         setSizeFull();
         setPadding(false);
-        getStyle().set("background-color", "var(--lumo-shade-10pct)");
-
-        noAssignmentSelected = new VerticalLayout(new Span("No assignment selected"));
-        add(noAssignmentSelected);
 
         binder = new Binder<>();
         var formLayout = new FormLayout();
@@ -140,11 +135,11 @@ class AssignmentReportPanel extends VerticalLayout {
         resourcesGrid.setSelectionMode(Grid.SelectionMode.NONE);
 
         resourcesGrid.addColumn(ReportResourceDTO::getCallSign).setHeader("Resource");
-        resourcesGrid.addColumn(dto -> Formatters.formatDateTime(dto.getDispatched())).setHeader("Dispatched");
-        resourcesGrid.addColumn(dto -> Formatters.formatDateTime(dto.getEnRoute())).setHeader("En route");
-        resourcesGrid.addColumn(dto -> Formatters.formatDateTime(dto.getOnScene())).setHeader("On scene");
-        resourcesGrid.addColumn(dto -> Formatters.formatDateTime(dto.getAvailable())).setHeader("Available");
-        resourcesGrid.addColumn(dto -> Formatters.formatDateTime(dto.getAtStation())).setHeader("At station");
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getDispatched())).setHeader("Dispatched");
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getEnRoute())).setHeader("En route");
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getOnScene())).setHeader("On scene");
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getAvailable())).setHeader("Available");
+        resourcesGrid.addColumn(dto -> Formatters.formatTime(dto.getAtStation())).setHeader("At station");
 
         sceneBinder = new Binder<>();
         var sceneForm = new FormLayout();
@@ -251,7 +246,6 @@ class AssignmentReportPanel extends VerticalLayout {
     private void doSetBean(ReportDTO bean) {
         var previousBean = this.bean;
         this.bean = bean;
-        noAssignmentSelected.setVisible(bean == null);
         content.setVisible(bean != null);
 
         binder.setBean(bean);

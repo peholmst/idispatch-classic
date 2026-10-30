@@ -5,12 +5,14 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dependency.StyleSheet;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.masterdetaillayout.MasterDetailLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.splitlayout.SplitLayout;
-import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
 import com.vaadin.flow.function.SerializableRunnable;
 import com.vaadin.flow.router.BeforeLeaveEvent;
 import com.vaadin.flow.router.BeforeLeaveObserver;
@@ -33,7 +35,7 @@ import java.util.Optional;
 @RolesAllowed({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER})
 @PageTitle("iDispatch | Reports")
 @StyleSheet(Lumo.COMPACT_STYLESHEET)
-public class ReportsView extends SplitLayout implements HasNavbarContent, BeforeLeaveObserver {
+public class ReportsView extends MasterDetailLayout implements HasNavbarContent, BeforeLeaveObserver {
 
     private final AssignmentService assignmentService;
     private final Button refreshButton;
@@ -48,13 +50,21 @@ public class ReportsView extends SplitLayout implements HasNavbarContent, Before
         this.assignmentService = assignmentService;
 
         assignmentsGrid = new Grid<>();
-        assignmentsGrid.addColumn(Formatters::formatAssignment);
+        assignmentsGrid.addColumn(Assignment::getId).setHeader("Number")
+                .setSortable(true).setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setFlexGrow(0);
+        var closedColumn = assignmentsGrid.addColumn(assignment -> Formatters.formatDateTime(assignment.getClosed()))
+                .setHeader("Closed").setComparator(Assignment::getClosed).setAutoWidth(true).setFlexGrow(0);
+        assignmentsGrid.addColumn(Assignment::getUrgency).setHeader("Urgency")
+                .setComparator(Assignment::getUrgency).setAutoWidth(true).setFlexGrow(0);
+        assignmentsGrid.addColumn(assignment -> Formatters.formatAssignmentType(assignment.getType())).setHeader("Type")
+                .setSortable(true).setResizable(true);
+        assignmentsGrid.addColumn(assignment -> Formatters.formatMunicipality(assignment.getMunicipality()))
+                .setHeader("Municipality").setSortable(true).setResizable(true);
+        assignmentsGrid.addColumn(Assignment::getAddress).setHeader("Address")
+                .setSortable(true).setResizable(true);
+        assignmentsGrid.sort(GridSortOrder.desc(closedColumn).build());
         assignmentsGrid.setSizeFull();
-        assignmentsGrid.addThemeVariants(
-                GridVariant.LUMO_NO_BORDER,
-                GridVariant.LUMO_COMPACT
-        );
-        assignmentsGrid.getStyle().set("background", "none");
+        assignmentsGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER, GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
 
         var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
         reportPanel = new AssignmentReportPanel(reportService, authorities.stream()
@@ -78,18 +88,24 @@ public class ReportsView extends SplitLayout implements HasNavbarContent, Before
                 discardChangesThen(() -> assignmentsGrid.asSingleSelect().setValue(event.getValue()));
                 return;
             }
-            reportPanel.setBean(Optional.ofNullable(event.getValue())
+            var report = Optional.ofNullable(event.getValue())
                     .flatMap(assignment -> reportService.findReportByAssignmentId(assignment.nullSafeId()))
-                    .orElse(null));
+                    .orElse(null);
+            reportPanel.setBean(report);
+            setDetail(report == null ? null : reportPanel);
         });
 
-        setOrientation(Orientation.HORIZONTAL);
-        addThemeVariants(SplitLayoutVariant.LUMO_SMALL);
-        setSplitterPosition(25);
         setSizeFull();
+        setMasterSize("30em");
+        setDetailSize("40em");
+        setExpandMaster(true);
+        setMaster(assignmentsGrid);
+        setDetailPlaceholder(new Span("No assignment selected"));
 
-        addToPrimary(assignmentsGrid);
-        addToSecondary(reportPanel);
+        // When the report is shown on top of the list, closing it deselects the assignment, which asks first if there
+        // are unsaved changes
+        addBackdropClickListener(event -> assignmentsGrid.asSingleSelect().clear());
+        addDetailEscapePressListener(event -> assignmentsGrid.asSingleSelect().clear());
     }
 
     /**

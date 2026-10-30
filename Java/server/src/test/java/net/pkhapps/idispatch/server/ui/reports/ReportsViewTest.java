@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.server.ui.reports;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -8,6 +9,7 @@ import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.masterdetaillayout.MasterDetailLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -58,7 +60,8 @@ class ReportsViewTest extends AbstractUITest {
         navigate(ReportsView.class);
 
         assertThat(find(Span.class).withText("No assignment selected").exists()).isTrue();
-        assertThat(find(FormLayout.class, reportPanel()).exists()).isFalse();
+        assertThat(view().getDetail()).isNull();
+        assertThat(find(AssignmentReportPanel.class).exists()).isFalse();
     }
 
     @Test
@@ -70,7 +73,44 @@ class ReportsViewTest extends AbstractUITest {
         assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isTrue();
         assertThat(containsRow(assignments(), Assignment::getId, open.getId())).isFalse();
         var row = rowOf(assignments(), Assignment::getId, closed.getId());
-        assertThat(test(assignments()).getCellText(row, 0)).isEqualTo(Formatters.formatAssignment(closed));
+        assertThat(test(assignments()).getCellText(row, 0)).as("Number").isEqualTo(closed.getId().toString());
+        assertThat(test(assignments()).getCellText(row, 1)).as("Closed").isEqualTo(Formatters.formatDateTime(closed.getClosed()));
+        assertThat(test(assignments()).getCellText(row, 2)).as("Urgency").isEqualTo("B");
+        assertThat(test(assignments()).getCellText(row, 3)).as("Type").isEqualTo(closed.getType().getFormattedDescription());
+        assertThat(test(assignments()).getCellText(row, 4)).as("Municipality").isEqualTo(closed.getMunicipality().getName());
+        assertThat(test(assignments()).getCellText(row, 5)).as("Address").isEqualTo("Report Road 7");
+    }
+
+    @Test
+    void assignments_areSortedByClosedTimeNewestFirst() {
+        var older = handledAssignment(unique("CS"));
+        var newer = handledAssignment(unique("CS"));
+        navigate(ReportsView.class);
+
+        assertThat(rowOf(assignments(), Assignment::getId, newer.getId()))
+                .isLessThan(rowOf(assignments(), Assignment::getId, older.getId()));
+    }
+
+    @Test
+    @WithMockUser(username = "report-writer", roles = {"REPORT_WRITER", "DISPATCHER"})
+    void closingTheReportOverlay_deselectsTheAssignment_butAsksFirstIfThereAreUnsavedChanges() {
+        var closed = handledAssignment(unique("CS"));
+        navigate(ReportsView.class);
+        select(closed);
+
+        ComponentUtil.fireEvent(view(), new MasterDetailLayout.DetailEscapePressEvent(view(), true));
+        assertThat(selectedAssignment()).isNull();
+        assertThat(view().getDetail()).isNull();
+
+        select(closed);
+        integerField("How many people were involved?").setValue(5);
+        ComponentUtil.fireEvent(view(), new MasterDetailLayout.BackdropClickEvent(view(), true));
+        assertThat(selectedAssignment()).isEqualTo(closed);
+        assertThat(view().getDetail()).isSameAs(reportPanel());
+        test(confirmDialog()).confirm();
+
+        assertThat(selectedAssignment()).isNull();
+        assertThat(view().getDetail()).isNull();
     }
 
     @Test
@@ -81,7 +121,7 @@ class ReportsViewTest extends AbstractUITest {
 
         select(closed);
 
-        assertThat(find(Span.class).withText("No assignment selected").exists()).isFalse();
+        assertThat(view().getDetail()).isSameAs(reportPanel());
         assertThat(reportField("Number").getValue()).isEqualTo(closed.getId().toString());
         assertThat(reportField("Opened").getValue()).isEqualTo(Formatters.formatDateTime(closed.getOpened()));
         assertThat(reportField("Closed").getValue()).isEqualTo(Formatters.formatDateTime(closed.getClosed()));
@@ -95,10 +135,10 @@ class ReportsViewTest extends AbstractUITest {
         var resources = resources();
         assertThat(test(resources).size()).isEqualTo(1);
         assertThat(test(resources).getCellText(0, 0)).isEqualTo(callSign);
-        assertThat(test(resources).getCellText(0, 1)).as("Dispatched").isNotBlank();
-        assertThat(test(resources).getCellText(0, 2)).as("En route").isNotBlank();
-        assertThat(test(resources).getCellText(0, 3)).as("On scene").isNotBlank();
-        assertThat(test(resources).getCellText(0, 4)).as("Available").isNotBlank();
+        assertThat(test(resources).getCellText(0, 1)).as("Dispatched").matches("\\d{2}:\\d{2}:\\d{2}");
+        assertThat(test(resources).getCellText(0, 2)).as("En route").matches("\\d{2}:\\d{2}:\\d{2}");
+        assertThat(test(resources).getCellText(0, 3)).as("On scene").matches("\\d{2}:\\d{2}:\\d{2}");
+        assertThat(test(resources).getCellText(0, 4)).as("Available").matches("\\d{2}:\\d{2}:\\d{2}");
         assertThat(test(resources).getCellText(0, 5)).as("At station").isEmpty();
     }
 
@@ -233,7 +273,7 @@ class ReportsViewTest extends AbstractUITest {
         test(confirmDialog()).confirm();
 
         assertThat(selectedAssignment()).isNull();
-        assertThat(find(Span.class).withText("No assignment selected").exists()).isTrue();
+        assertThat(view().getDetail()).isNull();
     }
 
     @Test
@@ -391,10 +431,11 @@ class ReportsViewTest extends AbstractUITest {
 
     @SuppressWarnings("unchecked")
     private Grid<Assignment> assignments() {
-        return find(Grid.class, currentView()).all().stream()
-                .filter(grid -> grid.getParent().filter(reportPanel()::equals).isEmpty())
-                .findFirst()
-                .orElseThrow();
+        return (Grid<Assignment>) view().getMaster();
+    }
+
+    private ReportsView view() {
+        return (ReportsView) currentView();
     }
 
     private Grid<?> resources() {
