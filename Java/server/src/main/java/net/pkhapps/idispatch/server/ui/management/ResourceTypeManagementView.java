@@ -7,13 +7,14 @@ import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.ResourceTypeManagementService;
 import net.pkhapps.idispatch.server.entity.ResourceType;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.ui.RootLayout;
 
-@Route(value = "management/resource-type", layout = ManagementLayout.class)
+@Route(value = "management/resource-type", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_ADMIN)
 public class ResourceTypeManagementView extends AbstractManagementView<ResourceType, ResourceTypeManagementService> {
 
     public ResourceTypeManagementView(ResourceTypeManagementService service) {
-        super(service);
+        super(service, "management.resource-types");
     }
 
     @Override

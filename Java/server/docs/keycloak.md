@@ -10,7 +10,7 @@ nothing about users or roles is stored in the iDispatch database.
 | `REPORT_READER` | Reports of closed assignments, read only |
 | `REPORT_WRITER` | Reports of closed assignments, and filling in what happened on scene while a report is open |
 | `REPORT_REVIEWER` | Reports of closed assignments, read only, and closing a report once it has been checked, or re-opening it. Nobody can change a closed report |
-| `ADMIN` | The management console (municipalities, assignment types, resources, resource types, destinations) |
+| `ADMIN` | The management views (municipalities, assignment types, resources, resource types, destinations) |
 
 A user can have any combination of these roles. A user with none of them can log in, but only sees the home page.
 Role names are case sensitive, and the application ignores roles it doesn't recognize.
@@ -220,7 +220,7 @@ The proxy must set `X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-Port
 ### 8. Check that it works
 
 1. Open iDispatch. The browser goes to the Keycloak login page of your realm.
-2. Log in as a user with the `ADMIN` role. The menu shows **Management** and **My Account**, and the username at
+2. Log in as a user with the `ADMIN` role. The menu shows the management views under **Administration**, and **My Account**, and the username at
    the top of the menu.
 3. Log out with the power button. The Keycloak session ends too, and the browser returns to the Keycloak login page.
 

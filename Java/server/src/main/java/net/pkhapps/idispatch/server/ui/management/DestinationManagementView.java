@@ -8,15 +8,16 @@ import net.pkhapps.idispatch.server.entity.Destination;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.SmsDestination;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.ui.RootLayout;
 
 import java.util.stream.Collectors;
 
-@Route(value = "management/destination", layout = ManagementLayout.class)
+@Route(value = "management/destination", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_ADMIN)
 public class DestinationManagementView extends AbstractManagementView<Destination, DestinationManagementService> {
 
     public DestinationManagementView(DestinationManagementService service) {
-        super(service);
+        super(service, "management.destinations");
     }
 
     @Override

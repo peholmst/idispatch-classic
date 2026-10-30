@@ -14,14 +14,16 @@ import com.vaadin.flow.component.orderedlayout.ScrollerVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
-import com.vaadin.flow.router.RouteConfiguration;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.dws.DispatchView;
-import net.pkhapps.idispatch.server.ui.management.ManagementLayout;
+import net.pkhapps.idispatch.server.ui.management.AssignmentTypeManagementView;
+import net.pkhapps.idispatch.server.ui.management.DestinationManagementView;
 import net.pkhapps.idispatch.server.ui.management.MunicipalityManagementView;
+import net.pkhapps.idispatch.server.ui.management.ResourceManagementView;
+import net.pkhapps.idispatch.server.ui.management.ResourceTypeManagementView;
 import net.pkhapps.idispatch.server.ui.reports.ReportsView;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -107,16 +109,15 @@ public class RootLayout extends AppLayout implements RouterLayout {
     }
 
     private SideNav createAdministrationNavigation() {
-        var management = new SideNavItem(getTranslation("nav.management"), MunicipalityManagementView.class, VaadinIcon.COG.create());
-        // Highlight the item in every section of the management console, not only in the one it opens
-        var routes = RouteConfiguration.forApplicationScope();
-        management.setPathAliases(ManagementLayout.getSectionViews().stream()
-                .map(routes::getUrl)
-                .collect(Collectors.toSet()));
-
         var nav = new SideNav(getTranslation("nav.administration"));
         nav.setWidthFull();
-        nav.addItem(management);
+        nav.addItem(
+                new SideNavItem(getTranslation("management.municipalities"), MunicipalityManagementView.class, VaadinIcon.BUILDING.create()),
+                new SideNavItem(getTranslation("management.assignment-types"), AssignmentTypeManagementView.class, VaadinIcon.CLIPBOARD_TEXT.create()),
+                new SideNavItem(getTranslation("management.resources"), ResourceManagementView.class, VaadinIcon.TRUCK.create()),
+                new SideNavItem(getTranslation("management.resource-types"), ResourceTypeManagementView.class, VaadinIcon.TAGS.create()),
+                new SideNavItem(getTranslation("management.destinations"), DestinationManagementView.class, VaadinIcon.PAPERPLANE.create())
+        );
         return nav;
     }
 

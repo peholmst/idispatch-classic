@@ -7,13 +7,14 @@ import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.AssignmentTypeManagementService;
 import net.pkhapps.idispatch.server.entity.AssignmentType;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.ui.RootLayout;
 
-@Route(value = "management/assignment-type", layout = ManagementLayout.class)
+@Route(value = "management/assignment-type", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_ADMIN)
 public class AssignmentTypeManagementView extends AbstractManagementView<AssignmentType, AssignmentTypeManagementService> {
 
     public AssignmentTypeManagementView(AssignmentTypeManagementService service) {
-        super(service);
+        super(service, "management.assignment-types");
     }
 
     @Override

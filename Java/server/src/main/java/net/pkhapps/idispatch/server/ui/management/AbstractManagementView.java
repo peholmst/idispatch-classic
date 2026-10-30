@@ -14,6 +14,7 @@ import net.pkhapps.idispatch.server.boundary.DefaultFilter;
 import net.pkhapps.idispatch.server.boundary.ManagementService;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
 import net.pkhapps.idispatch.server.entity.Deactivatable;
+import net.pkhapps.idispatch.server.ui.ViewTitle;
 
 import java.util.Optional;
 
@@ -23,6 +24,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         extends VerticalLayout implements HasDynamicTitle {
 
     private final S service;
+    private final String titleKey;
     private final Grid<E> grid;
     private final Button edit;
     private final Button delete;
@@ -30,8 +32,12 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
     private final Checkbox includeDeleted;
     private final TextField searchField;
 
-    public AbstractManagementView(S service) {
+    /**
+     * @param titleKey the translation key of the view's title
+     */
+    public AbstractManagementView(S service, String titleKey) {
         this.service = requireNonNull(service);
+        this.titleKey = requireNonNull(titleKey);
 
         grid = new Grid<>();
         configureGrid(grid);
@@ -57,17 +63,24 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         var refresh = new Button(VaadinIcon.REFRESH.create(), event -> refresh());
 
         setSizeFull();
+        setPadding(false);
+        setSpacing(false);
 
-        var filterBar = new HorizontalLayout();
-        filterBar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
-        filterBar.add(searchField);
+        var toolbar = new HorizontalLayout(new ViewTitle(getTranslation(titleKey)));
+        toolbar.addToEnd(searchField);
         if (supportsRestore()) {
-            filterBar.add(includeDeleted);
+            toolbar.addToEnd(includeDeleted);
         }
-        filterBar.add(refresh);
-        add(filterBar);
+        toolbar.addToEnd(refresh);
+        toolbar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        toolbar.setWidthFull();
+        toolbar.setPadding(true);
+        toolbar.addClassName("toolbar");
+        add(toolbar);
 
-        add(grid);
+        var content = new VerticalLayout(grid);
+        content.setSizeFull();
+        add(content);
 
         var buttons = new HorizontalLayout();
         buttons.add(add, edit);
@@ -78,7 +91,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
             buttons.add(restore);
         }
 
-        add(buttons);
+        content.add(buttons);
 
         grid.addSelectionListener(event -> updateButtonStates());
 
@@ -177,7 +190,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
 
     @Override
     public String getPageTitle() {
-        return "iDispatch | " + getTranslation(ManagementLayout.getSectionLabelKey(getClass()));
+        return "iDispatch | " + getTranslation(titleKey);
     }
 
     protected abstract void configureGrid(Grid<E> grid);
