@@ -74,12 +74,4 @@ abstract class AbstractManagementViewTest extends AbstractUITest {
     protected void search(String term) {
         test(find(TextField.class).withPropertyValue(TextField::getPlaceholder, "Search...").single()).setValue(term);
     }
-
-    protected Button refreshButton() {
-        return find(Button.class, currentView()).all().stream()
-                .filter(button -> button.getIcon() != null
-                        && "vaadin:refresh".equals(button.getIcon().getElement().getAttribute("icon")))
-                .findFirst()
-                .orElseThrow();
-    }
 }
