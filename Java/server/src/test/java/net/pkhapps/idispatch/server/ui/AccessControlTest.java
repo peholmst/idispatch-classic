@@ -137,7 +137,7 @@ class AccessControlTest extends AbstractUITest {
     @WithMockUser(username = "drawer-user")
     void drawer_showsUsernameWhenThereIsNoIdToken() {
         navigate(RootView.class);
-        assertThat(find(Avatar.class).single().getName()).isEqualTo("drawer-user");
+        assertThat(find(Avatar.class).withCondition(avatar -> avatar.hasClassName("app-user")).single().getName()).isEqualTo("drawer-user");
         assertThat(find(Span.class).withText("drawer-user").exists()).isTrue();
     }
 
@@ -147,7 +147,7 @@ class AccessControlTest extends AbstractUITest {
 
         navigate(RootView.class);
 
-        assertThat(find(Avatar.class).single().getName()).isEqualTo("Dana Dispatcher");
+        assertThat(find(Avatar.class).withCondition(avatar -> avatar.hasClassName("app-user")).single().getName()).isEqualTo("Dana Dispatcher");
         assertThat(find(Span.class).withText("Dana Dispatcher").exists()).isTrue();
         assertThat(find(Span.class).withText("oidc-user").exists()).isFalse();
     }
@@ -158,7 +158,7 @@ class AccessControlTest extends AbstractUITest {
 
         navigate(RootView.class);
 
-        assertThat(find(Avatar.class).single().getName()).isEqualTo("oidc-user");
+        assertThat(find(Avatar.class).withCondition(avatar -> avatar.hasClassName("app-user")).single().getName()).isEqualTo("oidc-user");
         assertThat(find(Span.class).withText("oidc-user").exists()).isTrue();
     }
 

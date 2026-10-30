@@ -1,15 +1,17 @@
 package net.pkhapps.idispatch.server.ui;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.avatar.AvatarVariant;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
+import com.vaadin.flow.component.orderedlayout.ScrollerVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
@@ -38,42 +40,19 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
 
     public RootLayout(AuthenticationContext authenticationContext) {
         var toggle = new DrawerToggle();
-        var title = new H1("iDispatch");
-        title.getStyle()
-                .set("font-size", "var(--aura-font-size-l)")
-                .set("line-height", "var(--aura-line-height-xl)")
-                .set("margin", "0 var(--vaadin-padding-m)");
-
-        var displayName = getDisplayName(authenticationContext);
-        var avatar = new Avatar(displayName);
-        var name = new Span(displayName);
-        name.getStyle()
-                .set("overflow", "hidden")
-                .set("text-overflow", "ellipsis")
-                .set("white-space", "nowrap");
-        var user = new HorizontalLayout(avatar, name);
-        user.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
-        user.setWidthFull();
-        user.setPadding(true);
-
-        var header = new VerticalLayout(title, user);
-        header.setSizeUndefined();
-        header.setPadding(false);
-        header.setSpacing(false);
 
         var navigation = new VerticalLayout(createViewNavigation());
         if (isUserInRole(Roles.ROLE_ADMIN)) {
             navigation.add(createAdministrationNavigation());
         }
         navigation.add(createAccountNavigation(authenticationContext));
+        var drawer = new Scroller(navigation);
+        drawer.addThemeVariants(ScrollerVariant.OVERFLOW_INDICATORS);
 
-        addToDrawer(header, new Scroller(navigation));
+        addToDrawer(createApplicationHeader(), drawer, createUserFooter(getDisplayName(authenticationContext)));
 
         viewTitle = new H2();
-        viewTitle.getStyle()
-                .set("font-size", "var(--aura-font-size-l)")
-                .set("line-height", "var(--aura-line-height-xl)")
-                .set("margin", "0");
+        viewTitle.addClassName("view-title");
 
         navbarLayout = new HorizontalLayout();
         navbarLayout.setPadding(false);
@@ -84,6 +63,35 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         addToNavbar(navbarLayout);
 
         setPrimarySection(Section.DRAWER);
+    }
+
+    private static Component createApplicationHeader() {
+        var logo = new Avatar("iDispatch");
+        logo.setAbbreviation("iD");
+        logo.addClassName("app-logo");
+        logo.addThemeVariants(AvatarVariant.AURA_FILLED, AvatarVariant.XSMALL);
+
+        var name = new Span("iDispatch");
+        name.addClassName("app-name");
+
+        var header = new HorizontalLayout(logo, name);
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.setPadding(true);
+        return header;
+    }
+
+    private static Component createUserFooter(String displayName) {
+        var avatar = new Avatar(displayName);
+        avatar.addClassName("app-user");
+        avatar.addThemeVariants(AvatarVariant.XSMALL);
+        var name = new Span(displayName);
+        name.addClassName("app-user-name");
+
+        var footer = new HorizontalLayout(avatar, name);
+        footer.setAlignItems(FlexComponent.Alignment.CENTER);
+        footer.setPadding(true);
+        footer.addClassName("app-footer");
+        return footer;
     }
 
     /**
