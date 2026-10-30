@@ -25,8 +25,16 @@ html {
     white-space: nowrap;
 }
 
-.view-title {
+.view-title h2 {
     font-size: var(--aura-font-size-l);
     font-weight: var(--aura-font-weight-semibold);
     margin: 0;
+}
+
+.view-title vaadin-drawer-toggle {
+    margin: 0;
+}
+
+.toolbar {
+    border-bottom: 1px solid var(--aura-accent-border-color);
 }

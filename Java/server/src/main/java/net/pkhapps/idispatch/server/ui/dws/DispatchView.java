@@ -1,7 +1,6 @@
 package net.pkhapps.idispatch.server.ui.dws;
 
 
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -16,23 +15,20 @@ import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.boundary.DispatchService;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
-import net.pkhapps.idispatch.server.ui.HasNavbarContent;
 import net.pkhapps.idispatch.server.ui.RootLayout;
+import net.pkhapps.idispatch.server.ui.ViewTitle;
 import org.springframework.context.event.ApplicationEventMulticaster;
-
-import java.util.Optional;
 
 @Route(value = "dws", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_DISPATCHER)
 @CssImport("./styles/dispatch-view-styles.css")
 @CssImport("./styles/dispatch-view-grid-styles.css")
-public class DispatchView extends VerticalLayout implements HasNavbarContent, HasDynamicTitle {
+public class DispatchView extends VerticalLayout implements HasDynamicTitle {
 
     private final AssignmentService assignmentService;
     private final AssignmentPanel assignmentPanel;
     private final AssignmentListPanel assignmentListPanel;
     private final ResourceListPanel resourceListPanel;
-    private final HorizontalLayout toolbar;
 
     public DispatchView(AssignmentService assignmentService,
                         ResourceStatusService resourceStatusService,
@@ -47,13 +43,15 @@ public class DispatchView extends VerticalLayout implements HasNavbarContent, Ha
         setSpacing(false);
         setPadding(false);
 
-        toolbar = new HorizontalLayout();
-        toolbar.getStyle().set("margin-left", "var(--vaadin-padding-m)");
-        toolbar.setSizeUndefined();
-
         var newAssignment = new Button(getTranslation("dispatch.new-assignment"), event -> newAssignment());
         newAssignment.addThemeVariants(ButtonVariant.PRIMARY);
-        toolbar.add(newAssignment);
+
+        var toolbar = new HorizontalLayout(new ViewTitle(getTranslation("nav.dispatcher")), newAssignment);
+        toolbar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        toolbar.setWidthFull();
+        toolbar.setPadding(true);
+        toolbar.addClassName("toolbar");
+        add(toolbar);
 
         var primarySplit = new SplitLayout(SplitLayout.Orientation.HORIZONTAL);
         primarySplit.setSizeFull();
@@ -78,17 +76,7 @@ public class DispatchView extends VerticalLayout implements HasNavbarContent, Ha
     }
 
     @Override
-    public Optional<Component> getNavbarContent() {
-        return Optional.of(toolbar);
-    }
-
-    @Override
-    public String getTitle() {
-        return getTranslation("nav.dispatcher");
-    }
-
-    @Override
     public String getPageTitle() {
-        return "iDispatch | " + getTitle();
+        return "iDispatch | " + getTranslation("nav.dispatcher");
     }
 }

@@ -3,10 +3,8 @@ package net.pkhapps.idispatch.server.ui;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.applayout.AppLayout;
-import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.avatar.AvatarVariant;
-import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -16,8 +14,6 @@ import com.vaadin.flow.component.orderedlayout.ScrollerVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
-import com.vaadin.flow.router.AfterNavigationEvent;
-import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouteConfiguration;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.spring.security.AuthenticationContext;
@@ -34,14 +30,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @PermitAll
-public class RootLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
-
-    private final HorizontalLayout navbarLayout;
-    private final H2 viewTitle;
+public class RootLayout extends AppLayout implements RouterLayout {
 
     public RootLayout(AuthenticationContext authenticationContext) {
-        var toggle = new DrawerToggle();
-
         var navigation = new VerticalLayout(createViewNavigation());
         navigation.setPadding(false);
         navigation.setMinWidth(200, Unit.PIXELS);
@@ -53,17 +44,6 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         drawer.addThemeVariants(ScrollerVariant.OVERFLOW_INDICATORS);
 
         addToDrawer(createApplicationHeader(), drawer, createUserFooter(getDisplayName(authenticationContext)));
-
-        viewTitle = new H2();
-        viewTitle.addClassName("view-title");
-
-        navbarLayout = new HorizontalLayout();
-        navbarLayout.setPadding(false);
-        navbarLayout.setSpacing(false);
-        navbarLayout.setWidthFull();
-        navbarLayout.add(toggle, viewTitle);
-
-        addToNavbar(navbarLayout);
 
         setPrimarySection(Section.DRAWER);
     }
@@ -170,28 +150,5 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
             return auth.getAuthorities().stream().anyMatch(ga -> ga.getAuthority().equals(role));
         }
         return false;
-    }
-
-    @Override
-    public void afterNavigation(AfterNavigationEvent afterNavigationEvent) {
-        afterNavigationEvent.getActiveChain()
-                .stream()
-                .filter(HasNavbarContent.class::isInstance)
-                .map(HasNavbarContent.class::cast)
-                .findFirst()
-                .ifPresentOrElse(this::setNavbarContent, this::clearNavbarContent);
-    }
-
-    private void setNavbarContent(HasNavbarContent contentProvider) {
-        clearNavbarContent();
-        contentProvider.getNavbarContent().ifPresent(navbarLayout::add);
-        viewTitle.setText(contentProvider.getTitle());
-    }
-
-    private void clearNavbarContent() {
-        if (navbarLayout.getComponentCount() > 2) {
-            navbarLayout.remove(navbarLayout.getComponentAt(2));
-        }
-        viewTitle.setText("");
     }
 }

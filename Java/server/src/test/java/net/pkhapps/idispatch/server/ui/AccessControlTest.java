@@ -47,7 +47,7 @@ class AccessControlTest extends AbstractUITest {
         var root = navigate(RootView.class);
         assertThat(find(H1.class, root).single().getText()).isEqualTo("Welcome to iDispatch!");
         assertThat(navigationItems()).containsExactly("Home", "Log Out");
-        assertThat(navbarTitle()).isEqualTo("Home");
+        assertThat(viewTitle()).isEqualTo("Home");
     }
 
     @Test
@@ -91,7 +91,7 @@ class AccessControlTest extends AbstractUITest {
         navigate(RootView.class);
         assertThat(navigationItems()).containsExactly("Home", "Reports", "Log Out");
         navigate(ReportsView.class);
-        assertThat(navbarTitle()).isEqualTo("Reports");
+        assertThat(viewTitle()).isEqualTo("Reports");
     }
 
     @Test
@@ -100,7 +100,7 @@ class AccessControlTest extends AbstractUITest {
         navigate(RootView.class);
         assertThat(navigationItems()).containsExactly("Home", "Reports", "Log Out");
         navigate(ReportsView.class);
-        assertThat(navbarTitle()).isEqualTo("Reports");
+        assertThat(viewTitle()).isEqualTo("Reports");
         navigate("dws", RouteNotFoundError.class);
     }
 
@@ -110,7 +110,7 @@ class AccessControlTest extends AbstractUITest {
         navigate(RootView.class);
         assertThat(navigationItems()).containsExactly("Home", "Reports", "Log Out");
         navigate(ReportsView.class);
-        assertThat(navbarTitle()).isEqualTo("Reports");
+        assertThat(viewTitle()).isEqualTo("Reports");
         navigate("dws", RouteNotFoundError.class);
     }
 
@@ -120,7 +120,7 @@ class AccessControlTest extends AbstractUITest {
         navigate(RootView.class);
         assertThat(navigationItems()).containsExactly("Home", "Management", "Log Out");
         navigate(MunicipalityManagementView.class);
-        assertThat(navbarTitle()).isEqualTo("Management Console");
+        assertThat(viewTitle()).isEqualTo("Management Console");
     }
 
     @Test
@@ -130,7 +130,7 @@ class AccessControlTest extends AbstractUITest {
         assertThat(navigationItems())
                 .containsExactly("Home", "Dispatcher", "Reports", "Management", "Log Out");
         navigate(DispatchView.class);
-        assertThat(navbarTitle()).isEqualTo("Dispatcher");
+        assertThat(viewTitle()).isEqualTo("Dispatcher");
     }
 
     @Test
@@ -216,7 +216,7 @@ class AccessControlTest extends AbstractUITest {
                 .toList();
     }
 
-    private String navbarTitle() {
+    private String viewTitle() {
         return find(H2.class).single().getText();
     }
 }
