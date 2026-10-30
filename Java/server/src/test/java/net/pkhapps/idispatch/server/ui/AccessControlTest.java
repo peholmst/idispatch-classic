@@ -116,11 +116,11 @@ class AccessControlTest extends AbstractUITest {
 
     @Test
     @WithMockUser(username = "admin-only", roles = "ADMIN")
-    void admin_seesManagementEntryAndCanOpenManagement() {
+    void admin_seesManagementEntriesAndCanOpenManagement() {
         navigate(RootView.class);
-        assertThat(navigationItems()).containsExactly("Home", "Management", "Log Out");
+        assertThat(navigationItems()).containsExactly("Home", "Municipalities", "Assignment Types", "Resources", "Resource Types", "Destinations", "Log Out");
         navigate(MunicipalityManagementView.class);
-        assertThat(viewTitle()).isEqualTo("Management Console");
+        assertThat(viewTitle()).isEqualTo("Municipalities");
     }
 
     @Test
@@ -128,7 +128,7 @@ class AccessControlTest extends AbstractUITest {
     void userWithAllRoles_seesAllEntries() {
         navigate(RootView.class);
         assertThat(navigationItems())
-                .containsExactly("Home", "Dispatcher", "Reports", "Management", "Log Out");
+                .containsExactly("Home", "Dispatcher", "Reports", "Municipalities", "Assignment Types", "Resources", "Resource Types", "Destinations", "Log Out");
         navigate(DispatchView.class);
         assertThat(viewTitle()).isEqualTo("Dispatcher");
     }
@@ -196,18 +196,6 @@ class AccessControlTest extends AbstractUITest {
                 .map(invocation -> invocation.getInvocation().getParameters())
                 .filter(parameters -> parameters.contains("/oauth2/authorization/keycloak"))
                 .toList();
-    }
-
-    @Test
-    @WithMockUser(username = "admin-only", roles = "ADMIN")
-    void managementItem_matchesEverySectionOfTheManagementConsole() {
-        navigate(RootView.class);
-
-        var management = find(SideNavItem.class).withCondition(item -> "Management".equals(item.getLabel())).single();
-        assertThat(management.getPath()).isEqualTo("management/municipality");
-        assertThat(management.getPathAliases()).containsExactlyInAnyOrder("management/municipality",
-                "management/assignment-type", "management/resource", "management/resource-type",
-                "management/destination");
     }
 
     private List<String> navigationItems() {

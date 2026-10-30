@@ -4,7 +4,6 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.ListItem;
-import com.vaadin.flow.component.tabs.Tab;
 import net.pkhapps.idispatch.server.entity.Municipality;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -22,12 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MunicipalityManagementViewTest extends AbstractManagementViewTest {
 
     @Test
-    void view_showsManagementConsoleWithAllSections() {
+    void view_showsItsOwnTitle() {
         navigate(MunicipalityManagementView.class);
 
-        assertThat(find(H2.class).single().getText()).isEqualTo("Management Console");
-        assertThat(find(Tab.class).all().stream().map(tab -> tab.getElement().getTextRecursively()))
-                .contains("Municipalities", "Assignment Types", "Resources", "Resource Types", "Destinations");
+        assertThat(find(H2.class).single().getText()).isEqualTo("Municipalities");
     }
 
     @Test
