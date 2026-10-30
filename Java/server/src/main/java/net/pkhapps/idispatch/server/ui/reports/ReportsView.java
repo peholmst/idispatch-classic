@@ -1,14 +1,12 @@
 package net.pkhapps.idispatch.server.ui.reports;
 
 import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
@@ -25,7 +23,6 @@ import com.vaadin.flow.router.BeforeLeaveEvent;
 import com.vaadin.flow.router.BeforeLeaveObserver;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.Lumo;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.boundary.ReportService;
@@ -34,8 +31,8 @@ import net.pkhapps.idispatch.server.entity.AssignmentType;
 import net.pkhapps.idispatch.server.entity.Municipality;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.Formatters;
-import net.pkhapps.idispatch.server.ui.HasNavbarContent;
 import net.pkhapps.idispatch.server.ui.RootLayout;
+import net.pkhapps.idispatch.server.ui.ViewTitle;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -55,12 +52,10 @@ import java.util.stream.Stream;
 
 @Route(value = "reports", layout = RootLayout.class)
 @RolesAllowed({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER})
-@StyleSheet(Lumo.COMPACT_STYLESHEET)
-public class ReportsView extends MasterDetailLayout implements HasNavbarContent, HasDynamicTitle, BeforeLeaveObserver {
+public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, BeforeLeaveObserver {
 
     private final AssignmentService assignmentService;
     private final ReportService reportService;
-    private final Button refreshButton;
     private final Grid<Assignment> assignmentsGrid;
     private final DatePicker closedFrom;
     private final DatePicker closedTo;
@@ -96,7 +91,7 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
                 .setSortable(true).setResizable(true);
         assignmentsGrid.sort(GridSortOrder.desc(closedColumn).build());
         assignmentsGrid.setSizeFull();
-        assignmentsGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER, GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
+        assignmentsGrid.addThemeVariants(GridVariant.NO_BORDER, GridVariant.ROW_STRIPES);
 
         var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -114,7 +109,7 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
             assignmentsDataView.refreshAll();
         });
 
-        refreshButton = new Button(VaadinIcon.REFRESH.create(), event -> discardChangesThen(this::refresh));
+        var refreshButton = new Button(VaadinIcon.REFRESH.create(), event -> discardChangesThen(this::refresh));
 
         assignmentsGrid.asSingleSelect().addValueChangeListener(event -> {
             if (revertingSelection) {
@@ -172,15 +167,23 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
             typeFilter.clear();
             reportStatusFilter.clear();
         });
-        clearFilters.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        clearFilters.addThemeVariants(ButtonVariant.TERTIARY);
 
         var filterBar = new HorizontalLayout(closedFrom, closedTo, municipalityFilter, typeFilter, reportStatusFilter,
                 clearFilters);
         filterBar.setWrap(true);
         filterBar.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
-        filterBar.getStyle().set("padding", "0 var(--lumo-space-m) var(--lumo-space-s)");
+        filterBar.addClassName("toolbar");
+        filterBar.setWidthFull();
+        filterBar.setPadding(true);
 
-        var master = new VerticalLayout(filterBar, assignmentsGrid);
+        var toolbar = new HorizontalLayout(new ViewTitle(getTranslation("nav.reports")), refreshButton);
+        toolbar.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+        toolbar.setWidthFull();
+        toolbar.setPadding(true);
+        toolbar.addClassName("toolbar");
+
+        var master = new VerticalLayout(toolbar, filterBar, assignmentsGrid);
         master.setSizeFull();
         master.setPadding(false);
         master.setSpacing(false);
@@ -322,19 +325,6 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
 
     @Override
     public String getPageTitle() {
-        return "iDispatch | " + getTitle();
-    }
-
-    @Override
-    public Optional<Component> getNavbarContent() {
-        var toolbar = new HorizontalLayout(refreshButton);
-        toolbar.getStyle().set("margin-left", "var(--lumo-space-m)");
-        toolbar.setSizeUndefined();
-        return Optional.of(toolbar);
-    }
-
-    @Override
-    public String getTitle() {
-        return getTranslation("nav.reports");
+        return "iDispatch | " + getTranslation("nav.reports");
     }
 }

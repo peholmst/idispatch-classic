@@ -53,26 +53,26 @@ public class CustomErrorHandler implements ErrorHandler {
                 VaadinIcon.KEY.create(),
                 I18NProvider.translate("error.access-denied"),
                 new Div(new Text(additionalMessage)),
-                NotificationVariant.LUMO_WARNING
+                NotificationVariant.WARNING
         );
-        notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
+        notification.addThemeVariants(NotificationVariant.WARNING);
         notification.open();
     }
 
     private void showNotification(String errorId) {
         var errorSpan = new Span(errorId);
         errorSpan.getStyle()
-                .set("background-color", "var(--lumo-contrast-20pct)")
-                .set("border-radius", "var(--lumo-border-radius-s)")
-                .set("padding", "var(--lumo-space-xs)");
+                .set("background-color", "var(--vaadin-background-container-strong)")
+                .set("border-radius", "var(--vaadin-radius-s)")
+                .set("padding", "var(--vaadin-padding-xs)");
         var text = new Div(new Text(I18NProvider.translate("error.unexpected.contact-admin") + " "), errorSpan);
-        text.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        text.getStyle().set("font-size", "var(--aura-font-size-s)");
 
         var notification = createNotification(
                 VaadinIcon.WARNING.create(),
                 I18NProvider.translate("error.unexpected"),
                 text,
-                NotificationVariant.LUMO_ERROR
+                NotificationVariant.ERROR
         );
         notification.open();
     }
@@ -83,11 +83,11 @@ public class CustomErrorHandler implements ErrorHandler {
 
         var headerDiv = new Div(new Text(header));
         headerDiv.getStyle().set("font-weight", "600");
-        text.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        text.getStyle().set("font-size", "var(--aura-font-size-s)");
         var info = new Div(headerDiv, text);
         var closeBtn = new Button(VaadinIcon.CLOSE_SMALL.create(),
                 clickEvent -> notification.close());
-        closeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        closeBtn.addThemeVariants(ButtonVariant.TERTIARY);
 
         var layout = new HorizontalLayout(icon, info, closeBtn);
         layout.setAlignItems(FlexComponent.Alignment.CENTER);

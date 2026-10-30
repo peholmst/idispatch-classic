@@ -1,34 +1,34 @@
 .resource-state-at_station {
-    background-color: darkgreen;
-    color: white;
+    --vaadin-button-background: darkgreen;
+    --vaadin-button-text-color: white;
 }
 
 .resource-state-available {
-    background-color: greenyellow;
-    color: black;
+    --vaadin-button-background: greenyellow;
+    --vaadin-button-text-color: black;
 }
 
 .resource-state-out_of_service {
-    background-color: orange;
-    color: black;
+    --vaadin-button-background: orange;
+    --vaadin-button-text-color: black;
 }
 
 .resource-state-reserved {
-    background-color: deeppink;
-    color: black;
+    --vaadin-button-background: deeppink;
+    --vaadin-button-text-color: black;
 }
 
 .resource-state-dispatched {
-    background-color: orangered;
-    color: white;
+    --vaadin-button-background: orangered;
+    --vaadin-button-text-color: white;
 }
 
 .resource-state-en_route {
-    background-color: yellow;
-    color: black;
+    --vaadin-button-background: yellow;
+    --vaadin-button-text-color: black;
 }
 
 .resource-state-on_scene {
-    background-color: dodgerblue;
-    color: white;
+    --vaadin-button-background: dodgerblue;
+    --vaadin-button-text-color: white;
 }

@@ -1,20 +1,19 @@
 package net.pkhapps.idispatch.server.ui;
 
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.applayout.AppLayout;
-import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.avatar.AvatarVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
+import com.vaadin.flow.component.orderedlayout.ScrollerVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
-import com.vaadin.flow.router.AfterNavigationEvent;
-import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouteConfiguration;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.spring.security.AuthenticationContext;
@@ -31,59 +30,51 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @PermitAll
-public class RootLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
-
-    private final HorizontalLayout navbarLayout;
-    private final H2 viewTitle;
+public class RootLayout extends AppLayout implements RouterLayout {
 
     public RootLayout(AuthenticationContext authenticationContext) {
-        var toggle = new DrawerToggle();
-        var title = new H1("iDispatch");
-        title.getStyle()
-                .set("font-size", "var(--lumo-font-size-l)")
-                .set("line-height", "var(--lumo-size-l)")
-                .set("margin", "0 var(--lumo-space-m)");
-
-        var displayName = getDisplayName(authenticationContext);
-        var avatar = new Avatar(displayName);
-        var name = new Span(displayName);
-        name.getStyle()
-                .set("overflow", "hidden")
-                .set("text-overflow", "ellipsis")
-                .set("white-space", "nowrap");
-        var user = new HorizontalLayout(avatar, name);
-        user.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
-        user.setWidthFull();
-        user.setPadding(true);
-
-        var header = new VerticalLayout(title, user);
-        header.setSizeUndefined();
-        header.setPadding(false);
-        header.setSpacing(false);
-
         var navigation = new VerticalLayout(createViewNavigation());
+        navigation.setPadding(false);
+        navigation.setMinWidth(200, Unit.PIXELS);
         if (isUserInRole(Roles.ROLE_ADMIN)) {
             navigation.add(createAdministrationNavigation());
         }
         navigation.add(createAccountNavigation(authenticationContext));
+        var drawer = new Scroller(navigation);
+        drawer.addThemeVariants(ScrollerVariant.OVERFLOW_INDICATORS);
 
-        addToDrawer(header, new Scroller(navigation));
-
-        viewTitle = new H2();
-        viewTitle.getStyle()
-                .set("font-size", "var(--lumo-font-size-l)")
-                .set("line-height", "var(--lumo-size-l)")
-                .set("margin", "0");
-
-        navbarLayout = new HorizontalLayout();
-        navbarLayout.setPadding(false);
-        navbarLayout.setSpacing(false);
-        navbarLayout.setWidthFull();
-        navbarLayout.add(toggle, viewTitle);
-
-        addToNavbar(navbarLayout);
+        addToDrawer(createApplicationHeader(), drawer, createUserFooter(getDisplayName(authenticationContext)));
 
         setPrimarySection(Section.DRAWER);
+    }
+
+    private static Component createApplicationHeader() {
+        var logo = new Avatar("iDispatch");
+        logo.setAbbreviation("iD");
+        logo.addClassName("app-logo");
+        logo.addThemeVariants(AvatarVariant.AURA_FILLED, AvatarVariant.XSMALL);
+
+        var name = new Span("iDispatch");
+        name.addClassName("app-name");
+
+        var header = new HorizontalLayout(logo, name);
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.setPadding(true);
+        return header;
+    }
+
+    private static Component createUserFooter(String displayName) {
+        var avatar = new Avatar(displayName);
+        avatar.addClassName("app-user");
+        avatar.addThemeVariants(AvatarVariant.XSMALL);
+        var name = new Span(displayName);
+        name.addClassName("app-user-name");
+
+        var footer = new HorizontalLayout(avatar, name);
+        footer.setAlignItems(FlexComponent.Alignment.CENTER);
+        footer.setPadding(true);
+        footer.addClassName("app-footer");
+        return footer;
     }
 
     /**
@@ -103,6 +94,7 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
 
     private SideNav createViewNavigation() {
         var nav = new SideNav();
+        nav.setWidthFull();
         nav.addItem(new SideNavItem(getTranslation("nav.home"), RootView.class, VaadinIcon.HOME.create()));
         if (isUserInRole(Roles.ROLE_DISPATCHER)) {
             nav.addItem(new SideNavItem(getTranslation("nav.dispatcher"), DispatchView.class, VaadinIcon.HEADSET.create()));
@@ -123,12 +115,14 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
                 .collect(Collectors.toSet()));
 
         var nav = new SideNav(getTranslation("nav.administration"));
+        nav.setWidthFull();
         nav.addItem(management);
         return nav;
     }
 
     private SideNav createAccountNavigation(AuthenticationContext authenticationContext) {
         var nav = new SideNav(getTranslation("nav.account"));
+        nav.setWidthFull();
         // Users are managed in Keycloak, and change their password in the Keycloak account console of the realm
         // that issued their ID token
         authenticationContext.getAuthenticatedUser(Object.class)
@@ -156,28 +150,5 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
             return auth.getAuthorities().stream().anyMatch(ga -> ga.getAuthority().equals(role));
         }
         return false;
-    }
-
-    @Override
-    public void afterNavigation(AfterNavigationEvent afterNavigationEvent) {
-        afterNavigationEvent.getActiveChain()
-                .stream()
-                .filter(HasNavbarContent.class::isInstance)
-                .map(HasNavbarContent.class::cast)
-                .findFirst()
-                .ifPresentOrElse(this::setNavbarContent, this::clearNavbarContent);
-    }
-
-    private void setNavbarContent(HasNavbarContent contentProvider) {
-        clearNavbarContent();
-        contentProvider.getNavbarContent().ifPresent(navbarLayout::add);
-        viewTitle.setText(contentProvider.getTitle());
-    }
-
-    private void clearNavbarContent() {
-        if (navbarLayout.getComponentCount() > 2) {
-            navbarLayout.remove(navbarLayout.getComponentAt(2));
-        }
-        viewTitle.setText("");
     }
 }

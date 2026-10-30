@@ -36,9 +36,8 @@ public class ResourceListPanel extends VerticalLayout {
 
         grid = new Grid<>();
         grid.addThemeVariants(
-                GridVariant.LUMO_NO_BORDER,
-                GridVariant.LUMO_COMPACT,
-                GridVariant.LUMO_ROW_STRIPES
+                GridVariant.NO_BORDER,
+                GridVariant.ROW_STRIPES
         );
         grid.setSelectionMode(Grid.SelectionMode.NONE);
         add(grid);
@@ -51,7 +50,7 @@ public class ResourceListPanel extends VerticalLayout {
 
     private Button createStatusButton(ResourceStatus resourceStatus) {
         var btn = new Button(Formatters.formatResourceState(resourceStatus.getState()));
-        btn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        btn.addThemeVariants(ButtonVariant.SMALL);
         btn.addClassName(Formatters.resourceStateClassName(resourceStatus.getState()));
         btn.addClickListener(event -> new ChangeResourceStatusDialog(resourceStatusService, resourceStatus).open());
         return btn;

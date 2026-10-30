@@ -1,41 +1,34 @@
 package net.pkhapps.idispatch.server.ui.dws;
 
 
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
-import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.Lumo;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.boundary.DispatchService;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
-import net.pkhapps.idispatch.server.ui.HasNavbarContent;
 import net.pkhapps.idispatch.server.ui.RootLayout;
+import net.pkhapps.idispatch.server.ui.ViewTitle;
 import org.springframework.context.event.ApplicationEventMulticaster;
-
-import java.util.Optional;
 
 @Route(value = "dws", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_DISPATCHER)
-@StyleSheet(Lumo.COMPACT_STYLESHEET)
 @CssImport("./styles/dispatch-view-styles.css")
 @CssImport("./styles/dispatch-view-grid-styles.css")
-public class DispatchView extends VerticalLayout implements HasNavbarContent, HasDynamicTitle {
+public class DispatchView extends VerticalLayout implements HasDynamicTitle {
 
     private final AssignmentService assignmentService;
     private final AssignmentPanel assignmentPanel;
     private final AssignmentListPanel assignmentListPanel;
     private final ResourceListPanel resourceListPanel;
-    private final HorizontalLayout toolbar;
 
     public DispatchView(AssignmentService assignmentService,
                         ResourceStatusService resourceStatusService,
@@ -45,23 +38,24 @@ public class DispatchView extends VerticalLayout implements HasNavbarContent, Ha
         assignmentPanel = new AssignmentPanel(assignmentService, resourceStatusService, dispatchService, eventMulticaster);
         assignmentListPanel = new AssignmentListPanel(assignmentService, eventMulticaster, assignmentPanel::setAssignmentId);
         resourceListPanel = new ResourceListPanel(resourceStatusService, eventMulticaster);
-        getStyle().set("background-color", "var(--lumo-shade-10pct)");
         setSizeFull();
         setMargin(false);
         setSpacing(false);
         setPadding(false);
 
-        toolbar = new HorizontalLayout();
-        toolbar.getStyle().set("margin-left", "var(--lumo-space-m)");
-        toolbar.setSizeUndefined();
-
         var newAssignment = new Button(getTranslation("dispatch.new-assignment"), event -> newAssignment());
-        newAssignment.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        toolbar.add(newAssignment);
+        newAssignment.addThemeVariants(ButtonVariant.PRIMARY);
+
+        var toolbar = new HorizontalLayout(new ViewTitle(getTranslation("nav.dispatcher")), newAssignment);
+        toolbar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        toolbar.setWidthFull();
+        toolbar.setPadding(true);
+        toolbar.addClassName("toolbar");
+        add(toolbar);
 
         var primarySplit = new SplitLayout(SplitLayout.Orientation.HORIZONTAL);
         primarySplit.setSizeFull();
-        primarySplit.addThemeVariants(SplitLayoutVariant.LUMO_SMALL);
+        primarySplit.addThemeVariants(SplitLayoutVariant.SMALL);
         add(primarySplit);
 
 
@@ -70,7 +64,7 @@ public class DispatchView extends VerticalLayout implements HasNavbarContent, Ha
         primarySplit.addToPrimary(assignmentPanel);
         var secondarySplit = new SplitLayout(SplitLayout.Orientation.VERTICAL);
         secondarySplit.setSizeFull();
-        secondarySplit.addThemeVariants(SplitLayoutVariant.LUMO_SMALL);
+        secondarySplit.addThemeVariants(SplitLayoutVariant.SMALL);
         secondarySplit.addToPrimary(assignmentListPanel);
         secondarySplit.addToSecondary(resourceListPanel);
         primarySplit.addToSecondary(secondarySplit);
@@ -82,17 +76,7 @@ public class DispatchView extends VerticalLayout implements HasNavbarContent, Ha
     }
 
     @Override
-    public Optional<Component> getNavbarContent() {
-        return Optional.of(toolbar);
-    }
-
-    @Override
-    public String getTitle() {
-        return getTranslation("nav.dispatcher");
-    }
-
-    @Override
     public String getPageTitle() {
-        return "iDispatch | " + getTitle();
+        return "iDispatch | " + getTranslation("nav.dispatcher");
     }
 }

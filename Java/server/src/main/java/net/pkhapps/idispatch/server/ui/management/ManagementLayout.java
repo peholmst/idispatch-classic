@@ -1,26 +1,22 @@
 package net.pkhapps.idispatch.server.ui.management;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.dependency.StyleSheet;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tabs;
-import com.vaadin.flow.component.tabs.TabsVariant;
 import com.vaadin.flow.router.ParentLayout;
 import com.vaadin.flow.router.RouterLayout;
-import com.vaadin.flow.theme.lumo.Lumo;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.security.Roles;
-import net.pkhapps.idispatch.server.ui.HasNavbarContent;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.TabUtils;
+import net.pkhapps.idispatch.server.ui.ViewTitle;
 
 import java.util.List;
-import java.util.Optional;
 
-@StyleSheet(Lumo.COMPACT_STYLESHEET)
 @ParentLayout(RootLayout.class)
 @RolesAllowed(Roles.ROLE_ADMIN)
-public class ManagementLayout extends VerticalLayout implements RouterLayout, HasNavbarContent {
+public class ManagementLayout extends VerticalLayout implements RouterLayout {
 
     private static final List<Section> SECTIONS = List.of(
             new Section("management.municipalities", MunicipalityManagementView.class),
@@ -30,15 +26,18 @@ public class ManagementLayout extends VerticalLayout implements RouterLayout, Ha
             new Section("management.destinations", DestinationManagementView.class)
     );
 
-    private final Tabs views;
-
     public ManagementLayout() {
-        views = new Tabs();
+        var views = new Tabs();
         views.setOrientation(Tabs.Orientation.HORIZONTAL);
-        views.addThemeVariants(TabsVariant.LUMO_MINIMAL);
         SECTIONS.forEach(section -> views.add(TabUtils.createNavigationTab(getTranslation(section.labelKey()), section.view())));
 
-        getStyle().set("background-color", "var(--lumo-shade-10pct)");
+        // The section views are added below the toolbar
+        var toolbar = new HorizontalLayout(new ViewTitle(getTranslation("management.title")), views);
+        toolbar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        toolbar.setWidthFull();
+        toolbar.setPadding(true);
+        toolbar.addClassName("toolbar");
+        add(toolbar);
 
         setSizeFull();
         setPadding(false);
@@ -60,16 +59,6 @@ public class ManagementLayout extends VerticalLayout implements RouterLayout, Ha
                 .map(Section::labelKey)
                 .findFirst()
                 .orElseThrow();
-    }
-
-    @Override
-    public Optional<Component> getNavbarContent() {
-        return Optional.of(views);
-    }
-
-    @Override
-    public String getTitle() {
-        return getTranslation("management.title");
     }
 
     private record Section(String labelKey, Class<? extends Component> view) {

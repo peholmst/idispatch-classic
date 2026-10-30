@@ -26,11 +26,11 @@ abstract class AbstractManagementViewTest extends AbstractUITest {
     }
 
     protected Button restoreButton() {
-        return iconButton("lumo:undo").orElseThrow();
+        return iconButton("vaadin:reply").orElseThrow();
     }
 
     protected Optional<Button> findRestoreButton() {
-        return iconButton("lumo:undo");
+        return iconButton("vaadin:reply");
     }
 
     protected Button refreshButton() {

@@ -8,15 +8,10 @@ import jakarta.annotation.security.PermitAll;
 
 @Route(value = "", layout = RootLayout.class)
 @PermitAll
-public class RootView extends VerticalLayout implements HasNavbarContent, HasDynamicTitle {
+public class RootView extends VerticalLayout implements HasDynamicTitle {
 
     public RootView() {
-        add(new H1(getTranslation("home.welcome")));
-    }
-
-    @Override
-    public String getTitle() {
-        return getTranslation("nav.home");
+        add(new ViewTitle(getTranslation("nav.home")), new H1(getTranslation("home.welcome")));
     }
 
     @Override

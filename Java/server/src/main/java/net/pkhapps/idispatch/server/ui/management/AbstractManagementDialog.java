@@ -38,7 +38,7 @@ public abstract class AbstractManagementDialog<E extends AbstractEntity> extends
         add(validationErrors);
 
         var save = new Button(getTranslation("common.save"), event -> saveAndClose());
-        save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        save.addThemeVariants(ButtonVariant.PRIMARY);
         save.addClickShortcut(Key.ENTER);
 
         var cancel = new Button(getTranslation("common.cancel"), event -> close());
@@ -68,7 +68,7 @@ public abstract class AbstractManagementDialog<E extends AbstractEntity> extends
             ex.getViolationMessages(getLocale()).forEach(message -> validationErrors.add(new ListItem(message)));
         } catch (DataIntegrityViolationException ex) {
             var notification = new Notification(getTranslation("management.data-integrity-violation"));
-            notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
+            notification.addThemeVariants(NotificationVariant.WARNING);
             notification.setPosition(Notification.Position.MIDDLE);
             notification.setDuration(3000);
             notification.open();
