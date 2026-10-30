@@ -3,7 +3,6 @@ package net.pkhapps.idispatch.server.ui.dws;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
@@ -21,8 +20,6 @@ import org.springframework.context.event.ApplicationEventMulticaster;
 
 @Route(value = "dws", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_DISPATCHER)
-@CssImport("./styles/dispatch-view-styles.css")
-@CssImport("./styles/dispatch-view-grid-styles.css")
 public class DispatchView extends VerticalLayout implements HasDynamicTitle {
 
     private final AssignmentService assignmentService;

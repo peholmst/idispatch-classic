@@ -1,3 +1,8 @@
+@import "styles/dispatch-view-styles.css";
+@import "styles/dispatch-view-grid-styles.css";
+@import "styles/management-view-grid-styles.css";
+@import "styles/management-dialog-styles.css";
+
 /* Dense layout for the dispatch, reports and management screens (replaces Lumo's compact preset) */
 html {
     --aura-base-size: 12;

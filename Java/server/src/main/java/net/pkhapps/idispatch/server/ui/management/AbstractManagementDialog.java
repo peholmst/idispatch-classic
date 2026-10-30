@@ -4,7 +4,6 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.ListItem;
@@ -22,7 +21,6 @@ import org.springframework.lang.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-@CssImport("./styles/management-dialog-styles.css")
 public abstract class AbstractManagementDialog<E extends AbstractEntity> extends Dialog {
 
     private final ManagementService<E> service;

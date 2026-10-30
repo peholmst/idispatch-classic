@@ -2,6 +2,7 @@ package net.pkhapps.idispatch.server.ui.dws;
 
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -44,7 +45,7 @@ public class AssignmentListPanel extends VerticalLayout {
         grid.addColumn(Assignment::getId).setHeader(getTranslation("assignment.id"));
         grid.addColumn(assignment -> Formatters.formatDateTime(assignment.getOpened())).setHeader(getTranslation("assignment.date"));
         grid.addColumn(assignment -> Formatters.formatAssignmentType(assignment.getType())).setHeader(getTranslation("assignment.type"));
-        grid.addColumn(Assignment::getUrgency).setHeader(getTranslation("assignment.urgency")).setPartNameGenerator((assignment -> Formatters.assignmentUrgencyClassName(assignment.getUrgency())));
+        grid.addComponentColumn(this::createUrgencyBadge).setHeader(getTranslation("assignment.urgency"));
         grid.addColumn(assignment -> Formatters.formatMunicipality(assignment.getMunicipality())).setHeader(getTranslation("assignment.municipality"));
         grid.addColumn(Assignment::getAddress).setHeader(getTranslation("assignment.address"));
 
@@ -56,6 +57,15 @@ public class AssignmentListPanel extends VerticalLayout {
         }
 
         add(grid);
+    }
+
+    private Badge createUrgencyBadge(Assignment assignment) {
+        var badge = new Badge();
+        if (assignment.getUrgency() != null) {
+            badge.setText(assignment.getUrgency().name());
+            badge.addClassName(Formatters.assignmentUrgencyClassName(assignment.getUrgency()));
+        }
+        return badge;
     }
 
     @Override
