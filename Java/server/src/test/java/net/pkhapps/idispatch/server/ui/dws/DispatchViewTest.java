@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.ui.dws;
 
+import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -67,11 +68,11 @@ class DispatchViewTest extends AbstractUITest {
 
         var row = rowOf(assignmentList(), Assignment::getId, assignment.getId());
         assertThat(test(assignmentList()).getCellText(row, 2)).isEqualTo(type.getFormattedDescription());
-        assertThat(test(assignmentList()).getCellText(row, 3)).isEqualTo("A");
+        var urgencyBadge = (Badge) test(assignmentList()).getCellComponent(row, 3);
+        assertThat(urgencyBadge.getText()).isEqualTo("A");
+        assertThat(urgencyBadge.getClassNames()).contains("urgency-a");
         assertThat(test(assignmentList()).getCellText(row, 4)).isEqualTo(municipality.getName());
         assertThat(test(assignmentList()).getCellText(row, 5)).isEqualTo("Main Street 1");
-        assertThat(assignmentList().getColumns().get(3).getPartNameGenerator()
-                .apply(test(assignmentList()).getRow(row))).isEqualTo("urgency-a");
     }
 
     @Test

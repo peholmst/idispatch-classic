@@ -1,21 +1,21 @@
-vaadin-grid::part(urgency-a) {
-    background-color: orangered;
-    color: white;
+vaadin-badge.urgency-a {
+    --vaadin-badge-background: orangered;
+    --vaadin-badge-text-color: white;
 }
 
-vaadin-grid::part(urgency-b) {
-    background-color: salmon;
-    color: black;
+vaadin-badge.urgency-b {
+    --vaadin-badge-background: salmon;
+    --vaadin-badge-text-color: black;
 }
 
-vaadin-grid::part(urgency-c) {
-    background-color: yellow;
-    color: black;
+vaadin-badge.urgency-c {
+    --vaadin-badge-background: yellow;
+    --vaadin-badge-text-color: black;
 }
 
-vaadin-grid::part(urgency-d) {
-    background-color: lightgreen;
-    color: black;
+vaadin-badge.urgency-d {
+    --vaadin-badge-background: lightgreen;
+    --vaadin-badge-text-color: black;
 }
 
 vaadin-grid::part(header-cell) {
