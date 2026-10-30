@@ -7,7 +7,9 @@ nothing about users or roles is stored in the iDispatch database.
 | Keycloak client role | Gives access to |
 |---|---|
 | `DISPATCHER` | The dispatcher workstation (open and dispatch assignments, change resource statuses) |
-| `REPORT_READER` | Reports of closed assignments |
+| `REPORT_READER` | Reports of closed assignments, read only |
+| `REPORT_WRITER` | Reports of closed assignments, and filling in what happened on scene while a report is open |
+| `REPORT_REVIEWER` | Reports of closed assignments, read only, and closing a report once it has been checked, or re-opening it. Nobody can change a closed report |
 | `ADMIN` | The management console (municipalities, assignment types, resources, resource types, destinations) |
 
 A user can have any combination of these roles. A user with none of them can log in, but only sees the home page.
@@ -22,16 +24,24 @@ link in the application's menu opens it.
 application starts, and waits until Keycloak has imported the realm.
 
 * Keycloak: <http://localhost:8180>, admin console at <http://localhost:8180/admin> (`admin` / `admin`)
-* Realm `idispatch`, imported from `keycloak/idispatch-realm.json` every time the container starts. Keycloak
-  doesn't persist anything, so changes made in the admin console are lost when the container is recreated. To
-  keep a change, put it in the JSON file.
+* Realm `idispatch`, imported from `keycloak/idispatch-realm.json` when the container is created. Keycloak keeps
+  its data inside the container, with no volume, and skips the import if the realm already exists. Stopping and
+  restarting the container keeps the realm as it was; recreating it imports the JSON file again and throws away
+  changes made in the admin console. To keep a change, put it in the JSON file. After changing the file, recreate
+  the container, then log out of iDispatch and back in to get the new roles:
+
+  ```shell
+  docker compose up -d --force-recreate --wait keycloak
+  ```
 * Users:
 
   | Username | Password | Roles |
   |---|---|---|
-  | `admin` | `changeme` | `ADMIN`, `DISPATCHER`, `REPORT_READER` |
+  | `admin` | `changeme` | `ADMIN`, `DISPATCHER`, `REPORT_READER`, `REPORT_WRITER`, `REPORT_REVIEWER` |
   | `dispatcher` | `dispatcher` | `DISPATCHER` |
   | `reports` | `reports` | `REPORT_READER` |
+  | `reporter` | `reporter` | `REPORT_WRITER` |
+  | `reviewer` | `reviewer` | `REPORT_REVIEWER` |
 
 Spring Boot skips `docker compose up` entirely if *any* of the services is already running. If PostgreSQL was
 running before Keycloak was added to `compose.yaml`, start Keycloak once by hand:
@@ -86,11 +96,13 @@ your organization requires. iDispatch doesn't depend on any of it.
 
 ### 3. Create the roles
 
-On the `idispatch` client, open the **Roles** tab and create three roles, with exactly these names:
+On the `idispatch` client, open the **Roles** tab and create five roles, with exactly these names:
 
 * `ADMIN`
 * `DISPATCHER`
 * `REPORT_READER`
+* `REPORT_WRITER`
+* `REPORT_REVIEWER`
 
 These are *client* roles, not realm roles. The application only reads roles of the `idispatch` client.
 
@@ -130,7 +142,7 @@ select **Generated ID token**. The token must contain, for example, `"roles": ["
    the `idispatch` roles the user needs.
 
 With more than a few users, it's easier to give the roles to groups: create groups such as `Dispatchers`,
-`Report readers` and `Administrators` under **Groups**, assign the client roles on each group's **Role mapping**
+`Report readers`, `Report writers`, `Report reviewers` and `Administrators` under **Groups**, assign the client roles on each group's **Role mapping**
 tab, and add users to the groups. Keycloak can also take users and groups from LDAP or Active Directory under
 **User federation**.
 

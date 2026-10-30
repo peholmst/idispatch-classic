@@ -19,6 +19,12 @@ public final class Formatters {
                 .format(ZonedDateTime.ofInstant(instant, ZoneId.systemDefault()));
     }
 
+    public static String formatTime(Instant instant) {
+        return instant == null ? null : DateTimeFormatter
+                .ofPattern("HH:mm:ss")
+                .format(ZonedDateTime.ofInstant(instant, ZoneId.systemDefault()));
+    }
+
     public static String formatAssignmentType(AssignmentType assignmentType) {
         return assignmentType == null ? null : assignmentType.getFormattedDescription();
     }
