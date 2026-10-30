@@ -8,7 +8,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
@@ -25,7 +24,6 @@ import com.vaadin.flow.router.BeforeLeaveEvent;
 import com.vaadin.flow.router.BeforeLeaveObserver;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.Lumo;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.boundary.ReportService;
@@ -55,7 +53,6 @@ import java.util.stream.Stream;
 
 @Route(value = "reports", layout = RootLayout.class)
 @RolesAllowed({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER})
-@StyleSheet(Lumo.COMPACT_STYLESHEET)
 public class ReportsView extends MasterDetailLayout implements HasNavbarContent, HasDynamicTitle, BeforeLeaveObserver {
 
     private final AssignmentService assignmentService;
@@ -96,7 +93,7 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
                 .setSortable(true).setResizable(true);
         assignmentsGrid.sort(GridSortOrder.desc(closedColumn).build());
         assignmentsGrid.setSizeFull();
-        assignmentsGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER, GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
+        assignmentsGrid.addThemeVariants(GridVariant.NO_BORDER, GridVariant.ROW_STRIPES);
 
         var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -172,13 +169,13 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
             typeFilter.clear();
             reportStatusFilter.clear();
         });
-        clearFilters.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        clearFilters.addThemeVariants(ButtonVariant.TERTIARY);
 
         var filterBar = new HorizontalLayout(closedFrom, closedTo, municipalityFilter, typeFilter, reportStatusFilter,
                 clearFilters);
         filterBar.setWrap(true);
         filterBar.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
-        filterBar.getStyle().set("padding", "0 var(--lumo-space-m) var(--lumo-space-s)");
+        filterBar.getStyle().set("padding", "0 var(--vaadin-padding-m) var(--vaadin-padding-s)");
 
         var master = new VerticalLayout(filterBar, assignmentsGrid);
         master.setSizeFull();
@@ -328,7 +325,7 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
     @Override
     public Optional<Component> getNavbarContent() {
         var toolbar = new HorizontalLayout(refreshButton);
-        toolbar.getStyle().set("margin-left", "var(--lumo-space-m)");
+        toolbar.getStyle().set("margin-left", "var(--vaadin-padding-m)");
         toolbar.setSizeUndefined();
         return Optional.of(toolbar);
     }

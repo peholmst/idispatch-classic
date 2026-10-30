@@ -151,7 +151,7 @@ public class AssignmentPanel extends VerticalLayout {
         assignmentLayout.add(assignmentActions);
 
         assignedResources = new Grid<>();
-        assignedResources.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
+        assignedResources.addThemeVariants(GridVariant.ROW_STRIPES);
         assignedResources.setWidthFull();
         assignedResources.setHeight(200, Unit.PIXELS);
         assignedResources.addColumn(rs -> Formatters.formatResource(rs.getResource())).setHeader(getTranslation("dispatch.resource"));
@@ -160,18 +160,18 @@ public class AssignmentPanel extends VerticalLayout {
         assignmentLayout.add(assignedResources);
 
         var dispatchAll = new Button(getTranslation("dispatch.dispatch-all"), event -> dispatchAll());
-        dispatchAll.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        dispatchAll.addThemeVariants(ButtonVariant.ERROR);
         var dispatchSelected = new Button(getTranslation("dispatch.dispatch-selected"), event -> dispatchSelected());
         dispatchSelected.setEnabled(false);
-        dispatchSelected.addThemeVariants(ButtonVariant.LUMO_ERROR);
+        dispatchSelected.addThemeVariants(ButtonVariant.ERROR);
         var dispatchReserved = new Button(getTranslation("dispatch.dispatch-reserved"), event -> dispatchReserved());
-        dispatchReserved.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+        dispatchReserved.addThemeVariants(ButtonVariant.PRIMARY, ButtonVariant.ERROR);
 
         var dispatchActions = new HorizontalLayout(dispatchAll, dispatchSelected, dispatchReserved);
         assignmentLayout.add(dispatchActions);
 
         var closeAssignment = new Button(getTranslation("dispatch.close-assignment"), event -> closeAssignment());
-        closeAssignment.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        closeAssignment.addThemeVariants(ButtonVariant.TERTIARY);
         assignmentLayout.add(closeAssignment);
 
         assignedResources.addSelectionListener(event -> {
@@ -196,7 +196,7 @@ public class AssignmentPanel extends VerticalLayout {
 
     private Button createStatusButton(ResourceStatus resourceStatus) {
         var btn = new Button(Formatters.formatResourceState(resourceStatus.getState()));
-        btn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        btn.addThemeVariants(ButtonVariant.SMALL);
         btn.addClassName(Formatters.resourceStateClassName(resourceStatus.getState()));
         btn.addClickListener(event -> new ChangeResourceStatusDialog(resourceStatusService, resourceStatus).open());
         return btn;
@@ -263,7 +263,7 @@ public class AssignmentPanel extends VerticalLayout {
         ex.getViolationMessages(getLocale()).forEach(error -> errors.add(new ListItem(error)));
         var notification = new Notification(errors);
         notification.setPosition(Notification.Position.MIDDLE);
-        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+        notification.addThemeVariants(NotificationVariant.ERROR);
         notification.setDuration(2000);
         notification.open();
     }

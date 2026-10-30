@@ -37,8 +37,7 @@ public class AssignmentListPanel extends VerticalLayout {
 
         grid = new Grid<>();
         grid.addThemeVariants(
-                GridVariant.LUMO_NO_BORDER,
-                GridVariant.LUMO_COMPACT
+                GridVariant.NO_BORDER
         );
         grid.setSizeFull();
 

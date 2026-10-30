@@ -149,7 +149,7 @@ class AssignmentReportPanel extends VerticalLayout {
         resourcesGrid = new Grid<>();
         resourcesGrid.setWidthFull();
         resourcesGrid.setAllRowsVisible(true);
-        resourcesGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
+        resourcesGrid.addThemeVariants(GridVariant.ROW_STRIPES);
         resourcesGrid.setSelectionMode(Grid.SelectionMode.NONE);
 
         resourcesGrid.addColumn(ReportResourceDTO::getCallSign).setHeader(getTranslation("dispatch.resource"));
@@ -188,9 +188,9 @@ class AssignmentReportPanel extends VerticalLayout {
         statusRow.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
 
         save = new Button(getTranslation("report.save"), event -> save());
-        save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        save.addThemeVariants(ButtonVariant.PRIMARY);
         close = new Button(getTranslation("report.close"), VaadinIcon.LOCK.create(), event -> close());
-        close.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+        close.addThemeVariants(ButtonVariant.SUCCESS);
         reopen = new Button(getTranslation("report.reopen"), VaadinIcon.UNLOCK.create(), event -> reopen());
         var actions = new HorizontalLayout(save, close, reopen);
 
@@ -205,7 +205,7 @@ class AssignmentReportPanel extends VerticalLayout {
 
     private static Span createLastEditSpan() {
         var span = new Span();
-        span.getStyle().set("color", "var(--lumo-secondary-text-color)").set("font-size", "var(--lumo-font-size-s)");
+        span.getStyle().set("color", "var(--vaadin-text-color-secondary)").set("font-size", "var(--aura-font-size-s)");
         return span;
     }
 
@@ -368,17 +368,17 @@ class AssignmentReportPanel extends VerticalLayout {
             if (result instanceof UpdateResult.NoChange<AssignmentReport> noChange) {
                 noChange.getData().ifPresent(this::showChangedReport);
                 showNotification(getTranslation("report.save.closed-meanwhile"),
-                        NotificationVariant.LUMO_WARNING);
+                        NotificationVariant.WARNING);
             } else if (result instanceof UpdateResult.Conflict<AssignmentReport> conflict && conflict.getConflictingData() != null) {
                 showChangedReport(conflict.getConflictingData());
                 showNotification(getTranslation("report.save.conflict"),
-                        NotificationVariant.LUMO_WARNING);
+                        NotificationVariant.WARNING);
             } else {
                 result.getData().ifPresent(this::showChangedReport);
-                showNotification(getTranslation("report.saved"), NotificationVariant.LUMO_SUCCESS);
+                showNotification(getTranslation("report.saved"), NotificationVariant.SUCCESS);
             }
         } catch (ValidationFailedException ex) {
-            showNotification(String.join("\n", ex.getViolationMessages(getLocale())), NotificationVariant.LUMO_ERROR);
+            showNotification(String.join("\n", ex.getViolationMessages(getLocale())), NotificationVariant.ERROR);
         }
     }
 
@@ -388,7 +388,7 @@ class AssignmentReportPanel extends VerticalLayout {
         }
         if (unsavedChanges) {
             // Only possible for a reviewer who also writes reports
-            showNotification(getTranslation("report.close.unsaved-changes"), NotificationVariant.LUMO_WARNING);
+            showNotification(getTranslation("report.close.unsaved-changes"), NotificationVariant.WARNING);
             return;
         }
         showReviewResult(reportService.closeReport(bean.getReport()), getTranslation("report.closed-notification"));
@@ -407,10 +407,10 @@ class AssignmentReportPanel extends VerticalLayout {
                 showChangedReport(conflict.getConflictingData());
             }
             showNotification(getTranslation("report.review.conflict"),
-                    NotificationVariant.LUMO_WARNING);
+                    NotificationVariant.WARNING);
         } else {
             result.getData().ifPresent(this::showChangedReport);
-            showNotification(successText, NotificationVariant.LUMO_SUCCESS);
+            showNotification(successText, NotificationVariant.SUCCESS);
         }
     }
 

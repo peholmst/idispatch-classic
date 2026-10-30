@@ -7,11 +7,12 @@ import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.i18n.DefaultI18NProvider;
 import com.vaadin.flow.i18n.I18NProvider;
 import com.vaadin.flow.server.VaadinServiceInitListener;
-import com.vaadin.flow.theme.lumo.Lumo;
+import com.vaadin.flow.theme.aura.Aura;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@StyleSheet(Lumo.STYLESHEET)
+@StyleSheet(Aura.STYLESHEET)
+@StyleSheet("styles.css")
 @ColorScheme(ColorScheme.Value.DARK)
 @Push
 @Configuration

@@ -40,9 +40,9 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
         var toggle = new DrawerToggle();
         var title = new H1("iDispatch");
         title.getStyle()
-                .set("font-size", "var(--lumo-font-size-l)")
-                .set("line-height", "var(--lumo-size-l)")
-                .set("margin", "0 var(--lumo-space-m)");
+                .set("font-size", "var(--aura-font-size-l)")
+                .set("line-height", "var(--aura-line-height-xl)")
+                .set("margin", "0 var(--vaadin-padding-m)");
 
         var displayName = getDisplayName(authenticationContext);
         var avatar = new Avatar(displayName);
@@ -71,8 +71,8 @@ public class RootLayout extends AppLayout implements RouterLayout, AfterNavigati
 
         viewTitle = new H2();
         viewTitle.getStyle()
-                .set("font-size", "var(--lumo-font-size-l)")
-                .set("line-height", "var(--lumo-size-l)")
+                .set("font-size", "var(--aura-font-size-l)")
+                .set("line-height", "var(--aura-line-height-xl)")
                 .set("margin", "0");
 
         navbarLayout = new HorizontalLayout();

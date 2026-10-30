@@ -1,0 +1,4 @@
+/* Dense layout for the dispatch, reports and management screens (replaces Lumo's compact preset) */
+html {
+    --aura-base-size: 12;
+}

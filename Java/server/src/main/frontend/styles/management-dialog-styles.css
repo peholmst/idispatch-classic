@@ -1,5 +1,5 @@
 ul.validation-errors {
     list-style: none;
-    padding: var(--lumo-space-xs) 0;
-    color: var(--lumo-error-color)
+    padding: var(--vaadin-padding-xs) 0;
+    color: var(--aura-red-text)
 }

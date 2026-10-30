@@ -11,7 +11,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.HasDynamicTitle;
-import com.vaadin.flow.theme.lumo.LumoIcon;
 import net.pkhapps.idispatch.server.boundary.DefaultFilter;
 import net.pkhapps.idispatch.server.boundary.ManagementService;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
@@ -43,12 +42,12 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         grid.setPartNameGenerator(entity -> isDeleted(entity) ? "deleted" : null);
 
         var add = new Button(getTranslation("management.add"), VaadinIcon.PLUS_CIRCLE.create(), event -> add());
-        add.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        add.addThemeVariants(ButtonVariant.PRIMARY);
         edit = new Button(VaadinIcon.EDIT.create(), event -> edit());
         edit.setTooltipText(getTranslation("management.edit"));
         delete = new Button(VaadinIcon.CLOSE_CIRCLE.create(), event -> delete());
-        delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        restore = new Button(LumoIcon.UNDO.create(), event -> restore());
+        delete.addThemeVariants(ButtonVariant.ERROR);
+        restore = new Button(VaadinIcon.REPLY.create(), event -> restore());
 
         searchField = new TextField();
         searchField.setPlaceholder(getTranslation("management.search"));
