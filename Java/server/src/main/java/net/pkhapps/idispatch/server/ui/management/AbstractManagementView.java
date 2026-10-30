@@ -3,7 +3,6 @@ package net.pkhapps.idispatch.server.ui.management;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -20,7 +19,6 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-@CssImport("./styles/management-view-grid-styles.css")
 public abstract class AbstractManagementView<E extends AbstractEntity, S extends ManagementService<E>>
         extends VerticalLayout implements HasDynamicTitle {
 

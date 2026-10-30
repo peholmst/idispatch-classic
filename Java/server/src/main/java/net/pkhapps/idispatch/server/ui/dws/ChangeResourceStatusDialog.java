@@ -1,7 +1,6 @@
 package net.pkhapps.idispatch.server.ui.dws;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
@@ -11,7 +10,6 @@ import net.pkhapps.idispatch.server.entity.ResourceStatus;
 import net.pkhapps.idispatch.server.ui.Formatters;
 
 
-@CssImport("./styles/dispatch-view-styles.css")
 public class ChangeResourceStatusDialog extends Dialog {
 
     private final ResourceStatusService resourceStatusService;
