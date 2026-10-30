@@ -4,14 +4,16 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -35,7 +37,9 @@ import net.pkhapps.idispatch.server.util.UpdateResult;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -46,6 +50,7 @@ class AssignmentReportPanel extends VerticalLayout {
     private final Binder<ReportDTO> binder;
     private final Binder<AssignmentReport> sceneBinder;
     private final List<UnitReportForm> unitForms = new ArrayList<>();
+    private final Map<Resource, Details> unitDetails = new HashMap<>();
     private final Grid<ReportResourceDTO> resourcesGrid;
     private final Component noAssignmentSelected;
     private final Scroller content;
@@ -244,6 +249,7 @@ class AssignmentReportPanel extends VerticalLayout {
     }
 
     private void doSetBean(ReportDTO bean) {
+        var previousBean = this.bean;
         this.bean = bean;
         noAssignmentSelected.setVisible(bean == null);
         content.setVisible(bean != null);
@@ -253,20 +259,42 @@ class AssignmentReportPanel extends VerticalLayout {
         sceneBinder.setBean(bean == null ? null : bean.getReport());
         sceneLastEdit.setText(bean == null ? "" : formatLastEdit(bean.getReport().getLastEdit()));
 
+        // Showing the same assignment again, such as after saving, keeps the units the user had opened open
+        var openedUnits = previousBean != null && bean != null && previousBean.getNumber().equals(bean.getNumber())
+                ? unitDetails.entrySet().stream().filter(entry -> entry.getValue().isOpened()).map(Map.Entry::getKey).toList()
+                : null;
         units.removeAll();
         unitForms.clear();
+        unitDetails.clear();
         if (bean != null) {
             var respondingResources = bean.getRespondingResources();
             if (respondingResources.isEmpty()) {
                 units.add(new Span("No units responded to this assignment"));
             }
             respondingResources.forEach(resource -> {
-                var unitForm = new UnitReportForm(resource, bean.getReport().getUnitReport(resource), editable);
+                var unitReport = bean.getReport().getUnitReport(resource);
+                var unitForm = new UnitReportForm(resource, unitReport, editable);
                 unitForm.binder.addValueChangeListener(event -> markChanged());
                 unitForms.add(unitForm);
-                units.add(unitForm);
+
+                var details = new Details(createUnitSummary(resource, unitReport), unitForm);
+                details.setWidthFull();
+                // A writer usually works on their own unit only, so every unit starts closed and stays out of the way
+                details.setOpened(openedUnits != null && openedUnits.contains(resource));
+                unitDetails.put(resource, details);
+                units.add(details);
             });
         }
+    }
+
+    private static Component createUnitSummary(Resource resource, UnitReport unitReport) {
+        var callSign = new Span(resource.getCallSign());
+        callSign.getStyle().set("font-weight", "600");
+        var lastEdit = createLastEditSpan();
+        lastEdit.setText(formatLastEdit(unitReport.getLastEdit()));
+        var summary = new HorizontalLayout(callSign, lastEdit);
+        summary.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
+        return summary;
     }
 
     private void save() {
@@ -275,7 +303,11 @@ class AssignmentReportPanel extends VerticalLayout {
         }
         var valid = sceneBinder.validate().isOk();
         for (var unitForm : unitForms) {
-            valid &= unitForm.binder.validate().isOk();
+            if (!unitForm.binder.validate().isOk()) {
+                // Don't hide the error in a closed unit
+                unitDetails.get(unitForm.getResource()).setOpened(true);
+                valid = false;
+            }
         }
         if (!valid) {
             return;
@@ -338,9 +370,7 @@ class AssignmentReportPanel extends VerticalLayout {
             binder.setBean(unitReport);
             binder.setReadOnly(!editable);
 
-            var lastEdit = createLastEditSpan();
-            lastEdit.setText(formatLastEdit(unitReport.getLastEdit()));
-            add(new H4(resource.getCallSign()), lastEdit, situationOnArrival, actionsTaken);
+            add(situationOnArrival, actionsTaken);
         }
 
         Resource getResource() {

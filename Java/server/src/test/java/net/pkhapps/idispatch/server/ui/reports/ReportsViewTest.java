@@ -4,9 +4,11 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -34,6 +36,7 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -113,6 +116,7 @@ class ReportsViewTest extends AbstractUITest {
         integerField("How many lightly injured?").setValue(2);
         integerField("How many seriously injured?").setValue(1);
         integerField("How many deceased?").setValue(0);
+        unitDetails(callSign).setOpened(true);
         textArea(unitForm(callSign), "What was the situation like when you arrived?").setValue("Smoke from the roof");
         textArea(unitForm(callSign), "What actions did you take?").setValue("Interior attack");
         test(button("Save Report")).click();
@@ -121,6 +125,7 @@ class ReportsViewTest extends AbstractUITest {
 
         test(refreshButton()).click();
         select(closed);
+        unitDetails(callSign).setOpened(true);
         assertThat(textArea(reportPanel(), "How did the situation develop?").getValue()).isEqualTo("The fire spread to the attic");
         assertThat(integerField("How many people were involved?").getValue()).isEqualTo(4);
         assertThat(integerField("How many lightly injured?").getValue()).isEqualTo(2);
@@ -265,11 +270,12 @@ class ReportsViewTest extends AbstractUITest {
         var resource = unitForm(callSign).getResource();
         assertThat(report.getUnitReport(resource).getLastEdit()).as("Unit report was not touched").isNull();
         assertThat(lastEditTexts(reportPanel())).anyMatch(text -> text.startsWith("Last edited by Erik Explorer on "));
-        assertThat(lastEditTexts(unitForm(callSign))).containsExactly("Not filled in yet");
+        assertThat(lastEditTexts(unitDetails(callSign).getSummary())).containsExactly("Not filled in yet");
 
         loginWithIdToken("subject-ella", "Ella", "Explorer");
         navigate(ReportsView.class);
         select(closed);
+        unitDetails(callSign).setOpened(true);
         textArea(unitForm(callSign), "What actions did you take?").setValue("Interior attack");
         test(button("Save Report")).click();
 
@@ -279,7 +285,46 @@ class ReportsViewTest extends AbstractUITest {
         assertThat(unitEdit.getSubject()).isEqualTo("subject-ella");
         assertThat(unitEdit.getFirstName()).isEqualTo("Ella");
         assertThat(unitEdit.getLastName()).isEqualTo("Explorer");
-        assertThat(lastEditTexts(unitForm(callSign))).singleElement().asString().startsWith("Last edited by Ella Explorer on ");
+        assertThat(lastEditTexts(unitDetails(callSign).getSummary())).singleElement().asString().startsWith("Last edited by Ella Explorer on ");
+    }
+
+    @Test
+    @WithMockUser(username = "report-writer", roles = {"REPORT_WRITER", "DISPATCHER"})
+    void singleUnit_startsClosed() {
+        var callSign = unique("CS");
+        var closed = handledAssignment(callSign);
+        navigate(ReportsView.class);
+        select(closed);
+
+        assertThat(unitDetails(callSign).isOpened()).isFalse();
+    }
+
+    @Test
+    @WithMockUser(username = "report-writer", roles = {"REPORT_WRITER", "DISPATCHER"})
+    void manyUnits_startClosed_andOpenedUnitsStayOpenAfterSaving() {
+        var mine = unique("CS");
+        var other = unique("CS");
+        var closed = handledAssignment(mine, other);
+        var another = handledAssignment(unique("CS"), unique("CS"));
+        navigate(ReportsView.class);
+        select(closed);
+
+        assertThat(unitDetails(mine).isOpened()).isFalse();
+        assertThat(unitDetails(other).isOpened()).isFalse();
+        assertThat(((HorizontalLayout) unitDetails(mine).getSummary()).getComponentAt(0))
+                .isInstanceOfSatisfying(Span.class, span -> assertThat(span.getText()).isEqualTo(mine));
+
+        unitDetails(mine).setOpened(true);
+        textArea(unitForm(mine), "What actions did you take?").setValue("Interior attack");
+        test(button("Save Report")).click();
+
+        assertThat(notificationTexts()).contains("Report saved");
+        assertThat(unitDetails(mine).isOpened()).isTrue();
+        assertThat(unitDetails(other).isOpened()).isFalse();
+
+        select(another);
+        select(closed);
+        assertThat(unitDetails(mine).isOpened()).as("Another assignment in between starts over").isFalse();
     }
 
     @Test
@@ -291,6 +336,7 @@ class ReportsViewTest extends AbstractUITest {
 
         assertThat(textArea(reportPanel(), "How did the situation develop?").isReadOnly()).isTrue();
         assertThat(integerField("How many people were involved?").isReadOnly()).isTrue();
+        unitDetails(callSign).setOpened(true);
         assertThat(textArea(unitForm(callSign), "What actions did you take?").isReadOnly()).isTrue();
         assertThat(find(Button.class).withText("Save Report").exists()).isFalse();
     }
@@ -308,12 +354,15 @@ class ReportsViewTest extends AbstractUITest {
 
     /**
      * Runs an assignment from start to finish through the services, like a dispatcher would: opens it, fills it
-     * in, assigns and dispatches a resource, lets the resource progress to available, and closes the assignment.
+     * in, assigns and dispatches one resource per call sign, lets the resources progress to available, and closes the
+     * assignment.
      */
-    private Assignment handledAssignment(String callSign) {
+    private Assignment handledAssignment(String... callSigns) {
         var type = testData.assignmentType(unique("T"), "Building fire");
         var municipality = testData.municipality(unique("Town "));
-        Resource resource = testData.resource(callSign, ResourceState.AT_STATION);
+        List<Resource> resources = Stream.of(callSigns)
+                .map(callSign -> testData.resource(callSign, ResourceState.AT_STATION))
+                .toList();
 
         var assignment = assignmentService.findAssignment(assignmentService.openAssignment()).orElseThrow();
         assignment.setType(type);
@@ -323,15 +372,19 @@ class ReportsViewTest extends AbstractUITest {
         assignment.setUrgency(AssignmentUrgency.B);
         assignment = assignmentService.updateAssignment(assignment).getData().orElseThrow();
 
-        resourceStatusService.setResourceAssignment(resource, assignment);
+        for (var resource : resources) {
+            resourceStatusService.setResourceAssignment(resource, assignment);
+        }
         try {
             dispatchService.dispatchAllResources(assignment);
         } catch (ValidationFailedException ex) {
             throw new AssertionError("Assignment could not be dispatched", ex);
         }
-        resourceStatusService.setResourceState(resource, ResourceState.EN_ROUTE);
-        resourceStatusService.setResourceState(resource, ResourceState.ON_SCENE);
-        resourceStatusService.setResourceState(resource, ResourceState.AVAILABLE);
+        for (var resource : resources) {
+            resourceStatusService.setResourceState(resource, ResourceState.EN_ROUTE);
+            resourceStatusService.setResourceState(resource, ResourceState.ON_SCENE);
+            resourceStatusService.setResourceState(resource, ResourceState.AVAILABLE);
+        }
         assertThat(assignmentService.closeAssignment(assignment)).isTrue();
         return assignmentService.findAssignment(assignment.getId()).orElseThrow();
     }
@@ -409,6 +462,14 @@ class ReportsViewTest extends AbstractUITest {
                 .filter(field -> label.equals(field.getLabel()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("No number field " + label));
+    }
+
+    private Details unitDetails(String callSign) {
+        var form = unitForm(callSign);
+        return find(Details.class, reportPanel()).all().stream()
+                .filter(details -> details.getContent().anyMatch(form::equals))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No expandable unit report for " + callSign));
     }
 
     private AssignmentReportPanel.UnitReportForm unitForm(String callSign) {
