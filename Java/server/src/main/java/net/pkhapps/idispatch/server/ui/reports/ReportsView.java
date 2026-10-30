@@ -2,17 +2,24 @@ package net.pkhapps.idispatch.server.ui.reports;
 
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.masterdetaillayout.MasterDetailLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.function.SerializableRunnable;
 import com.vaadin.flow.router.BeforeLeaveEvent;
 import com.vaadin.flow.router.BeforeLeaveObserver;
@@ -23,13 +30,21 @@ import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.AssignmentService;
 import net.pkhapps.idispatch.server.boundary.ReportService;
 import net.pkhapps.idispatch.server.entity.Assignment;
+import net.pkhapps.idispatch.server.entity.AssignmentType;
+import net.pkhapps.idispatch.server.entity.Municipality;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import net.pkhapps.idispatch.server.ui.HasNavbarContent;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Route(value = "reports", layout = RootLayout.class)
 @RolesAllowed({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER})
@@ -40,6 +55,11 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
     private final AssignmentService assignmentService;
     private final Button refreshButton;
     private final Grid<Assignment> assignmentsGrid;
+    private final DatePicker closedFrom;
+    private final DatePicker closedTo;
+    private final ComboBox<Municipality> municipalityFilter;
+    private final ComboBox<AssignmentType> typeFilter;
+    private GridListDataView<Assignment> assignmentsDataView;
 
     private final AssignmentReportPanel reportPanel;
     private boolean revertingSelection;
@@ -95,11 +115,51 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
             setDetail(report == null ? null : reportPanel);
         });
 
+        closedFrom = createDatePicker("Closed from");
+        closedTo = createDatePicker("Closed to");
+        closedFrom.addValueChangeListener(event -> closedTo.setMin(event.getValue()));
+        closedTo.addValueChangeListener(event -> closedFrom.setMax(event.getValue()));
+
+        municipalityFilter = new ComboBox<>("Municipality");
+        municipalityFilter.setItemLabelGenerator(Formatters::formatMunicipality);
+        typeFilter = new ComboBox<>("Type");
+        typeFilter.setItemLabelGenerator(Formatters::formatAssignmentType);
+        for (var comboBox : List.of(municipalityFilter, typeFilter)) {
+            comboBox.setClearButtonVisible(true);
+            comboBox.setWidth("12em");
+        }
+        for (var filter : List.<HasValue<?, ?>>of(closedFrom, closedTo, municipalityFilter, typeFilter)) {
+            filter.addValueChangeListener(event -> {
+                if (assignmentsDataView != null) {
+                    assignmentsDataView.refreshAll();
+                }
+            });
+        }
+
+        var clearFilters = new Button("Clear", VaadinIcon.CLOSE_SMALL.create(), event -> {
+            closedFrom.clear();
+            closedTo.clear();
+            municipalityFilter.clear();
+            typeFilter.clear();
+        });
+        clearFilters.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+        var filterBar = new HorizontalLayout(closedFrom, closedTo, municipalityFilter, typeFilter, clearFilters);
+        filterBar.setWrap(true);
+        filterBar.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
+        filterBar.getStyle().set("padding", "0 var(--lumo-space-m) var(--lumo-space-s)");
+
+        var master = new VerticalLayout(filterBar, assignmentsGrid);
+        master.setSizeFull();
+        master.setPadding(false);
+        master.setSpacing(false);
+        master.setFlexGrow(1, assignmentsGrid);
+
         setSizeFull();
         setMasterSize("30em");
         setDetailSize("40em");
         setExpandMaster(true);
-        setMaster(assignmentsGrid);
+        setMaster(master);
         setDetailPlaceholder(new Span("No assignment selected"));
 
         // When the report is shown on top of the list, closing it deselects the assignment, which asks first if there
@@ -160,9 +220,44 @@ public class ReportsView extends MasterDetailLayout implements HasNavbarContent,
         }
     }
 
+    private static DatePicker createDatePicker(String label) {
+        var datePicker = new DatePicker(label);
+        var i18n = new DatePicker.DatePickerI18n();
+        i18n.setDateFormat("dd.MM.yyyy");
+        i18n.setFirstDayOfWeek(1);
+        datePicker.setI18n(i18n);
+        datePicker.setClearButtonVisible(true);
+        datePicker.setWidth("10em");
+        return datePicker;
+    }
+
     private void refresh() {
         assignmentsGrid.deselectAll();
-        assignmentsGrid.setItems(assignmentService.findClosedAssignments());
+        var assignments = assignmentService.findClosedAssignments();
+        assignmentsDataView = assignmentsGrid.setItems(assignments);
+        assignmentsDataView.setFilter(this::matchesFilters);
+        // Offer only the municipalities and types that some closed assignment has, so every choice matches something
+        updateChoices(municipalityFilter, assignments.stream().map(Assignment::getMunicipality),
+                Comparator.comparing(Municipality::getName));
+        updateChoices(typeFilter, assignments.stream().map(Assignment::getType),
+                Comparator.comparing(AssignmentType::getFormattedDescription));
+    }
+
+    private static <T> void updateChoices(ComboBox<T> comboBox, Stream<T> values, Comparator<T> order) {
+        var selected = comboBox.getValue();
+        var choices = values.filter(Objects::nonNull).distinct().sorted(order).toList();
+        comboBox.setItems(choices);
+        if (selected != null && choices.contains(selected)) {
+            comboBox.setValue(selected);
+        }
+    }
+
+    private boolean matchesFilters(Assignment assignment) {
+        var closedDate = LocalDate.ofInstant(assignment.getClosed(), ZoneId.systemDefault());
+        return (closedFrom.getValue() == null || !closedDate.isBefore(closedFrom.getValue()))
+                && (closedTo.getValue() == null || !closedDate.isAfter(closedTo.getValue()))
+                && (municipalityFilter.getValue() == null || municipalityFilter.getValue().equals(assignment.getMunicipality()))
+                && (typeFilter.getValue() == null || typeFilter.getValue().equals(assignment.getType()));
     }
 
     @Override

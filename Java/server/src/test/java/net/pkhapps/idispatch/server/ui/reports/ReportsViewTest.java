@@ -4,7 +4,9 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -19,7 +21,9 @@ import net.pkhapps.idispatch.server.boundary.DispatchService;
 import net.pkhapps.idispatch.server.boundary.ReportService;
 import net.pkhapps.idispatch.server.boundary.ResourceStatusService;
 import net.pkhapps.idispatch.server.entity.Assignment;
+import net.pkhapps.idispatch.server.entity.AssignmentType;
 import net.pkhapps.idispatch.server.entity.AssignmentUrgency;
+import net.pkhapps.idispatch.server.entity.Municipality;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.ResourceState;
 import net.pkhapps.idispatch.server.entity.ValidationFailedException;
@@ -37,6 +41,8 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -89,6 +95,89 @@ class ReportsViewTest extends AbstractUITest {
 
         assertThat(rowOf(assignments(), Assignment::getId, newer.getId()))
                 .isLessThan(rowOf(assignments(), Assignment::getId, older.getId()));
+    }
+
+    @Test
+    void filteringByMunicipality_showsOnlyAssignmentsInThatMunicipality() {
+        var first = handledAssignment(unique("CS"));
+        var second = handledAssignment(unique("CS"));
+        navigate(ReportsView.class);
+        ComboBox<Municipality> municipality = comboBox("Municipality");
+        assertThat(municipality.getListDataView().getItems())
+                .contains(first.getMunicipality(), second.getMunicipality());
+
+        municipality.setValue(first.getMunicipality());
+
+        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isTrue();
+        assertThat(containsRow(assignments(), Assignment::getId, second.getId())).isFalse();
+    }
+
+    @Test
+    void filteringByType_showsOnlyAssignmentsOfThatType() {
+        var first = handledAssignment(unique("CS"));
+        var second = handledAssignment(unique("CS"));
+        navigate(ReportsView.class);
+        ComboBox<AssignmentType> type = comboBox("Type");
+        assertThat(type.getListDataView().getItems()).contains(first.getType(), second.getType());
+
+        type.setValue(second.getType());
+
+        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isFalse();
+        assertThat(containsRow(assignments(), Assignment::getId, second.getId())).isTrue();
+    }
+
+    @Test
+    void filteringByClosedDate_includesBothEndsOfTheRange() {
+        var closed = handledAssignment(unique("CS"));
+        var closedOn = LocalDate.ofInstant(closed.getClosed(), ZoneId.systemDefault());
+        navigate(ReportsView.class);
+
+        datePicker("Closed from").setValue(closedOn);
+        datePicker("Closed to").setValue(closedOn);
+        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isTrue();
+
+        datePicker("Closed to").clear();
+        datePicker("Closed from").setValue(closedOn.plusDays(1));
+        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isFalse();
+
+        datePicker("Closed from").clear();
+        datePicker("Closed to").setValue(closedOn.minusDays(1));
+        assertThat(containsRow(assignments(), Assignment::getId, closed.getId())).isFalse();
+    }
+
+    @Test
+    void clearingFilters_showsEverythingAgain() {
+        var first = handledAssignment(unique("CS"));
+        var second = handledAssignment(unique("CS"));
+        navigate(ReportsView.class);
+        this.<Municipality>comboBox("Municipality").setValue(first.getMunicipality());
+        this.<AssignmentType>comboBox("Type").setValue(first.getType());
+        datePicker("Closed from").setValue(LocalDate.ofInstant(first.getClosed(), ZoneId.systemDefault()).plusDays(1));
+        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isFalse();
+
+        test(button("Clear")).click();
+
+        assertThat(comboBox("Municipality").getValue()).isNull();
+        assertThat(comboBox("Type").getValue()).isNull();
+        assertThat(datePicker("Closed from").getValue()).isNull();
+        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isTrue();
+        assertThat(containsRow(assignments(), Assignment::getId, second.getId())).isTrue();
+    }
+
+    @Test
+    void refreshing_keepsTheFiltersAndOffersNewChoices() {
+        var first = handledAssignment(unique("CS"));
+        navigate(ReportsView.class);
+        ComboBox<Municipality> municipality = comboBox("Municipality");
+        municipality.setValue(first.getMunicipality());
+        var later = handledAssignment(unique("CS"));
+
+        test(refreshButton()).click();
+
+        assertThat(municipality.getValue()).isEqualTo(first.getMunicipality());
+        assertThat(municipality.getListDataView().getItems()).contains(later.getMunicipality());
+        assertThat(containsRow(assignments(), Assignment::getId, first.getId())).isTrue();
+        assertThat(containsRow(assignments(), Assignment::getId, later.getId())).isFalse();
     }
 
     @Test
@@ -431,7 +520,16 @@ class ReportsViewTest extends AbstractUITest {
 
     @SuppressWarnings("unchecked")
     private Grid<Assignment> assignments() {
-        return (Grid<Assignment>) view().getMaster();
+        return find(Grid.class, view().getMaster()).single();
+    }
+
+    private DatePicker datePicker(String label) {
+        return find(DatePicker.class, view().getMaster()).withCondition(picker -> label.equals(picker.getLabel())).single();
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> ComboBox<T> comboBox(String label) {
+        return find(ComboBox.class, view().getMaster()).withCondition(comboBox -> label.equals(comboBox.getLabel())).single();
     }
 
     private ReportsView view() {
