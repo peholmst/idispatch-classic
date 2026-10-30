@@ -11,7 +11,9 @@ services:
       - postgres-data:/var/lib/postgresql
 
   # Development identity provider. Imports the idispatch realm (client, roles and test users) from
-  # keycloak/idispatch-realm.json on every start; Keycloak keeps no state between restarts.
+  # keycloak/idispatch-realm.json when the container is created. Its data lives in the container, and the import
+  # skips an existing realm, so a restart keeps the old realm: after editing the JSON file, recreate the container
+  # with `docker compose up -d --force-recreate --wait keycloak`.
   # Admin console: http://localhost:8180/admin, user admin / admin.
   keycloak:
     image: quay.io/keycloak/keycloak:26.4

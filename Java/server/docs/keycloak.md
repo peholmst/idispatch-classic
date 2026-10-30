@@ -23,9 +23,15 @@ link in the application's menu opens it.
 application starts, and waits until Keycloak has imported the realm.
 
 * Keycloak: <http://localhost:8180>, admin console at <http://localhost:8180/admin> (`admin` / `admin`)
-* Realm `idispatch`, imported from `keycloak/idispatch-realm.json` every time the container starts. Keycloak
-  doesn't persist anything, so changes made in the admin console are lost when the container is recreated. To
-  keep a change, put it in the JSON file.
+* Realm `idispatch`, imported from `keycloak/idispatch-realm.json` when the container is created. Keycloak keeps
+  its data inside the container, with no volume, and skips the import if the realm already exists. Stopping and
+  restarting the container keeps the realm as it was; recreating it imports the JSON file again and throws away
+  changes made in the admin console. To keep a change, put it in the JSON file. After changing the file, recreate
+  the container, then log out of iDispatch and back in to get the new roles:
+
+  ```shell
+  docker compose up -d --force-recreate --wait keycloak
+  ```
 * Users:
 
   | Username | Password | Roles |
