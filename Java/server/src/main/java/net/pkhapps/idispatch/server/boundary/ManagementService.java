@@ -16,10 +16,6 @@ public interface ManagementService<E extends AbstractEntity> {
 
     List<E> findAll(Filter filter);
 
-    interface HardDeletable<E extends AbstractEntity> extends ManagementService<E> {
-        boolean delete(E entity);
-    }
-
     interface SoftDeletable<E extends AbstractEntity & Deactivatable> extends ManagementService<E> {
 
         void delete(E entity);

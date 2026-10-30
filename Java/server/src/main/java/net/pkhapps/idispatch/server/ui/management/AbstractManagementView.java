@@ -98,7 +98,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
 
         var toolbar = new HorizontalLayout(new ViewTitle(getTranslation(titleKey)));
         toolbar.addToEnd(searchField);
-        if (supportsRestore()) {
+        if (supportsDelete()) {
             toolbar.addToEnd(viewOptions);
         }
         toolbar.addToEnd(refresh, createAddButton());
@@ -158,11 +158,10 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         return service;
     }
 
+    /**
+     * Whether the service supports soft deletion, and so deleting, restoring and showing deleted entities.
+     */
     protected boolean supportsDelete() {
-        return (getService() instanceof ManagementService.HardDeletable) || (getService() instanceof ManagementService.SoftDeletable);
-    }
-
-    protected boolean supportsRestore() {
         return getService() instanceof ManagementService.SoftDeletable;
     }
 
@@ -175,7 +174,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
     }
 
     protected boolean canRestore(E entity) {
-        return supportsRestore() && isDeleted(entity);
+        return supportsDelete() && isDeleted(entity);
     }
 
     protected boolean isDeleted(E entity) {
@@ -184,9 +183,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     protected void delete(E entity) {
-        if (getService() instanceof ManagementService.HardDeletable<?>) {
-            ((ManagementService.HardDeletable) getService()).delete(entity);
-        } else if (getService() instanceof ManagementService.SoftDeletable<?>) {
+        if (getService() instanceof ManagementService.SoftDeletable<?>) {
             ((ManagementService.SoftDeletable) getService()).delete(entity);
         }
     }
