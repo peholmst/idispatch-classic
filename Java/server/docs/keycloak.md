@@ -18,6 +18,11 @@ Role names are case sensitive, and the application ignores roles it doesn't reco
 Users manage their own password, and other account details, in the Keycloak account console. The **My Account**
 link in the application's menu opens it.
 
+The application is in English, Swedish or Finnish. Each user picks their language in the Keycloak account console
+(or on the Keycloak login page), and Keycloak puts it in the `locale` claim of the ID token. The application reads the
+claim at login, so after changing the language the user must log out of iDispatch and back in. There is no language
+setting in iDispatch itself. Users who haven't picked a language, or picked one iDispatch doesn't have, get English.
+
 ## Development
 
 `compose.yaml` runs Keycloak next to PostgreSQL. Spring Boot's Docker Compose support starts both when the
@@ -92,7 +97,7 @@ your organization requires. iDispatch doesn't depend on any of it.
    `https://example.com/idispatch/login/oauth2/code/keycloak` and so on. The post logout redirect URI is the
    application's base URL exactly, without a trailing slash.
 5. Select **Save**.
-6. Open the **Credentials** tab and copy the **Client secret**. The application needs it in step 6.
+6. Open the **Credentials** tab and copy the **Client secret**. The application needs it in step 7.
 
 ### 3. Create the roles
 
@@ -132,7 +137,18 @@ from a claim named `roles`:
 To check the result, open the client's **Client scopes → Evaluate** tab, pick a user that has some roles, and
 select **Generated ID token**. The token must contain, for example, `"roles": ["DISPATCHER"]`.
 
-### 5. Add the users
+### 5. Enable the languages
+
+1. Under **Realm settings → Localization**, turn **Internationalization** on.
+2. Set **Supported locales** to `English`, `Svenska` and `Suomi`, and **Default locale** to the language most of your
+   users speak. Select **Save**.
+
+The `locale` claim comes from the `locale` mapper of the built-in `profile` client scope, which the application
+requests. To check it, set a user's language under **Users → (user) → Details → Select a locale**, and look for
+`"locale": "fi"` (for example) in the client's **Client scopes → Evaluate → Generated ID token**. Keycloak only puts
+the claim in the token when the user has picked a language.
+
+### 6. Add the users
 
 1. Under **Users → Add user**, create each person who uses iDispatch. Give them a username, which is the name the
    application shows, and a first and last name.
@@ -156,7 +172,7 @@ moved into Keycloak, so create the users in Keycloak as above before upgrading. 
 *Dispatcher* to `DISPATCHER`, *Report Reader* to `REPORT_READER` and *Admin* to `ADMIN`. Users that were disabled
 are simply not created, or are created with **Enabled** off.
 
-### 6. Configure the application
+### 7. Configure the application
 
 Set the Keycloak connection in the `application.yml` next to `idispatch-server.jar`. (When running in Docker,
 set it in `deploy/.env` instead; see [deployment.md](deployment.md).)
@@ -201,7 +217,7 @@ server:
 The proxy must set `X-Forwarded-Proto`, `X-Forwarded-Host` and `X-Forwarded-Port`. The runboard WebSocket
 (`/ws/runboard`) doesn't use Keycloak and is not affected.
 
-### 7. Check that it works
+### 8. Check that it works
 
 1. Open iDispatch. The browser goes to the Keycloak login page of your realm.
 2. Log in as a user with the `ADMIN` role. The menu shows **Management** and **My Account**, and the username at

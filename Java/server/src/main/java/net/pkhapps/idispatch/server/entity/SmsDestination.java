@@ -12,7 +12,7 @@ public class SmsDestination extends Destination {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "sms_destination_phone_numbers")
-    @NotEmpty(message = "Please enter at least one phone number")
+    @NotEmpty(message = "{idispatch.sms-destination.phone-numbers.required}")
     private Set<String> phoneNumbers = new HashSet<>();
 
     public Set<String> getPhoneNumbers() {

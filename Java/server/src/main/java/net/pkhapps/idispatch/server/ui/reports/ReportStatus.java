@@ -2,18 +2,19 @@ package net.pkhapps.idispatch.server.ui.reports;
 
 import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.badge.BadgeVariant;
+import com.vaadin.flow.i18n.I18NProvider;
 
 /**
  * Whether a reviewer has closed a report. Shown the same way in the list of assignments and in the report itself.
  */
 enum ReportStatus {
-    OPEN("Open"),
-    CLOSED("Closed");
+    OPEN("report.status.open"),
+    CLOSED("report.status.closed");
 
-    private final String label;
+    private final String labelKey;
 
-    ReportStatus(String label) {
-        this.label = label;
+    ReportStatus(String labelKey) {
+        this.labelKey = labelKey;
     }
 
     static ReportStatus of(boolean closed) {
@@ -21,7 +22,7 @@ enum ReportStatus {
     }
 
     String getLabel() {
-        return label;
+        return I18NProvider.translate(labelKey);
     }
 
     Badge createBadge() {
@@ -31,7 +32,7 @@ enum ReportStatus {
     }
 
     void applyTo(Badge badge) {
-        badge.setText(label);
+        badge.setText(getLabel());
         badge.setThemeVariant(BadgeVariant.SUCCESS, this == CLOSED);
     }
 }

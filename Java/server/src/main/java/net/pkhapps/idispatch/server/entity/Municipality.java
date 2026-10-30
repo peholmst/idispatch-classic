@@ -17,7 +17,7 @@ public class Municipality extends AbstractLockableEntity implements Deactivatabl
     public static final String PROP_NAME = "name";
 
     @Column(name = "name", nullable = false, unique = true)
-    @NotBlank(message = "Please enter a name")
+    @NotBlank(message = "{idispatch.municipality.name.required}")
     private String name = "";
     @Column(name = "active", nullable = false)
     private boolean active = true;

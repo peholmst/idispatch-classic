@@ -15,7 +15,7 @@ public class MunicipalityManagementDialog extends AbstractManagementDialog<Munic
 
     @Override
     protected String getTitle(@Nullable Municipality entity) {
-        return entity == null ? "Add Municipality" : "Edit Municipality";
+        return entity == null ? getTranslation("management.municipality.add") : getTranslation("management.municipality.edit");
     }
 
     @Override
@@ -25,7 +25,7 @@ public class MunicipalityManagementDialog extends AbstractManagementDialog<Munic
             protected void initForm(Binder<Municipality> binder, FormLayout formLayout) {
                 binder.setBean(entity == null ? new Municipality() : entity);
 
-                var name = new TextField("Municipality name");
+                var name = new TextField(getTranslation("management.municipality-name"));
                 formLayout.add(name);
 
                 binder.bind(name, Municipality::getName, Municipality::setName);

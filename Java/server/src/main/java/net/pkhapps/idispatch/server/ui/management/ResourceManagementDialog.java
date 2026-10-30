@@ -17,7 +17,7 @@ public class ResourceManagementDialog extends AbstractManagementDialog<Resource>
 
     @Override
     protected String getTitle(@Nullable Resource entity) {
-        return entity == null ? "Add Resource" : "Edit Resource";
+        return entity == null ? getTranslation("management.resource.add") : getTranslation("management.resource.edit");
     }
 
     @Override
@@ -32,10 +32,10 @@ public class ResourceManagementDialog extends AbstractManagementDialog<Resource>
             protected void initForm(Binder<Resource> binder, FormLayout formLayout) {
                 binder.setBean(entity == null ? new Resource() : entity);
 
-                var callSign = new TextField("Call sign");
+                var callSign = new TextField(getTranslation("management.call-sign"));
                 formLayout.add(callSign);
 
-                var type = new ComboBox<ResourceType>("Type");
+                var type = new ComboBox<ResourceType>(getTranslation("management.type"));
                 type.setItemLabelGenerator(ResourceType::getFormattedDescription);
                 type.setItems(service().findApplicableTypes());
                 formLayout.add(type);

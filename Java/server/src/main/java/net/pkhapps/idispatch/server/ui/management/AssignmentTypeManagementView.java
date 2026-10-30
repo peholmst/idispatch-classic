@@ -2,7 +2,6 @@ package net.pkhapps.idispatch.server.ui.management;
 
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
-import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.AssignmentTypeManagementService;
@@ -11,7 +10,6 @@ import net.pkhapps.idispatch.server.security.Roles;
 
 @Route(value = "management/assignment-type", layout = ManagementLayout.class)
 @RolesAllowed(Roles.ROLE_ADMIN)
-@PageTitle("iDispatch | Assignment Types")
 public class AssignmentTypeManagementView extends AbstractManagementView<AssignmentType, AssignmentTypeManagementService> {
 
     public AssignmentTypeManagementView(AssignmentTypeManagementService service) {
@@ -20,8 +18,8 @@ public class AssignmentTypeManagementView extends AbstractManagementView<Assignm
 
     @Override
     protected void configureGrid(Grid<AssignmentType> grid) {
-        var code = grid.addColumn(AssignmentType::getCode).setHeader("Code").setSortable(true);
-        grid.addColumn(AssignmentType::getDescription).setHeader("Description");
+        var code = grid.addColumn(AssignmentType::getCode).setHeader(getTranslation("management.code")).setSortable(true);
+        grid.addColumn(AssignmentType::getDescription).setHeader(getTranslation("management.description"));
         grid.sort(GridSortOrder.asc(code).build());
     }
 

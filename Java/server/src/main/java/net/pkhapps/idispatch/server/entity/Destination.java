@@ -24,14 +24,14 @@ public abstract class Destination extends AbstractLockableEntity implements Deac
     private boolean active = true;
 
     @Column(name = "description")
-    @Size(max = 255, message = "Please enter at most 255 characters")
+    @Size(max = 255, message = "{idispatch.destination.description.size}")
     private String description;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "destination_resources",
             joinColumns = @JoinColumn(name = "destination_id"),
             inverseJoinColumns = @JoinColumn(name = "resource_id"))
-    @NotEmpty(message = "Please select at least one resource")
+    @NotEmpty(message = "{idispatch.destination.resources.required}")
     private Set<Resource> resources = new HashSet<>();
 
     /**

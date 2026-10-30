@@ -3,6 +3,9 @@
   "displayName": "iDispatch",
   "enabled": true,
   "sslRequired": "none",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en", "sv", "fi"],
+  "defaultLocale": "en",
   "clients": [
     {
       "clientId": "idispatch",

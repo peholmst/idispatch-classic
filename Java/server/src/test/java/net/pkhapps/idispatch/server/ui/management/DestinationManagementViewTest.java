@@ -50,7 +50,7 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
 
         var row = rowOf(this.<Destination>grid(), Destination::getId,
                 destinationId(d -> d instanceof RunboardDestination r && key.equals(r.getRunboardKey())));
-        assertThat(test(this.<Destination>grid()).getCellText(row, 0)).isEqualTo("Runboard");
+        assertThat(test(this.<Destination>grid()).getCellText(row, 0)).isEqualTo("Runboard Destination");
         assertThat(test(this.<Destination>grid()).getCellText(row, 1)).isEqualTo(description);
         assertThat(test(this.<Destination>grid()).getCellText(row, 2)).isEqualTo(callSign);
     }

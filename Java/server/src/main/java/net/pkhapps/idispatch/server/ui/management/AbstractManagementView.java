@@ -10,6 +10,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.theme.lumo.LumoIcon;
 import net.pkhapps.idispatch.server.boundary.DefaultFilter;
 import net.pkhapps.idispatch.server.boundary.ManagementService;
@@ -22,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 @CssImport("./styles/management-view-grid-styles.css")
 public abstract class AbstractManagementView<E extends AbstractEntity, S extends ManagementService<E>>
-        extends VerticalLayout {
+        extends VerticalLayout implements HasDynamicTitle {
 
     private final S service;
     private final Grid<E> grid;
@@ -41,21 +42,21 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         grid.setSelectionMode(Grid.SelectionMode.SINGLE);
         grid.setPartNameGenerator(entity -> isDeleted(entity) ? "deleted" : null);
 
-        var add = new Button("Add...", VaadinIcon.PLUS_CIRCLE.create(), event -> add());
+        var add = new Button(getTranslation("management.add"), VaadinIcon.PLUS_CIRCLE.create(), event -> add());
         add.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         edit = new Button(VaadinIcon.EDIT.create(), event -> edit());
-        edit.setTooltipText("Edit");
+        edit.setTooltipText(getTranslation("management.edit"));
         delete = new Button(VaadinIcon.CLOSE_CIRCLE.create(), event -> delete());
         delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
         restore = new Button(LumoIcon.UNDO.create(), event -> restore());
 
         searchField = new TextField();
-        searchField.setPlaceholder("Search...");
+        searchField.setPlaceholder(getTranslation("management.search"));
         searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
         searchField.setValueChangeMode(ValueChangeMode.LAZY);
         searchField.addValueChangeListener(event -> refresh());
 
-        includeDeleted = new Checkbox("Include deleted", event -> refresh());
+        includeDeleted = new Checkbox(getTranslation("management.include-deleted"), event -> refresh());
         var refresh = new Button(VaadinIcon.REFRESH.create(), event -> refresh());
 
         setSizeFull();
@@ -175,6 +176,11 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         } else {
             return false;
         }
+    }
+
+    @Override
+    public String getPageTitle() {
+        return "iDispatch | " + getTranslation(ManagementLayout.getSectionLabelKey(getClass()));
     }
 
     protected abstract void configureGrid(Grid<E> grid);

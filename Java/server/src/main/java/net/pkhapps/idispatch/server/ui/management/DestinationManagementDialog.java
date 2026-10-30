@@ -28,12 +28,12 @@ public class DestinationManagementDialog extends AbstractManagementDialog<Destin
     @Override
     protected String getTitle(@Nullable Destination entity) {
         if (entity == null) {
-            return "Add Destination";
+            return getTranslation("management.destination.add");
         } else {
             if (entity instanceof SmsDestination) {
-                return "Edit SMS Destination";
+                return getTranslation("management.destination.edit-sms");
             } else if (entity instanceof RunboardDestination) {
-                return "Edit Runboard Destination";
+                return getTranslation("management.destination.edit-runboard");
             } else {
                 throw new IllegalStateException("Unknown destination type");
             }
@@ -98,8 +98,8 @@ public class DestinationManagementDialog extends AbstractManagementDialog<Destin
         public abstract Binder<? extends Destination> getBinder();
 
         protected <D extends Destination> void addDescriptionField(Binder<D> binder) {
-            var description = new TextField("Description");
-            description.setHelperText("Only shown here, to tell destinations apart");
+            var description = new TextField(getTranslation("management.description"));
+            description.setHelperText(getTranslation("management.destination.description.helper"));
             add(description);
             binder.forField(description)
                     .withNullRepresentation("")
@@ -115,14 +115,14 @@ public class DestinationManagementDialog extends AbstractManagementDialog<Destin
             binder.setBean(entity);
             addDescriptionField(binder);
 
-            var phoneNumbers = new TextArea("Phone numbers");
-            final var info = new Span("Use commas or line breaks to separate numbers. Remember to add the +358 prefix!");
+            var phoneNumbers = new TextArea(getTranslation("management.destination.phone-numbers"));
+            final var info = new Span(getTranslation("management.destination.phone-numbers.info"));
             add(new Div(phoneNumbers, info));
             binder.forField(phoneNumbers)
                     .withConverter(new PhoneNumbersToStringConverter())
                     .bind(SmsDestination::getPhoneNumbers, SmsDestination::setPhoneNumbers);
 
-            var resources = new MultiSelectComboBox<Resource>("Resources");
+            var resources = new MultiSelectComboBox<Resource>(getTranslation("management.resources"));
             resources.setItems(service().findApplicableResources());
             resources.setItemLabelGenerator(Resource::getCallSign);
             add(resources);
@@ -131,7 +131,7 @@ public class DestinationManagementDialog extends AbstractManagementDialog<Destin
 
         @Override
         public String getLabel() {
-            return "SMS Destination";
+            return getTranslation("management.destination.type.sms");
         }
 
         @Override
@@ -148,11 +148,11 @@ public class DestinationManagementDialog extends AbstractManagementDialog<Destin
             binder.setBean(entity);
             addDescriptionField(binder);
 
-            var runboardKey = new TextField("Runboard Key");
+            var runboardKey = new TextField(getTranslation("management.destination.runboard-key"));
             add(runboardKey);
             binder.bind(runboardKey, RunboardDestination::getRunboardKey, RunboardDestination::setRunboardKey);
 
-            var resources = new MultiSelectComboBox<Resource>("Resources");
+            var resources = new MultiSelectComboBox<Resource>(getTranslation("management.resources"));
             resources.setItems(service().findApplicableResources());
             resources.setItemLabelGenerator(Resource::getCallSign);
             add(resources);
@@ -161,7 +161,7 @@ public class DestinationManagementDialog extends AbstractManagementDialog<Destin
 
         @Override
         public String getLabel() {
-            return "Runboard Destination";
+            return getTranslation("management.destination.type.runboard");
         }
 
         @Override

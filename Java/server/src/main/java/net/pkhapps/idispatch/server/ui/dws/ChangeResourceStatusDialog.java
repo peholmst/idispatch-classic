@@ -25,7 +25,7 @@ public class ChangeResourceStatusDialog extends Dialog {
         buttons = new VerticalLayout();
         add(buttons);
 
-        setHeaderTitle("Change state of " + resourceStatus.getResource().getCallSign());
+        setHeaderTitle(getTranslation("dispatch.change-state.title", resourceStatus.getResource().getCallSign()));
         resourceStatus.getManualValidNextStates().stream().sorted().forEach(this::createResourceStateButton);
         setCloseOnEsc(true);
         setCloseOnOutsideClick(true);

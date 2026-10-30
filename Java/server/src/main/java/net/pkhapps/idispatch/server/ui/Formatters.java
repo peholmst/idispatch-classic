@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.server.ui;
 
+import com.vaadin.flow.i18n.I18NProvider;
 import net.pkhapps.idispatch.server.entity.*;
-import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -38,7 +38,7 @@ public final class Formatters {
     }
 
     public static String formatResourceState(ResourceState resourceState) {
-        return resourceState == null ? null : StringUtils.capitalize(resourceState.name().toLowerCase().replace('_', ' '));
+        return resourceState == null ? null : I18NProvider.translate("resource-state." + resourceState.name());
     }
 
     public static String formatAssignment(Assignment assignment) {
@@ -60,6 +60,6 @@ public final class Formatters {
     }
 
     public static String formatBoolean(Boolean bool) {
-        return bool == null ? null : bool ? "Yes" : "No";
+        return bool == null ? null : I18NProvider.translate(bool ? "common.yes" : "common.no");
     }
 }

@@ -34,7 +34,6 @@ import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.lang.Nullable;
 
 import java.util.Collections;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -89,12 +88,12 @@ public class AssignmentPanel extends VerticalLayout {
         assignmentLayout.setSpacing(true);
         assignmentLayout.setPadding(true);
 
-        assignmentType = new ComboBox<>("Type");
+        assignmentType = new ComboBox<>(getTranslation("assignment.type"));
         assignmentType.setItemLabelGenerator(AssignmentType::getFormattedDescription);
         assignmentType.setWidthFull();
         binder.bind(assignmentType, Assignment::getType, Assignment::setType);
 
-        var urgency = new ComboBox<AssignmentUrgency>("Urgency");
+        var urgency = new ComboBox<AssignmentUrgency>(getTranslation("assignment.urgency"));
         urgency.setItems(assignmentService.findApplicableUrgencies());
         urgency.setItemLabelGenerator(AssignmentUrgency::name);
         binder.bind(urgency, Assignment::getUrgency, Assignment::setUrgency);
@@ -103,18 +102,18 @@ public class AssignmentPanel extends VerticalLayout {
         typeAndUrgency.setWidthFull();
         assignmentLayout.add(typeAndUrgency);
 
-        municipality = new ComboBox<>("Municipality");
+        municipality = new ComboBox<>(getTranslation("assignment.municipality"));
         municipality.setItemLabelGenerator(Municipality::getName);
         municipality.setWidthFull();
         assignmentLayout.add(municipality);
         binder.bind(municipality, Assignment::getMunicipality, Assignment::setMunicipality);
 
-        var address = new TextField("Address");
+        var address = new TextField(getTranslation("assignment.address"));
         address.setWidthFull();
         assignmentLayout.add(address);
         binder.bind(address, Assignment::getAddress, Assignment::setAddress);
 
-        var description = new TextArea("Description");
+        var description = new TextArea(getTranslation("assignment.description"));
         description.setWidthFull();
         assignmentLayout.add(description);
         binder.bind(description, Assignment::getDescription, Assignment::setDescription);
@@ -139,7 +138,7 @@ public class AssignmentPanel extends VerticalLayout {
             }
         });
 
-        assignmentLayout.add(new H4("Resources"));
+        assignmentLayout.add(new H4(getTranslation("dispatch.resources")));
         availableResource = new ComboBox<>();
         availableResource.setWidthFull();
         availableResource.setItemLabelGenerator(Resource::getCallSign);
@@ -155,23 +154,23 @@ public class AssignmentPanel extends VerticalLayout {
         assignedResources.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_ROW_STRIPES);
         assignedResources.setWidthFull();
         assignedResources.setHeight(200, Unit.PIXELS);
-        assignedResources.addColumn(rs -> Formatters.formatResource(rs.getResource())).setHeader("Resource");
-        assignedResources.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader("State");
+        assignedResources.addColumn(rs -> Formatters.formatResource(rs.getResource())).setHeader(getTranslation("dispatch.resource"));
+        assignedResources.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
         assignedResources.setSelectionMode(Grid.SelectionMode.MULTI);
         assignmentLayout.add(assignedResources);
 
-        var dispatchAll = new Button("Dispatch All", event -> dispatchAll());
+        var dispatchAll = new Button(getTranslation("dispatch.dispatch-all"), event -> dispatchAll());
         dispatchAll.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        var dispatchSelected = new Button("Dispatch Selected", event -> dispatchSelected());
+        var dispatchSelected = new Button(getTranslation("dispatch.dispatch-selected"), event -> dispatchSelected());
         dispatchSelected.setEnabled(false);
         dispatchSelected.addThemeVariants(ButtonVariant.LUMO_ERROR);
-        var dispatchReserved = new Button("Dispatch Reserved", event -> dispatchReserved());
+        var dispatchReserved = new Button(getTranslation("dispatch.dispatch-reserved"), event -> dispatchReserved());
         dispatchReserved.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
         var dispatchActions = new HorizontalLayout(dispatchAll, dispatchSelected, dispatchReserved);
         assignmentLayout.add(dispatchActions);
 
-        var closeAssignment = new Button("Close Assignment", event -> closeAssignment());
+        var closeAssignment = new Button(getTranslation("dispatch.close-assignment"), event -> closeAssignment());
         closeAssignment.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         assignmentLayout.add(closeAssignment);
 
@@ -186,7 +185,7 @@ public class AssignmentPanel extends VerticalLayout {
     }
 
     private Component createNoAssignmentSelectedComponent() {
-        var noAssignmentSelected = new VerticalLayout(new Span("No assignment selected"));
+        var noAssignmentSelected = new VerticalLayout(new Span(getTranslation("assignment.none-selected")));
         noAssignmentSelected.setSizeFull();
         noAssignmentSelected.addClassName("content");
         noAssignmentSelected.setMargin(false);
@@ -261,7 +260,7 @@ public class AssignmentPanel extends VerticalLayout {
 
     private void showValidationFailedException(ValidationFailedException ex) {
         var errors = new UnorderedList();
-        ex.getViolationMessages(Locale.getDefault()).forEach(error -> errors.add(new ListItem(error)));
+        ex.getViolationMessages(getLocale()).forEach(error -> errors.add(new ListItem(error)));
         var notification = new Notification(errors);
         notification.setPosition(Notification.Position.MIDDLE);
         notification.addThemeVariants(NotificationVariant.LUMO_ERROR);

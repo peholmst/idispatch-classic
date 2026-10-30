@@ -18,10 +18,10 @@ import static net.pkhapps.idispatch.server.entity.AssignmentReport.MAX_TEXT_LENG
 public class UnitReport implements Serializable {
 
     @Column(name = "situation_on_arrival", nullable = false, length = MAX_TEXT_LENGTH)
-    @Size(max = MAX_TEXT_LENGTH, message = "Please describe the situation on arrival in at most 4000 characters")
+    @Size(max = MAX_TEXT_LENGTH, message = "{idispatch.unit-report.situation-on-arrival.size}")
     private String situationOnArrival = "";
     @Column(name = "actions_taken", nullable = false, length = MAX_TEXT_LENGTH)
-    @Size(max = MAX_TEXT_LENGTH, message = "Please describe the actions taken in at most 4000 characters")
+    @Size(max = MAX_TEXT_LENGTH, message = "{idispatch.unit-report.actions-taken.size}")
     private String actionsTaken = "";
     @Embedded
     @AttributeOverride(name = "subject", column = @Column(name = "last_edited_by_subject"))

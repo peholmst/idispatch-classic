@@ -35,16 +35,16 @@ public class Assignment extends AbstractLockableEntity {
     private AssignmentUrgency urgency = AssignmentUrgency.N;
     @ManyToOne
     @JoinColumn(name = "type_id")
-    @NotNull(message = "Please select an assignment type", groups = DispatchValidationGroup.class)
+    @NotNull(message = "{idispatch.assignment.type.required}", groups = DispatchValidationGroup.class)
     private AssignmentType type;
     @Column(name = "description", nullable = false)
     private String description = "";
     @ManyToOne
     @JoinColumn(name = "municipality_id")
-    @NotNull(message = "Please select a municipality", groups = DispatchValidationGroup.class)
+    @NotNull(message = "{idispatch.assignment.municipality.required}", groups = DispatchValidationGroup.class)
     private Municipality municipality;
     @Column(name = "address", nullable = false)
-    @NotBlank(message = "Please enter an address", groups = DispatchValidationGroup.class)
+    @NotBlank(message = "{idispatch.assignment.address.required}", groups = DispatchValidationGroup.class)
     private String address = "";
 
     public Assignment() {
