@@ -2,6 +2,8 @@ package net.pkhapps.idispatch.server.ui.reports;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.badge.Badge;
+import com.vaadin.flow.component.badge.BadgeVariant;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.details.Details;
@@ -20,8 +22,10 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.dom.ElementFactory;
 import com.vaadin.flow.function.ValueProvider;
+import com.vaadin.flow.signals.Signal;
 import com.vaadin.flow.data.binder.Setter;
 import net.pkhapps.idispatch.server.boundary.ReportDTO;
 import net.pkhapps.idispatch.server.boundary.ReportResourceDTO;
@@ -42,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 class AssignmentReportPanel extends VerticalLayout {
 
@@ -216,6 +221,8 @@ class AssignmentReportPanel extends VerticalLayout {
         textArea.setWidthFull();
         textArea.setMinRows(3);
         textArea.setMaxLength(AssignmentReport.MAX_TEXT_LENGTH);
+        // Send the text while the user types, so that closing the tab right after typing still warns about it
+        textArea.setValueChangeMode(ValueChangeMode.LAZY);
         return textArea;
     }
 
@@ -271,7 +278,7 @@ class AssignmentReportPanel extends VerticalLayout {
                 unitForm.binder.addValueChangeListener(event -> markChanged());
                 unitForms.add(unitForm);
 
-                var details = new Details(createUnitSummary(resource, unitReport), unitForm);
+                var details = new Details(createUnitSummary(resource, unitReport, unitForm.status()), unitForm);
                 details.setWidthFull();
                 // A writer usually works on their own unit only, so every unit starts closed and stays out of the way
                 details.setOpened(openedUnits != null && openedUnits.contains(resource));
@@ -281,12 +288,17 @@ class AssignmentReportPanel extends VerticalLayout {
         }
     }
 
-    private static Component createUnitSummary(Resource resource, UnitReport unitReport) {
+    private static Component createUnitSummary(Resource resource, UnitReport unitReport, Signal<UnitReportStatus> status) {
         var callSign = new Span(resource.getCallSign());
         callSign.getStyle().set("font-weight", "600");
+        // In the summary, so it shows whether the unit is open or not
+        var badge = new Badge();
+        badge.bindText(status.map(UnitReportStatus::getLabel));
+        badge.bindThemeName(BadgeVariant.SUCCESS.getVariantName(), status.map(UnitReportStatus.FILLED_IN::equals));
+        badge.bindThemeName(BadgeVariant.WARNING.getVariantName(), status.map(UnitReportStatus.PARTLY_FILLED_IN::equals));
         var lastEdit = createLastEditSpan();
         lastEdit.setText(formatLastEdit(unitReport.getLastEdit()));
-        var summary = new HorizontalLayout(callSign, lastEdit);
+        var summary = new HorizontalLayout(callSign, badge, lastEdit);
         summary.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
         return summary;
     }
@@ -340,12 +352,39 @@ class AssignmentReportPanel extends VerticalLayout {
     }
 
     /**
+     * How much of a unit's report has been answered, judging by what is in the form right now, saved or not.
+     */
+    enum UnitReportStatus {
+        NOT_FILLED_IN("Not filled in"),
+        PARTLY_FILLED_IN("Partly filled in"),
+        FILLED_IN("Filled in");
+
+        private final String label;
+
+        UnitReportStatus(String label) {
+            this.label = label;
+        }
+
+        String getLabel() {
+            return label;
+        }
+
+        static UnitReportStatus of(String situationOnArrival, String actionsTaken) {
+            var answered = Stream.of(situationOnArrival, actionsTaken)
+                    .filter(answer -> answer != null && !answer.isBlank())
+                    .count();
+            return answered == 2 ? FILLED_IN : answered == 1 ? PARTLY_FILLED_IN : NOT_FILLED_IN;
+        }
+    }
+
+    /**
      * What one responding unit found and did on scene.
      */
     static class UnitReportForm extends VerticalLayout {
 
         private final Resource resource;
         private final Binder<UnitReport> binder = new Binder<>();
+        private final Signal<UnitReportStatus> status;
 
         UnitReportForm(Resource resource, UnitReport unitReport, boolean editable) {
             this.resource = resource;
@@ -358,9 +397,14 @@ class AssignmentReportPanel extends VerticalLayout {
                 textArea.setWidthFull();
                 textArea.setMinRows(3);
                 textArea.setMaxLength(AssignmentReport.MAX_TEXT_LENGTH);
+                textArea.setValueChangeMode(ValueChangeMode.LAZY);
             }
-            binder.forField(situationOnArrival).bind(UnitReport::getSituationOnArrival, UnitReport::setSituationOnArrival);
-            binder.forField(actionsTaken).bind(UnitReport::getActionsTaken, UnitReport::setActionsTaken);
+            var situationOnArrivalBinding = binder.forField(situationOnArrival)
+                    .bind(UnitReport::getSituationOnArrival, UnitReport::setSituationOnArrival);
+            var actionsTakenBinding = binder.forField(actionsTaken)
+                    .bind(UnitReport::getActionsTaken, UnitReport::setActionsTaken);
+            status = Signal.computed(() -> UnitReportStatus.of(situationOnArrivalBinding.valueSignal().get(),
+                    actionsTakenBinding.valueSignal().get()));
             binder.setBean(unitReport);
             binder.setReadOnly(!editable);
 
@@ -369,6 +413,10 @@ class AssignmentReportPanel extends VerticalLayout {
 
         Resource getResource() {
             return resource;
+        }
+
+        Signal<UnitReportStatus> status() {
+            return status;
         }
     }
 }

@@ -3,6 +3,7 @@ package net.pkhapps.idispatch.server.ui.reports;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -457,6 +458,54 @@ class ReportsViewTest extends AbstractUITest {
     }
 
     @Test
+    @WithMockUser(username = "report-writer", roles = {"REPORT_WRITER", "DISPATCHER"})
+    void unitBadge_followsWhatIsInTheFormWhileEditing() {
+        var callSign = unique("CS");
+        var closed = handledAssignment(callSign);
+        navigate(ReportsView.class);
+        select(closed);
+
+        assertThat(unitDetails(callSign).isOpened()).isFalse();
+        assertThat(unitBadge(callSign).getText()).as("Shown while collapsed").isEqualTo("Not filled in");
+        assertThat(unitBadge(callSign).getThemeNames()).doesNotContain("success", "warning");
+
+        unitDetails(callSign).setOpened(true);
+        textArea(unitForm(callSign), "What was the situation like when you arrived?").setValue("Smoke from the roof");
+        assertThat(unitBadge(callSign).getText()).isEqualTo("Partly filled in");
+        assertThat(unitBadge(callSign).getThemeNames()).contains("warning").doesNotContain("success");
+
+        textArea(unitForm(callSign), "What actions did you take?").setValue("Interior attack");
+        assertThat(unitBadge(callSign).getText()).as("Shown while expanded").isEqualTo("Filled in");
+        assertThat(unitBadge(callSign).getThemeNames()).contains("success").doesNotContain("warning");
+
+        textArea(unitForm(callSign), "What actions did you take?").setValue("   ");
+        assertThat(unitBadge(callSign).getText()).as("Blank doesn't count").isEqualTo("Partly filled in");
+    }
+
+    @Test
+    void unitBadge_showsSavedStateToReaders() throws ValidationFailedException {
+        var filledIn = unique("CS");
+        var empty = unique("CS");
+        var closed = handledAssignment(filledIn, empty);
+        var report = reportService.findReportByAssignmentId(closed.getId()).orElseThrow();
+        var resource = report.getRespondingResources().stream()
+                .filter(r -> r.getCallSign().equals(filledIn)).findFirst().orElseThrow();
+        // Saving needs a writer; the view itself is opened as the reader that the class is annotated with
+        var reader = SecurityContextHolder.getContext();
+        loginWithIdToken("subject-erik", "Erik", "Explorer");
+        report.getReport().getUnitReport(resource).setSituationOnArrival("Smoke from the roof");
+        report.getReport().getUnitReport(resource).setActionsTaken("Interior attack");
+        reportService.saveReport(report.getReport());
+        SecurityContextHolder.setContext(reader);
+
+        navigate(ReportsView.class);
+        select(closed);
+
+        assertThat(unitBadge(filledIn).getText()).isEqualTo("Filled in");
+        assertThat(unitBadge(empty).getText()).isEqualTo("Not filled in");
+    }
+
+    @Test
     void reader_seesWhatHappenedOnSceneButCannotChangeIt() {
         var callSign = unique("CS");
         var closed = handledAssignment(callSign);
@@ -609,6 +658,10 @@ class ReportsViewTest extends AbstractUITest {
                 .filter(details -> details.getContent().anyMatch(form::equals))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("No expandable unit report for " + callSign));
+    }
+
+    private Badge unitBadge(String callSign) {
+        return find(Badge.class, unitDetails(callSign).getSummary()).single();
     }
 
     private AssignmentReportPanel.UnitReportForm unitForm(String callSign) {
