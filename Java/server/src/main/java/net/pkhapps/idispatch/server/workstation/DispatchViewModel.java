@@ -15,6 +15,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,19 @@ class DispatchViewModel {
     private final ValueSignal<List<AssignmentListItem>> openAssignments = new ValueSignal<>(List.of());
     // The assignment open in the form and selected in the list, or null for none
     private final ValueSignal<@Nullable AssignmentId> selected = new ValueSignal<>(null);
-    private final ValueSignal<List<ResourceRow>> resources = new ValueSignal<>(List.of());
+    private final ValueSignal<List<ResourceRow>> allResources = new ValueSignal<>(List.of());
+    private final ValueSignal<String> resourceFilter = new ValueSignal<>("");
+
+    private final Signal<List<ResourceRow>> resources = Signal.computed(() -> {
+        var filter = resourceFilter.get().strip().toLowerCase(Locale.ROOT);
+        var all = allResources.get();
+        if (filter.isEmpty()) {
+            return all;
+        }
+        return all.stream()
+                .filter(row -> row.callSign() != null && row.callSign().toLowerCase(Locale.ROOT).contains(filter))
+                .toList();
+    });
 
     private final Signal<@Nullable AssignmentListItem> selectedAssignment = Signal.computed(() -> {
         var id = selected.get();
@@ -73,10 +86,17 @@ class DispatchViewModel {
     }
 
     /**
-     * Every resource, with the assignment it is on.
+     * Every resource whose call sign contains the {@linkplain #resourceFilter() filter}, with the assignment it is on.
      */
     Signal<List<ResourceRow>> resources() {
-        return resources.asReadonly();
+        return resources;
+    }
+
+    /**
+     * The text the listed resources' call signs must contain, ignoring case; empty lists every resource.
+     */
+    Signal<String> resourceFilter() {
+        return resourceFilter.asReadonly();
     }
 
     // --- Commands ---
@@ -120,6 +140,13 @@ class DispatchViewModel {
         assignment.open(id);
     }
 
+    /**
+     * Lists only the resources whose call sign contains the text, ignoring case.
+     */
+    void filterResources(String text) {
+        resourceFilter.set(text);
+    }
+
     void changeResourceState(ResourceId resource, ResourceState state) {
         resourceStatusService.setResourceState(resource, state);
     }
@@ -142,7 +169,7 @@ class DispatchViewModel {
         var others = statuses.stream().map(ResourceStatus::assignment).filter(Objects::nonNull)
                 .filter(id -> !assignments.containsKey(id)).collect(Collectors.toSet());
         assignmentService.findAssignments(others).forEach(item -> assignments.put(item.id(), item));
-        resources.set(statuses.stream()
+        allResources.set(statuses.stream()
                 .map(status -> new ResourceRow(status, callSigns.get(status.resourceId()),
                         status.assignment() == null ? null : assignments.get(status.assignment())))
                 .toList());

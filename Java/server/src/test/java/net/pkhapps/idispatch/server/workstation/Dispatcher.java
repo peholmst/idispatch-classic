@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.server.workstation;
 
 import com.vaadin.browserless.BrowserlessUserContext;
+import com.vaadin.flow.data.provider.SortDirection;
 
 import java.util.List;
 import java.util.Map;
@@ -219,6 +220,21 @@ public class Dispatcher {
 
     public boolean canDispatchSelected() {
         return page.canDispatchSelected();
+    }
+
+    public void filtersResourcesBy(String text) {
+        page.filterResources(text);
+    }
+
+    public void sortsResourcesBy(String column, SortDirection direction) {
+        page.sortResourcesBy(column, direction);
+    }
+
+    /**
+     * Whether the first resource is above the second in the list of all resources.
+     */
+    public boolean seesResourceAbove(String upper, String lower) {
+        return page.indexInResourceList(upper) < page.indexInResourceList(lower);
     }
 
     public List<String> listedResources() {
