@@ -1,7 +1,5 @@
 package net.pkhapps.idispatch.server.assignment;
 
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.municipality.Municipality;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -19,14 +17,14 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long>, J
     List<Assignment> findByClosedIsNotNull(Pageable pageable);
 
     /**
-     * Returns the municipalities that at least one closed assignment is in, in no particular order.
+     * Returns the IDs of the municipalities that at least one closed assignment is in, in no particular order.
      */
-    @Query("select distinct m from Assignment a join a.municipality m where a.closed is not null")
-    List<Municipality> findMunicipalitiesOfClosedAssignments();
+    @Query("select distinct a.municipalityId from Assignment a where a.closed is not null and a.municipalityId is not null")
+    List<Long> findMunicipalityIdsOfClosedAssignments();
 
     /**
-     * Returns the types that at least one closed assignment has, by code.
+     * Returns the IDs of the types that at least one closed assignment has, in no particular order.
      */
-    @Query("select distinct t from Assignment a join a.type t where a.closed is not null order by t.code")
-    List<AssignmentType> findTypesOfClosedAssignments();
+    @Query("select distinct a.typeId from Assignment a where a.closed is not null and a.typeId is not null")
+    List<Long> findTypeIdsOfClosedAssignments();
 }

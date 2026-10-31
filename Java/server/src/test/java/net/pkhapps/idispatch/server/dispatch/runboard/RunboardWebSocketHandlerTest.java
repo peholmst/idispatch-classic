@@ -6,17 +6,19 @@ import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentRepository;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
 import net.pkhapps.idispatch.server.dispatch.Destination;
 import net.pkhapps.idispatch.server.dispatch.DestinationRepository;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationRepository;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationSent;
 import net.pkhapps.idispatch.server.dispatch.ReceiptRepository;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.shared.Bilingual;
+import net.pkhapps.idispatch.server.ui.TestData.GivenAssignmentType;
+import net.pkhapps.idispatch.server.ui.TestData.GivenMunicipality;
 import net.pkhapps.idispatch.server.ui.TestData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +85,9 @@ class RunboardWebSocketHandlerTest {
     void waitingNotifications_areSentOnConnect_andAcknowledgementCreatesReceipt() throws Exception {
         var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
         var destination = runboardDestination(resource);
-        var notification = dispatch(resource, destination);
+        var municipality = testData.municipality(unique("Municipality"));
+        var type = testData.assignmentType(unique("AT"), "Test assignment type");
+        var notification = dispatch(assignment(municipality, type), resource, Set.of(destination));
 
         var client = connect(destination.getRunboardKey());
         var message = client.nextMessage();
@@ -92,8 +96,8 @@ class RunboardWebSocketHandlerTest {
         var sent = message.path("notifications").get(0);
         assertThat(sent.path("id").asLong()).isEqualTo(notification.getId());
         assertThat(sent.path("address").asString()).isEqualTo(notification.getAddress());
-        assertThat(sent.path("municipality").asString()).isEqualTo(notification.getMunicipality().getNameFi());
-        assertThat(sent.path("assignment_type_code").asString()).isEqualTo(notification.getAssignmentType().getCode());
+        assertThat(sent.path("municipality").asString()).isEqualTo(municipality.nameFi());
+        assertThat(sent.path("assignment_type_code").asString()).isEqualTo(type.code());
         assertThat(sent.path("urgency").asString()).isEqualTo(notification.getUrgency().name());
         assertThat(sent.path("resources").get(0).asString()).isEqualTo(resource.getCallSign());
         assertThat(sent.path("language").asString()).isEqualTo("fi");
@@ -108,20 +112,18 @@ class RunboardWebSocketHandlerTest {
         var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
         var finnish = runboardDestination(resource);
         var swedish = runboardDestination(resource, Bilingual.SWEDISH);
-        var assignment = new Assignment();
-        assignment.setMunicipality(entity(Municipality.class, testData.municipality(unique("Parainen "), unique("Pargas ")).id()));
-        assignment.setType(entity(AssignmentType.class, testData.assignmentType(unique("AT"), "Rakennuspalo", "Byggnadsbrand").id()));
-        assignment.setUrgency(AssignmentUrgency.A);
-        var notification = dispatch(assignment, resource, Set.of(finnish, swedish));
+        var municipality = testData.municipality(unique("Parainen "), unique("Pargas "));
+        var type = testData.assignmentType(unique("AT"), "Rakennuspalo", "Byggnadsbrand");
+        dispatch(assignment(municipality, type), resource, Set.of(finnish, swedish));
 
         var inFinnish = connect(finnish.getRunboardKey()).nextMessage().path("notifications").get(0);
         var inSwedish = connect(swedish.getRunboardKey()).nextMessage().path("notifications").get(0);
 
         assertThat(inFinnish.path("language").asString()).isEqualTo("fi");
-        assertThat(inFinnish.path("municipality").asString()).isEqualTo(notification.getMunicipality().getNameFi());
+        assertThat(inFinnish.path("municipality").asString()).isEqualTo(municipality.nameFi());
         assertThat(inFinnish.path("assignment_type_descr").asString()).isEqualTo("Rakennuspalo");
         assertThat(inSwedish.path("language").asString()).isEqualTo("sv");
-        assertThat(inSwedish.path("municipality").asString()).isEqualTo(notification.getMunicipality().getNameSv());
+        assertThat(inSwedish.path("municipality").asString()).isEqualTo(municipality.nameSv());
         assertThat(inSwedish.path("assignment_type_descr").asString()).isEqualTo("Byggnadsbrand");
     }
 
@@ -194,11 +196,17 @@ class RunboardWebSocketHandlerTest {
     }
 
     private DispatchNotification dispatch(Resource resource, Destination destination) {
-        var assignment = new Assignment();
-        assignment.setMunicipality(entity(Municipality.class, testData.municipality(unique("Municipality")).id()));
-        assignment.setType(entity(AssignmentType.class, testData.assignmentType(unique("AT"), "Test assignment type").id()));
-        assignment.setUrgency(AssignmentUrgency.A);
+        var assignment = assignment(testData.municipality(unique("Municipality")),
+                testData.assignmentType(unique("AT"), "Test assignment type"));
         return dispatch(assignment, resource, Set.of(destination));
+    }
+
+    private static Assignment assignment(GivenMunicipality municipality, GivenAssignmentType type) {
+        var assignment = new Assignment();
+        assignment.setMunicipalityId(new MunicipalityId(municipality.id()));
+        assignment.setTypeId(new AssignmentTypeId(type.id()));
+        assignment.setUrgency(AssignmentUrgency.A);
+        return assignment;
     }
 
     private DispatchNotification dispatch(Assignment assignment, Resource resource, Set<Destination> destinations) {

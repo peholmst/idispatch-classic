@@ -1,7 +1,9 @@
 package net.pkhapps.idispatch.server.assignment;
 
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
+import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
 
 import java.util.List;
@@ -44,9 +46,26 @@ public interface AssignmentService {
      */
     List<Assignment> findOpenAssignments();
 
-    List<Municipality> findApplicableMunicipalities();
+    /**
+     * Finds the municipalities that an assignment can be in, which are the ones not deleted, in no particular order.
+     */
+    List<MunicipalityListItem> findApplicableMunicipalities();
 
-    List<AssignmentType> findApplicableAssignmentTypes();
+    /**
+     * Finds the municipality with the given ID, whether deleted or not, so that an assignment keeps showing the
+     * municipality it is in.
+     */
+    Optional<MunicipalityListItem> findMunicipality(MunicipalityId id);
+
+    /**
+     * Finds the types that an assignment can be given, which are the ones not deleted, ordered by code.
+     */
+    List<AssignmentTypeListItem> findApplicableAssignmentTypes();
+
+    /**
+     * Finds the type with the given ID, whether deleted or not, so that an assignment keeps showing the type it has.
+     */
+    Optional<AssignmentTypeListItem> findAssignmentType(AssignmentTypeId id);
 
     List<AssignmentUrgency> findApplicableUrgencies();
 }

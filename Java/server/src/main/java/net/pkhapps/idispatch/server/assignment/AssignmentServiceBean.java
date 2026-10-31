@@ -1,10 +1,12 @@
 package net.pkhapps.idispatch.server.assignment;
 
 
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeRepository;
-import net.pkhapps.idispatch.server.municipality.Municipality;
-import net.pkhapps.idispatch.server.municipality.MunicipalityRepository;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
+import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
+import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractServiceBean;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
@@ -24,15 +26,15 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
 
     private final AssignmentRepository assignmentRepository;
     private final ResourcesOnAssignment resourcesOnAssignment;
-    private final MunicipalityRepository municipalityRepository;
-    private final AssignmentTypeRepository assignmentTypeRepository;
+    private final MunicipalityQueries municipalityQueries;
+    private final AssignmentTypeQueries assignmentTypeQueries;
 
-    AssignmentServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentRepository assignmentRepository, ResourcesOnAssignment resourcesOnAssignment, MunicipalityRepository municipalityRepository, AssignmentTypeRepository assignmentTypeRepository) {
+    AssignmentServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentRepository assignmentRepository, ResourcesOnAssignment resourcesOnAssignment, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries) {
         super(applicationContext, txManager);
         this.assignmentRepository = assignmentRepository;
         this.resourcesOnAssignment = resourcesOnAssignment;
-        this.municipalityRepository = municipalityRepository;
-        this.assignmentTypeRepository = assignmentTypeRepository;
+        this.municipalityQueries = municipalityQueries;
+        this.assignmentTypeQueries = assignmentTypeQueries;
     }
 
     @Override
@@ -61,7 +63,9 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
             return new UpdateResult.NoChange<>(assignment);
         }
         try {
-            final Assignment updatedAssignment = getTxTemplate().execute(status -> assignmentRepository.saveAndFlush(assignment));
+            final Assignment savedAssignment = getTxTemplate().execute(status -> assignmentRepository.saveAndFlush(assignment));
+            // Load the assignment again, so that the names of its type and municipality are those it now has
+            final Assignment updatedAssignment = assignmentRepository.findById(savedAssignment.getId()).orElseThrow();
             getApplicationContext().publishEvent(new AssignmentUpdated(this, updatedAssignment));
             return new UpdateResult.Success<>(updatedAssignment);
         } catch (OptimisticLockingFailureException ex) {
@@ -105,13 +109,23 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
     }
 
     @Override
-    public List<Municipality> findApplicableMunicipalities() {
-        return municipalityRepository.findByActiveTrue();
+    public List<MunicipalityListItem> findApplicableMunicipalities() {
+        return municipalityQueries.findActive();
     }
 
     @Override
-    public List<AssignmentType> findApplicableAssignmentTypes() {
-        return assignmentTypeRepository.findByActiveTrueOrderByCodeAsc();
+    public Optional<MunicipalityListItem> findMunicipality(MunicipalityId id) {
+        return municipalityQueries.findById(id);
+    }
+
+    @Override
+    public List<AssignmentTypeListItem> findApplicableAssignmentTypes() {
+        return assignmentTypeQueries.findActive();
+    }
+
+    @Override
+    public Optional<AssignmentTypeListItem> findAssignmentType(AssignmentTypeId id) {
+        return assignmentTypeQueries.findById(id);
     }
 
     @Override

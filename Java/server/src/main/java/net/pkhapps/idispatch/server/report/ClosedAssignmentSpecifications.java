@@ -6,8 +6,8 @@ import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import net.pkhapps.idispatch.server.assignment.Assignment;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.shared.AbstractEntity;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Sort;
@@ -40,12 +40,12 @@ final class ClosedAssignmentSpecifications {
         return (root, query, cb) -> cb.lessThan(root.get(Assignment.PROP_CLOSED), instant);
     }
 
-    public static Specification<Assignment> municipality(@NonNull Municipality municipality) {
-        return (root, query, cb) -> cb.equal(root.get(Assignment.PROP_MUNICIPALITY), municipality);
+    public static Specification<Assignment> municipality(@NonNull MunicipalityId municipality) {
+        return (root, query, cb) -> cb.equal(root.get(Assignment.PROP_MUNICIPALITY_ID), municipality.value());
     }
 
-    public static Specification<Assignment> type(@NonNull AssignmentType type) {
-        return (root, query, cb) -> cb.equal(root.get(Assignment.PROP_TYPE), type);
+    public static Specification<Assignment> type(@NonNull AssignmentTypeId type) {
+        return (root, query, cb) -> cb.equal(root.get(Assignment.PROP_TYPE_ID), type.value());
     }
 
     public static Specification<Assignment> reportClosed(boolean closed) {

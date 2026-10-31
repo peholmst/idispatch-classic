@@ -84,6 +84,29 @@ class DispatchingTest extends UseCaseTest {
     }
 
     @Test
+    void typeAndMunicipalityDeletedAfterTheyWereChosenStayOnTheAssignment() {
+        var code = unique("T");
+        var retiredType = given.assignmentType(code, "Retired type");
+        var retiredTown = given.municipality(unique("Retired town "));
+        var dispatcher = dispatcherAtWork();
+        var number = dispatcher.opensANewAssignment();
+        dispatcher.choosesType(code + " - Retired type");
+        dispatcher.choosesMunicipality(retiredTown.nameFi());
+        given.deleteAssignmentType(retiredType);
+        given.deleteMunicipality(retiredTown);
+
+        dispatcher.opensANewAssignment();
+        dispatcher.selectsAssignment(number);
+
+        assertThat(dispatcher.type()).isEqualTo(code + " - Retired type");
+        assertThat(dispatcher.municipality()).isEqualTo(retiredTown.nameFi());
+        assertThat(dispatcher.typeChoices()).as("Not offered for others").doesNotContain(code + " - Retired type");
+        assertThat(dispatcher.municipalityChoices()).doesNotContain(retiredTown.nameFi());
+        assertThat(dispatcher.assignmentInList(number)).containsEntry("Type", code + " - Retired type")
+                .containsEntry("Municipality", retiredTown.nameFi());
+    }
+
+    @Test
     void englishSpeakingDispatcherIsOfferedTheFinnishNames() {
         var code = unique("T");
         given.assignmentType(code, "Rakennuspalo", "Byggnadsbrand");

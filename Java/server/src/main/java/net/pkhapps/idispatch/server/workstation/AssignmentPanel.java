@@ -26,11 +26,11 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.dispatch.DispatchService;
-import net.pkhapps.idispatch.server.municipality.Municipality;
 import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
+import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceFormatters;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
@@ -57,8 +57,8 @@ public class AssignmentPanel extends VerticalLayout {
     private final Binder<Assignment> binder;
     private final Component noAssignmentSelected;
     private final Component assignmentForm;
-    private final ComboBox<AssignmentType> assignmentType;
-    private final ComboBox<Municipality> municipality;
+    private final ComboBox<AssignmentTypeListItem> assignmentType;
+    private final ComboBox<MunicipalityListItem> municipality;
     private final ComboBox<Resource> availableResource;
 
     private final AtomicBoolean initializingForm = new AtomicBoolean(false);
@@ -100,7 +100,11 @@ public class AssignmentPanel extends VerticalLayout {
         assignmentType = new ComboBox<>(getTranslation("assignment.type"));
         assignmentType.setItemLabelGenerator(AssignmentTypeFormatters::formatAssignmentType);
         assignmentType.setWidthFull();
-        binder.bind(assignmentType, Assignment::getType, Assignment::setType);
+        // Offers the types in use, but shows a deleted type that the assignment already has
+        binder.forField(assignmentType)
+                .withConverter(item -> item == null ? null : item.id(), id -> id == null ? null
+                        : assignmentService.findAssignmentType(id).orElse(null))
+                .bind(Assignment::getTypeId, Assignment::setTypeId);
 
         var urgency = new ComboBox<AssignmentUrgency>(getTranslation("assignment.urgency"));
         urgency.setItems(assignmentService.findApplicableUrgencies());
@@ -115,7 +119,10 @@ public class AssignmentPanel extends VerticalLayout {
         municipality.setItemLabelGenerator(MunicipalityFormatters::formatMunicipality);
         municipality.setWidthFull();
         assignmentLayout.add(municipality);
-        binder.bind(municipality, Assignment::getMunicipality, Assignment::setMunicipality);
+        binder.forField(municipality)
+                .withConverter(item -> item == null ? null : item.id(), id -> id == null ? null
+                        : assignmentService.findMunicipality(id).orElse(null))
+                .bind(Assignment::getMunicipalityId, Assignment::setMunicipalityId);
 
         var address = new TextField(getTranslation("assignment.address"));
         address.setWidthFull();

@@ -3,7 +3,9 @@ package net.pkhapps.idispatch.server.report;
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
 import net.pkhapps.idispatch.server.dispatch.DispatchService;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
@@ -16,7 +18,6 @@ import org.springframework.boot.test.context.TestComponent;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Locale;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -82,15 +83,11 @@ public class HandledAssignments {
                 .collect(Collectors.toSet());
 
         var assignment = asDispatcher(() -> {
-            var type = assignmentService.findApplicableAssignmentTypes().stream()
-                    .filter(t -> t.getId() == givenType.id()).findFirst().orElseThrow();
-            var municipality = assignmentService.findApplicableMunicipalities().stream()
-                    .filter(m -> m.getId() == givenMunicipality.id()).findFirst().orElseThrow();
             var resources = resourceStatusService.getAllResources().stream()
                     .filter(r -> resourceIds.contains(r.getId())).toList();
             var opened = assignmentService.findAssignment(assignmentService.openAssignment()).orElseThrow();
-            opened.setType(type);
-            opened.setMunicipality(municipality);
+            opened.setTypeId(new AssignmentTypeId(givenType.id()));
+            opened.setMunicipalityId(new MunicipalityId(givenMunicipality.id()));
             opened.setAddress("Report Road 7");
             opened.setDescription("Smoke seen");
             opened.setUrgency(AssignmentUrgency.B);
@@ -113,8 +110,7 @@ public class HandledAssignments {
             }
             return assignmentService.findAssignment(updated.getId()).orElseThrow();
         });
-        return new Handled(assignment, assignment.getType().getFormattedDescription(Locale.ENGLISH),
-                givenMunicipality.nameFi());
+        return new Handled(assignment, code + " - Building fire", givenMunicipality.nameFi());
     }
 
     /**

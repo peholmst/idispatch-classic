@@ -30,9 +30,8 @@ import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.i18n.I18NProvider;
 import com.vaadin.flow.signals.Signal;
+import net.pkhapps.idispatch.server.assignment.AssignmentFormatters;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
-import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
 import net.pkhapps.idispatch.server.shared.ValidationFailedException;
@@ -45,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
+
+import static com.google.common.base.Strings.nullToEmpty;
 
 class AssignmentReportPanel extends VerticalLayout {
 
@@ -119,8 +120,7 @@ class AssignmentReportPanel extends VerticalLayout {
         type.setWidthFull();
         formLayout.addFormItem(type, getTranslation("assignment.type"));
         binder.forField(type)
-                .withConverter(this::noConverter, AssignmentTypeFormatters::formatAssignmentType)
-                .bindReadOnly(ReportDTO::getType);
+                .bindReadOnly(dto -> nullToEmpty(AssignmentFormatters.formatAssignmentType(dto.getAssignment())));
 
         var description = new TextArea();
         description.setWidthFull();
@@ -133,8 +133,7 @@ class AssignmentReportPanel extends VerticalLayout {
         municipality.setWidthFull();
         formLayout.addFormItem(municipality, getTranslation("assignment.municipality"));
         binder.forField(municipality)
-                .withConverter(this::noConverter, MunicipalityFormatters::formatMunicipality)
-                .bindReadOnly(ReportDTO::getMunicipality);
+                .bindReadOnly(dto -> nullToEmpty(AssignmentFormatters.formatMunicipality(dto.getAssignment())));
 
         var address = new TextField();
         address.setWidthFull();

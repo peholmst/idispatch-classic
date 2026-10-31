@@ -3,8 +3,8 @@ package net.pkhapps.idispatch.server.dispatch;
 import jakarta.persistence.*;
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.shared.AbstractTimestampedEntity;
 
@@ -39,16 +39,14 @@ public class DispatchNotification extends AbstractTimestampedEntity {
     @JoinColumn(name = "assignment_id", nullable = false)
     private Assignment assignment;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "assignment_municipality_id", nullable = false)
-    private Municipality municipality;
+    @Column(name = "assignment_municipality_id", nullable = false)
+    private Long municipalityId;
 
     @Column(name = "assignment_address", nullable = false)
     private String address;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "assignment_type_id", nullable = false)
-    private AssignmentType assignmentType;
+    @Column(name = "assignment_type_id", nullable = false)
+    private Long assignmentTypeId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "assignment_urgency", nullable = false)
@@ -64,9 +62,9 @@ public class DispatchNotification extends AbstractTimestampedEntity {
         this.assignedResources = newHashSet(checkNotNull(assignedResources));
         this.destinations = newHashSet(checkNotNull(destinations));
         this.assignment = checkNotNull(assignment);
-        municipality = assignment.getMunicipality();
+        municipalityId = checkNotNull(assignment.getMunicipalityId(), "The assignment has no municipality").value();
         address = assignment.getAddress();
-        assignmentType = assignment.getType();
+        assignmentTypeId = checkNotNull(assignment.getTypeId(), "The assignment has no type").value();
         urgency = assignment.getUrgency();
         description = assignment.getDescription();
     }
@@ -87,16 +85,16 @@ public class DispatchNotification extends AbstractTimestampedEntity {
         return assignment;
     }
 
-    public Municipality getMunicipality() {
-        return municipality;
+    public MunicipalityId getMunicipalityId() {
+        return new MunicipalityId(municipalityId);
     }
 
     public String getAddress() {
         return address;
     }
 
-    public AssignmentType getAssignmentType() {
-        return assignmentType;
+    public AssignmentTypeId getAssignmentTypeId() {
+        return new AssignmentTypeId(assignmentTypeId);
     }
 
     public AssignmentUrgency getUrgency() {

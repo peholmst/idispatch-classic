@@ -1,8 +1,8 @@
 package net.pkhapps.idispatch.server.report;
 
 import net.pkhapps.idispatch.server.assignment.Assignment;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
+import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
 import net.pkhapps.idispatch.server.shared.ValidationFailedException;
 import org.springframework.data.domain.Pageable;
@@ -31,14 +31,14 @@ public interface ReportService {
     int countClosedAssignments(ClosedAssignmentFilter filter);
 
     /**
-     * Returns the municipalities that at least one closed assignment is in, by name.
+     * Returns the municipalities that at least one closed assignment is in, deleted or not, in no particular order.
      */
-    List<Municipality> findMunicipalitiesOfClosedAssignments();
+    List<MunicipalityListItem> findMunicipalitiesOfClosedAssignments();
 
     /**
-     * Returns the types that at least one closed assignment has, by code and description.
+     * Returns the types that at least one closed assignment has, deleted or not, by code.
      */
-    List<AssignmentType> findTypesOfClosedAssignments();
+    List<AssignmentTypeListItem> findTypesOfClosedAssignments();
 
     /**
      * Validates and saves what happened on scene, and returns:
