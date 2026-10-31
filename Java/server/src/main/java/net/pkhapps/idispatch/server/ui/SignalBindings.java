@@ -52,7 +52,8 @@ public final class SignalBindings {
     /**
      * Sets the select-all checkbox from the rows and the selection once the round trip's changes are done, after Grid
      * has set it itself. Grid sets it only when the selection changes, so it goes stale when the rows change, and it
-     * shows an empty grid with an empty selection as all selected.
+     * shows an empty grid with an empty selection as all selected. Remove this once Grid keeps the checkbox right
+     * itself: <a href="https://github.com/vaadin/flow-components/issues/10553">vaadin/flow-components#10553</a>.
      */
     private static <T> void updateSelectAllCheckbox(Grid<T> grid, List<T> rows) {
         grid.getUI().ifPresent(ui -> ui.beforeClientResponse(grid, context -> {
