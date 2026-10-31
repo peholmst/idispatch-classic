@@ -2,29 +2,51 @@ package net.pkhapps.idispatch.server.resource;
 
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.textfield.TextField;
-import net.pkhapps.idispatch.server.ui.management.ManagementForm;
+import com.vaadin.flow.signals.Signal;
+import net.pkhapps.idispatch.server.ui.management.RecordForm;
+import org.jspecify.annotations.Nullable;
 
-class ResourceForm extends ManagementForm<Resource> {
+import java.util.Optional;
+
+/**
+ * Creates the {@link ResourceDetails} from a call sign and a type.
+ */
+class ResourceForm extends RecordForm<ResourceDetails> {
 
     private final TextField callSign;
+    private final Signal<Optional<ResourceDetails>> draft;
 
-    ResourceForm(ResourceManagementService service) {
-        super(Resource.class);
-
+    ResourceForm(ResourceManagementService service, @Nullable Resource resource) {
         callSign = new TextField(getTranslation("management.call-sign"));
-
+        callSign.setRequiredIndicatorVisible(true);
         // Offers the types in use, but shows a deleted type that the resource already has
         var type = new ComboBox<ResourceTypeListItem>(getTranslation("management.type"));
+        type.setRequiredIndicatorVisible(true);
         type.setItemLabelGenerator(ResourceFormatters::formatResourceType);
+        // Set the items before binding, since setting them clears the value
         type.setItems(service.findApplicableTypes());
-
         getContent().add(callSign, type);
 
-        binder.forField(callSign).bind(Resource.PROP_CALL_SIGN);
-        binder.forField(type)
-                .withConverter(item -> item == null ? null : item.id().value(),
-                        id -> id == null ? null : service.findType(new ResourceTypeId(id)).orElse(null))
-                .bind(Resource.PROP_TYPE_ID);
+        var callSignTouched = touchedSignal();
+        var typeTouched = touchedSignal();
+        var callSignValue = bind(callSign, resource == null ? "" : resource.callSign().value(), callSignTouched);
+        var typeValue = bind(type, resource == null ? null : service.findType(resource.typeId()).orElse(null),
+                typeTouched);
+
+        var callSignError = callSignValue.map(value -> CallSign.isValid(value)
+                ? null : getTranslation("management.call-sign-required"));
+        var typeError = typeValue.map(value -> value != null ? null : getTranslation("management.type-required"));
+        showError(callSign, callSignError, callSignTouched);
+        showError(type, typeError, typeTouched);
+
+        draft = Signal.computed(() -> callSignError.get() == null && typeError.get() == null
+                ? Optional.of(new ResourceDetails(new CallSign(callSignValue.get()), typeValue.get().id()))
+                : Optional.empty());
+    }
+
+    @Override
+    protected Signal<Optional<ResourceDetails>> draft() {
+        return draft;
     }
 
     @Override

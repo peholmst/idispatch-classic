@@ -15,7 +15,7 @@ public interface ResourceStatusService {
      * Finds the current status of the specified resource. If the resource is {@code null}, not active, or it does not
      * exist, an empty {@code Optional} is returned.
      *
-     * @see Resource#isActive()
+     * @see Resource#active()
      */
     Optional<ResourceStatus> findCurrentStatus(ResourceId resource);
 
@@ -24,8 +24,8 @@ public interface ResourceStatusService {
      * resource is not active, nothing happens. Otherwise, the new state is saved and a {@link ResourceStatusChanged}
      * event is fired.
      *
-     * @see ResourceStatus#getAllValidNextStates()
-     * @see Resource#isActive()
+     * @see ResourceStatus#allValidNextStates()
+     * @see Resource#active()
      */
     void setResourceState(ResourceId resource, ResourceState resourceState);
 
@@ -35,7 +35,7 @@ public interface ResourceStatusService {
      * new state is saved and a {@link ResourceStatusChanged} event is fired.
      *
      * @see ResourceStatus#isAvailable()
-     * @see Resource#isActive()
+     * @see Resource#active()
      */
     void setResourceAssignment(ResourceId resource, AssignmentId assignment);
 
@@ -51,12 +51,12 @@ public interface ResourceStatusService {
      * </ul>
      * Otherwise, nothing happens.
      *
-     * @see Resource#isActive()
+     * @see Resource#active()
      */
     void clearResourceAssignment(ResourceId resource);
 
     /**
-     * Same as {@link #clearResourceAssignment(ResourceId)} , but for all resources associated with the specified
+     * Same as {@link #clearResourceAssignment(ResourceId)}, but for all resources that refer to the specified
      * assignment.
      */
     void clearAssignmentFromAllResources(AssignmentId assignment);
@@ -78,7 +78,7 @@ public interface ResourceStatusService {
     /**
      * Finds all active and available resources, in call sign order.
      *
-     * @see Resource#isActive()
+     * @see Resource#active()
      * @see ResourceStatus#isAvailable()
      */
     List<ResourceListItem> getAvailableResources();
@@ -86,7 +86,7 @@ public interface ResourceStatusService {
     /**
      * Finds the current status of all active and available resources.
      *
-     * @see Resource#isActive()
+     * @see Resource#active()
      * @see ResourceStatus#isAvailable()
      */
     List<ResourceStatus> getStatusOfAvailableResources();
@@ -94,14 +94,14 @@ public interface ResourceStatusService {
     /**
      * Finds all active resources, in call sign order.
      *
-     * @see Resource#isActive()
+     * @see Resource#active()
      */
     List<ResourceListItem> getAllResources();
 
     /**
      * Finds the current status of all active resources.
      *
-     * @see Resource#isActive()
+     * @see Resource#active()
      */
     List<ResourceStatus> getStatusOfAllResources();
 }

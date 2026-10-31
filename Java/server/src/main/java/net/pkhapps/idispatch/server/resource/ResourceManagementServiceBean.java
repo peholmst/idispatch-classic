@@ -1,63 +1,77 @@
 package net.pkhapps.idispatch.server.resource;
 
-import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.security.Roles;
-import net.pkhapps.idispatch.server.shared.ValidationFailedException;
-import net.pkhapps.idispatch.server.shared.management.AbstractSoftDeletableManagementServiceBean;
-import org.springframework.data.jpa.domain.Specification;
+import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @Secured(Roles.ROLE_ADMIN)
-class ResourceManagementServiceBean extends AbstractSoftDeletableManagementServiceBean<Resource, ResourceRepository> implements ResourceManagementService {
+class ResourceManagementServiceBean implements ResourceManagementService {
+
+    private static final Logger log = LoggerFactory.getLogger(ResourceManagementServiceBean.class);
 
     private final ResourceRepository repository;
     private final ResourceStatusRepository resourceStatusRepository;
     private final ResourceTypeRepository resourceTypeRepository;
 
-    ResourceManagementServiceBean(Validator validator, ResourceRepository repository, ResourceStatusRepository resourceStatusRepository, ResourceTypeRepository resourceTypeRepository) {
-        super(validator);
+    ResourceManagementServiceBean(ResourceRepository repository, ResourceStatusRepository resourceStatusRepository,
+                                  ResourceTypeRepository resourceTypeRepository) {
         this.repository = repository;
         this.resourceStatusRepository = resourceStatusRepository;
         this.resourceTypeRepository = resourceTypeRepository;
     }
 
     @Override
-    protected ResourceRepository getRepository() {
-        return repository;
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public List<ResourceListItem> findAll(DefaultFilter filter) {
+        var searchTerm = filter.searchTerm() == null ? "" : filter.searchTerm().trim();
+        return repository.findListItems(filter.includesDeleted(), searchTerm);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public Optional<Resource> findById(ResourceId id) {
+        return repository.findById(id);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Resource save(Resource entity) throws ValidationFailedException {
-        if (entity.isNew()) {
-            final Resource saved = super.save(entity);
-            logger.debug("Creating new status entry for resource {}", saved);
-            final ResourceStatus resourceStatus = new ResourceStatus(saved.getResourceId(), ResourceState.OUT_OF_SERVICE);
-            resourceStatusRepository.saveAndFlush(resourceStatus);
-            return saved;
-        } else {
-            return super.save(entity);
-        }
+    public Resource create(ResourceDetails details) {
+        log.debug("Creating resource {}", details.callSign());
+        var resource = repository.insert(details);
+        resourceStatusRepository.insert(
+                new ResourceStatus(resource.id(), 0L, ResourceState.OUT_OF_SERVICE, null, Instant.now()));
+        return resource;
     }
 
     @Override
-    protected List<Resource> doFindAll(Filter filter) {
-        var specs = new ArrayList<Specification<Resource>>();
-        if (filter instanceof SoftDeletableFilter softDeletableFilter && softDeletableFilter.includesActiveOnly()) {
-            specs.add(ResourceSpecifications.activeOnly());
-        }
-        if (filter instanceof TextSearchFilter textSearchFilter) {
-            textSearchFilter.doWithSearchTerm(st -> specs.add(ResourceSpecifications.searchTerm(st)));
-        }
-        return getRepository().findAll(Specification.allOf(specs));
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Resource update(Resource resource) {
+        log.debug("Updating resource {} version {}", resource.id().value(), resource.version());
+        return repository.update(resource);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void delete(ResourceId id) {
+        log.debug("Softly deleting resource {}", id.value());
+        repository.setActive(id, false);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void restore(ResourceId id) {
+        log.debug("Restoring resource {}", id.value());
+        repository.setActive(id, true);
     }
 
     @Override

@@ -1,127 +1,98 @@
 package net.pkhapps.idispatch.server.resource;
 
-import jakarta.persistence.*;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Collections.unmodifiableSet;
+import static java.util.Objects.requireNonNull;
 
 /**
- * Entity that contains the current state of a {@link Resource}.
+ * The current state of a {@link Resource}, and the assignment it is on or was last on. Every change of state is kept
+ * as an {@link ArchivedResourceStatus} of the state before it.
+ *
+ * @param version    incremented on every change, so that a change based on an older version can be refused
+ * @param assignment the assignment the resource is or was last on, or {@code null} if none
+ * @param timestamp  when the resource got this state or assignment
  */
-@Entity
-@Table(name = "resource_status", indexes = @Index(columnList = "ts"))
-public class ResourceStatus extends AbstractResourceStateChange {
+public record ResourceStatus(ResourceId resourceId, long version, ResourceState state,
+                             @Nullable AssignmentId assignment, Instant timestamp) {
 
-    public static final String PROP_VERSION = "version";
-    public static final String PROP_AVAILABLE = "available";
-    public static final String PROP_DETACHED = "detached";
+    private static final Map<ResourceState, Set<ResourceState>> TRANSITIONS = Map.of(
+            ResourceState.RESERVED, EnumSet.of(ResourceState.DISPATCHED, ResourceState.EN_ROUTE, ResourceState.ON_SCENE,
+                    ResourceState.AVAILABLE, ResourceState.OUT_OF_SERVICE, ResourceState.AT_STATION),
+            ResourceState.DISPATCHED, EnumSet.of(ResourceState.EN_ROUTE, ResourceState.AVAILABLE,
+                    ResourceState.OUT_OF_SERVICE, ResourceState.AT_STATION),
+            ResourceState.EN_ROUTE, EnumSet.of(ResourceState.ON_SCENE, ResourceState.AVAILABLE,
+                    ResourceState.OUT_OF_SERVICE),
+            ResourceState.ON_SCENE, EnumSet.of(ResourceState.AVAILABLE, ResourceState.OUT_OF_SERVICE),
+            ResourceState.AVAILABLE, EnumSet.of(ResourceState.AT_STATION, ResourceState.OUT_OF_SERVICE,
+                    ResourceState.RESERVED),
+            ResourceState.AT_STATION, EnumSet.of(ResourceState.AVAILABLE, ResourceState.OUT_OF_SERVICE,
+                    ResourceState.RESERVED),
+            ResourceState.OUT_OF_SERVICE, EnumSet.of(ResourceState.AVAILABLE, ResourceState.AT_STATION));
 
-    private static final Map<ResourceState, Set<ResourceState>> TRANSITIONS = new HashMap<ResourceState, Set<ResourceState>>() {{
-        put(ResourceState.RESERVED, newHashSet(ResourceState.DISPATCHED, ResourceState.EN_ROUTE, ResourceState.ON_SCENE, ResourceState.AVAILABLE, ResourceState.OUT_OF_SERVICE, ResourceState.AT_STATION));
-        put(ResourceState.DISPATCHED, newHashSet(ResourceState.EN_ROUTE, ResourceState.AVAILABLE, ResourceState.OUT_OF_SERVICE, ResourceState.AT_STATION));
-        put(ResourceState.EN_ROUTE, newHashSet(ResourceState.ON_SCENE, ResourceState.AVAILABLE, ResourceState.OUT_OF_SERVICE));
-        put(ResourceState.ON_SCENE, newHashSet(ResourceState.AVAILABLE, ResourceState.OUT_OF_SERVICE));
-        put(ResourceState.AVAILABLE, newHashSet(ResourceState.AT_STATION, ResourceState.OUT_OF_SERVICE, ResourceState.RESERVED));
-        put(ResourceState.AT_STATION, newHashSet(ResourceState.AVAILABLE, ResourceState.OUT_OF_SERVICE, ResourceState.RESERVED));
-        put(ResourceState.OUT_OF_SERVICE, newHashSet(ResourceState.AVAILABLE, ResourceState.AT_STATION));
-    }};
-
-    @Column(name = "available", nullable = false)
-    private boolean available;
-
-    @Column(name = "assigned", nullable = false)
-    private boolean assigned;
-
-    @Version
-    private Long version;
-
-    protected ResourceStatus() {
-    }
-
-    public ResourceStatus(ResourceId resource, ResourceState state) {
-        setResourceId(resource);
-        setState(state);
-    }
-
-    public Long getVersion() {
-        return version;
-    }
-
-    protected void setVersion(Long version) {
-        this.version = version;
-    }
-
-    @Override
-    public void setState(ResourceState state) {
-        super.setState(state);
-        setTimestamp(Instant.now());
-        updateBooleanFlags();
-    }
-
-    public Set<ResourceState> getAllValidNextStates() {
-        return unmodifiableSet(TRANSITIONS.get(getState()));
-    }
-
-    public Set<ResourceState> getManualValidNextStates() {
-        return getAllValidNextStates()
-                .stream()
-                .filter(state -> state != ResourceState.RESERVED && state != ResourceState.DISPATCHED)
-                .collect(Collectors.toSet());
+    public ResourceStatus {
+        requireNonNull(resourceId);
+        requireNonNull(state);
+        requireNonNull(timestamp);
     }
 
     /**
-     * Returns whether the resource is currently available for new assignments.
+     * Returns the states the resource can go to from its current one.
+     */
+    public Set<ResourceState> allValidNextStates() {
+        return unmodifiableSet(TRANSITIONS.get(state));
+    }
+
+    /**
+     * Returns the states a dispatcher can set by hand, which leaves out reserving and dispatching.
+     */
+    public Set<ResourceState> manualValidNextStates() {
+        var states = EnumSet.copyOf(TRANSITIONS.get(state));
+        states.remove(ResourceState.RESERVED);
+        states.remove(ResourceState.DISPATCHED);
+        return unmodifiableSet(states);
+    }
+
+    /**
+     * Returns whether the resource is available for new assignments.
      */
     public boolean isAvailable() {
-        return available;
+        return state.isAvailableForNewAssignments();
     }
 
     /**
-     * Returns whether the resource is currently assigned to another assignment. Please note that this method can return
-     * false even though {@link #getAssignmentId()} is not null.
+     * Returns whether the resource is on its assignment. A resource that is available again or out of service still
+     * refers to its last assignment, but is no longer on it.
      */
     public boolean isAssigned() {
-        return assigned;
-    }
-
-    private void updateBooleanFlags() {
-        final ResourceState state = getState();
-        assigned = getAssignmentId() != null && !state.isAvailableForNewAssignments() && state != ResourceState.OUT_OF_SERVICE;
-        available = state.isAvailableForNewAssignments();
-    }
-
-    @Override
-    public void setAssignmentId(@Nullable AssignmentId lastAssignment) {
-        super.setAssignmentId(lastAssignment);
-        setTimestamp(Instant.now());
-        updateBooleanFlags();
+        return assignment != null && !state.isAvailableForNewAssignments() && state != ResourceState.OUT_OF_SERVICE;
     }
 
     /**
-     * Creates an archived version of this status entity.
+     * Returns this status changed to the given state at the given time, to be saved as a change of this version.
      */
-    public ArchivedResourceStatus toArchived() {
-        return new ArchivedResourceStatus(this);
+    public ResourceStatus withState(ResourceState state, Instant now) {
+        return new ResourceStatus(resourceId, version, state, assignment, now);
     }
 
-    @Override
-    public String toString() {
-        return toStringHelper(this)
-                .add(PROP_ID, getId())
-                .add(PROP_VERSION, version)
-                .add(PROP_RESOURCE_ID, getResourceId())
-                .add(PROP_STATE, getState())
-                .add(PROP_ASSIGNMENT_ID, getAssignmentId())
-                .add(PROP_TIMESTAMP, getTimestamp())
-                .toString();
+    /**
+     * Returns this status with the given assignment, or none, at the given time, to be saved as a change of this
+     * version.
+     */
+    public ResourceStatus withAssignment(@Nullable AssignmentId assignment, Instant now) {
+        return new ResourceStatus(resourceId, version, state, assignment, now);
+    }
+
+    /**
+     * Returns this status as it is kept once it has been replaced by a newer one.
+     */
+    public ArchivedResourceStatus toArchived() {
+        return new ArchivedResourceStatus(resourceId, state, assignment, timestamp);
     }
 }

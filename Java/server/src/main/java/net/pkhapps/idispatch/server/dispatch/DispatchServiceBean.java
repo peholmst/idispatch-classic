@@ -66,8 +66,8 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
     public DispatchNotification dispatchAllReservedResources(Assignment assignment) throws AssignmentNotReadyForDispatchException {
         return dispatchSelectedResources(assignment, resourceStatusService.getStatusOfResourcesAssignedToAssignment(assignment.id())
                 .stream()
-                .filter(status -> status.getState() == ResourceState.RESERVED)
-                .map(ResourceStatus::getResourceId)
+                .filter(status -> status.state() == ResourceState.RESERVED)
+                .map(ResourceStatus::resourceId)
                 .collect(Collectors.toList())
         );
     }

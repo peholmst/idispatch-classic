@@ -1,8 +1,11 @@
 package net.pkhapps.idispatch.server;
 
-import net.pkhapps.idispatch.server.resource.Resource;
-import net.pkhapps.idispatch.server.resource.ResourceRepository;
+import net.pkhapps.idispatch.server.dispatch.DestinationRepository;
+import net.pkhapps.idispatch.server.dispatch.runboard.RunboardDestination;
 import net.pkhapps.idispatch.server.jooq.Public;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceState;
+import net.pkhapps.idispatch.server.ui.TestData;
 import org.jooq.DSLContext;
 import org.jooq.Table;
 import org.junit.jupiter.api.Test;
@@ -13,12 +16,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_TYPES_SEQ;
-import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCES;
-import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCE_TYPES;
+import static net.pkhapps.idispatch.server.jooq.Tables.RUNBOARD_DESTINATIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -26,13 +28,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * that the Flyway migrations create, and jOOQ queries take part in the same Spring transactions as JPA.
  */
 @SpringBootTest
-@Import({TestcontainersConfiguration.class, TestSecurityConfiguration.class})
+@Import({TestData.class, TestcontainersConfiguration.class, TestSecurityConfiguration.class})
 class JooqTest {
 
     @Autowired
     DSLContext dsl;
     @Autowired
-    ResourceRepository resourceRepository;
+    DestinationRepository destinationRepository;
+    @Autowired
+    TestData testData;
     @Autowired
     PlatformTransactionManager txManager;
 
@@ -56,24 +60,22 @@ class JooqTest {
     @Test
     void jooqSeesWhatJpaHasFlushedInTheSameTransaction() {
         var tx = new TransactionTemplate(txManager);
-        var callSign = "jOOQ " + System.nanoTime();
-        var typeId = dsl.nextval(RESOURCE_TYPES_SEQ);
-        dsl.insertInto(RESOURCE_TYPES).set(RESOURCE_TYPES.ID, typeId).set(RESOURCE_TYPES.VERSION, 0L)
-                .set(RESOURCE_TYPES.CODE, callSign).set(RESOURCE_TYPES.DESCRIPTION_FI, "jOOQ")
-                .set(RESOURCE_TYPES.DESCRIPTION_SV, "").set(RESOURCE_TYPES.ACTIVE, true).execute();
+        var resource = testData.resource("jOOQ " + System.nanoTime(), ResourceState.AVAILABLE);
+        var runboardKey = "jOOQ " + System.nanoTime();
 
         var seen = tx.execute(status -> {
-            var resource = new Resource();
-            resource.setCallSign(callSign);
-            resource.setTypeId(typeId);
-            resourceRepository.saveAndFlush(resource);
-            var count = dsl.fetchCount(RESOURCES, RESOURCES.CALL_SIGN.eq(callSign));
+            var destination = new RunboardDestination();
+            destination.setRunboardKey(runboardKey);
+            destination.setResources(Set.of(new ResourceId(resource.id())));
+            destinationRepository.saveAndFlush(destination);
+            var count = dsl.fetchCount(RUNBOARD_DESTINATIONS, RUNBOARD_DESTINATIONS.RUNBOARD_KEY.eq(runboardKey));
             status.setRollbackOnly();
             return count;
         });
 
         assertThat(seen).isEqualTo(1);
-        assertThat(dsl.fetchCount(RESOURCES, RESOURCES.CALL_SIGN.eq(callSign))).as("Rolled back").isZero();
+        assertThat(dsl.fetchCount(RUNBOARD_DESTINATIONS, RUNBOARD_DESTINATIONS.RUNBOARD_KEY.eq(runboardKey)))
+                .as("Rolled back").isZero();
     }
 
     private static Map<String, String> columnsByTable(Table<?>... tables) {

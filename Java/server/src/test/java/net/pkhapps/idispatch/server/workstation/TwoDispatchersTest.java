@@ -69,7 +69,7 @@ class TwoDispatchersTest extends UseCaseTest {
     private ResourceStatus currentStatusOf(GivenResource resource) {
         var resourceStatusService = spring.getBean(ResourceStatusService.class);
         return RunAs.dispatcher(() -> resourceStatusService.getStatusOfAllResources().stream()
-                .filter(status -> status.getResourceId().value() == resource.id())
+                .filter(status -> status.resourceId().value() == resource.id())
                 .findFirst()
                 .orElseThrow());
     }

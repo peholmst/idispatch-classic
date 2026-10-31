@@ -1,50 +1,41 @@
 package net.pkhapps.idispatch.server.resource;
 
-import org.jooq.DSLContext;
-import org.jooq.Record3;
-import org.jooq.SelectJoinStep;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
 
-import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCES;
-
 @Service
 @Transactional(readOnly = true)
 class ResourceQueriesBean implements ResourceQueries {
 
-    private final DSLContext dsl;
+    private final ResourceRepository resourceRepository;
+    private final ResourceStatusRepository resourceStatusRepository;
 
-    ResourceQueriesBean(DSLContext dsl) {
-        this.dsl = dsl;
+    ResourceQueriesBean(ResourceRepository resourceRepository, ResourceStatusRepository resourceStatusRepository) {
+        this.resourceRepository = resourceRepository;
+        this.resourceStatusRepository = resourceStatusRepository;
     }
 
     @Override
     public List<ResourceListItem> findActive() {
-        return selectListItems()
-                .where(RESOURCES.ACTIVE.isTrue())
-                .orderBy(RESOURCES.CALL_SIGN)
-                .fetch(ResourceQueriesBean::toListItem);
+        return resourceRepository.findListItems(false, null);
     }
 
     @Override
     public List<ResourceListItem> findByIds(Collection<ResourceId> ids) {
-        if (ids.isEmpty()) {
-            return List.of();
-        }
-        return selectListItems()
-                .where(RESOURCES.ID.in(ids.stream().map(ResourceId::value).toList()))
-                .orderBy(RESOURCES.CALL_SIGN)
-                .fetch(ResourceQueriesBean::toListItem);
+        return ids.isEmpty() ? List.of() : resourceRepository.findListItems(ids);
     }
 
-    private SelectJoinStep<Record3<Long, String, Boolean>> selectListItems() {
-        return dsl.select(RESOURCES.ID, RESOURCES.CALL_SIGN, RESOURCES.ACTIVE).from(RESOURCES);
+    @Override
+    public List<ResourceListItem> findByCallSignContaining(String searchTerm) {
+        return resourceRepository.findListItems(true, searchTerm);
     }
 
-    private static ResourceListItem toListItem(Record3<Long, String, Boolean> row) {
-        return new ResourceListItem(new ResourceId(row.value1()), row.value2(), row.value3());
+    @Override
+    public List<ArchivedResourceStatus> findPastStatesOn(AssignmentId assignment) {
+        return resourceStatusRepository.findArchivedOn(assignment);
     }
 }

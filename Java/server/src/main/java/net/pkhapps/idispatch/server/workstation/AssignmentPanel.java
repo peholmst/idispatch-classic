@@ -177,7 +177,7 @@ public class AssignmentPanel extends VerticalLayout {
         assignedResources.addThemeVariants(GridVariant.ROW_STRIPES);
         assignedResources.setWidthFull();
         assignedResources.setHeight(200, Unit.PIXELS);
-        assignedResources.addColumn(rs -> assignedCallSigns.get(rs.getResourceId())).setHeader(getTranslation("dispatch.resource"));
+        assignedResources.addColumn(rs -> assignedCallSigns.get(rs.resourceId())).setHeader(getTranslation("dispatch.resource"));
         assignedResources.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
         assignedResources.setSelectionMode(Grid.SelectionMode.MULTI);
         assignedResources.setAriaLabel(getTranslation("dispatch.assigned-resources"));
@@ -219,11 +219,11 @@ public class AssignmentPanel extends VerticalLayout {
     }
 
     private Button createStatusButton(ResourceStatus resourceStatus) {
-        var btn = new Button(ResourceFormatters.formatResourceState(resourceStatus.getState()));
+        var btn = new Button(ResourceFormatters.formatResourceState(resourceStatus.state()));
         btn.addThemeVariants(ButtonVariant.SMALL);
-        btn.addClassName(ResourceFormatters.resourceStateClassName(resourceStatus.getState()));
+        btn.addClassName(ResourceFormatters.resourceStateClassName(resourceStatus.state()));
         btn.addClickListener(event -> new ChangeResourceStatusDialog(resourceStatusService, resourceStatus,
-                assignedCallSigns.get(resourceStatus.getResourceId())).open());
+                assignedCallSigns.get(resourceStatus.resourceId())).open());
         return btn;
     }
 
@@ -232,7 +232,7 @@ public class AssignmentPanel extends VerticalLayout {
         var statuses = shownAssignmentId == null ? List.<ResourceStatus>of()
                 : resourceStatusService.getStatusOfResourcesAssignedToAssignment(shownAssignmentId);
         assignedCallSigns.clear();
-        assignedCallSigns.putAll(resourceQueries.findCallSigns(statuses.stream().map(ResourceStatus::getResourceId).toList()));
+        assignedCallSigns.putAll(resourceQueries.findCallSigns(statuses.stream().map(ResourceStatus::resourceId).toList()));
         assignedResources.setItems(statuses);
     }
 
@@ -245,7 +245,7 @@ public class AssignmentPanel extends VerticalLayout {
     }
 
     private void removeFromAssignment() {
-        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::getResourceId).collect(Collectors.toSet());
+        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::resourceId).collect(Collectors.toSet());
         resources.forEach(resourceStatusService::clearResourceAssignment);
     }
 
@@ -261,7 +261,7 @@ public class AssignmentPanel extends VerticalLayout {
     }
 
     private void dispatchSelected() {
-        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::getResourceId).collect(Collectors.toSet());
+        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::resourceId).collect(Collectors.toSet());
         var assignment = this.assignment.peek();
         if (resources.size() > 0 && assignment != null) {
             try {

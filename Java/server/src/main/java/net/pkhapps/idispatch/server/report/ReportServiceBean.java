@@ -11,7 +11,6 @@ import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.resource.ArchivedResourceStatus;
-import net.pkhapps.idispatch.server.resource.ArchivedResourceStatusRepository;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceQueries;
@@ -37,8 +36,6 @@ import java.util.function.Consumer;
 @Secured({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER})
 class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
-    private final ArchivedResourceStatusRepository archivedResourceStatusRepository;
-
     private final AssignmentQueries assignmentQueries;
 
     private final AssignmentReportRepository assignmentReportRepository;
@@ -53,9 +50,8 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
     private final Validator validator;
 
-    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ArchivedResourceStatusRepository archivedResourceStatusRepository, AssignmentQueries assignmentQueries, AssignmentReportRepository assignmentReportRepository, ClosedAssignmentQuery closedAssignmentQuery, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, ResourceQueries resourceQueries, Validator validator) {
+    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentQueries assignmentQueries, AssignmentReportRepository assignmentReportRepository, ClosedAssignmentQuery closedAssignmentQuery, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, ResourceQueries resourceQueries, Validator validator) {
         super(applicationContext, txManager);
-        this.archivedResourceStatusRepository = archivedResourceStatusRepository;
         this.assignmentQueries = assignmentQueries;
         this.assignmentReportRepository = assignmentReportRepository;
         this.closedAssignmentQuery = closedAssignmentQuery;
@@ -222,8 +218,8 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         }
 
         private void process() {
-            var statuses = archivedResourceStatusRepository.findByAssignmentId(assignment.id().value());
-            resourceQueries.findByIds(statuses.stream().map(ArchivedResourceStatus::getResourceId).distinct().toList())
+            var statuses = resourceQueries.findPastStatesOn(assignment.id());
+            resourceQueries.findByIds(statuses.stream().map(ArchivedResourceStatus::resourceId).distinct().toList())
                     .forEach(resource -> resources.put(resource.id(), resource));
             statuses.forEach(this::process);
             dtoList.addAll(builderMap.values().stream().map(ReportResourceDTO.Builder::build).toList());
@@ -234,7 +230,7 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         }
 
         private void process(ArchivedResourceStatus status) {
-            switch (status.getState()) {
+            switch (status.state()) {
                 case AT_STATION:
                     process(status, ReportResourceDTO.Builder::getAtStation, ReportResourceDTO.Builder::setAtStation);
                     break;
@@ -253,12 +249,12 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         }
 
         private void process(ArchivedResourceStatus status, DateGetter getter, DateSetter setter) {
-            ReportResourceDTO.Builder builder = getBuilder(status.getResourceId());
+            ReportResourceDTO.Builder builder = getBuilder(status.resourceId());
             if (getter.get(builder) == null) {
-                setter.set(builder, status.getTimestamp());
+                setter.set(builder, status.timestamp());
             } else {
                 dtoList.add(builder.build());
-                builderMap.remove(status.getResourceId());
+                builderMap.remove(status.resourceId());
                 process(status, getter, setter);
             }
         }

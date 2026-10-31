@@ -19,13 +19,13 @@ public class ChangeResourceStatusDialog extends Dialog {
     public ChangeResourceStatusDialog(ResourceStatusService resourceStatusService, ResourceStatus resourceStatus,
                                       String callSign) {
         this.resourceStatusService = resourceStatusService;
-        this.resource = resourceStatus.getResourceId();
+        this.resource = resourceStatus.resourceId();
         addClassName("change-resource-status-dialog");
         buttons = new VerticalLayout();
         add(buttons);
 
         setHeaderTitle(getTranslation("dispatch.change-state.title", callSign));
-        resourceStatus.getManualValidNextStates().stream().sorted().forEach(this::createResourceStateButton);
+        resourceStatus.manualValidNextStates().stream().sorted().forEach(this::createResourceStateButton);
         setCloseOnEsc(true);
         setCloseOnOutsideClick(true);
     }

@@ -173,7 +173,12 @@ public class AdministrationPage extends AppShell {
     }
 
     public boolean canEdit(String label) {
-        return !field(label).isReadOnly();
+        var field = window.find(Component.class)
+                .withCondition(c -> c instanceof com.vaadin.flow.component.HasValue<?, ?>
+                        && c instanceof com.vaadin.flow.component.HasLabel hasLabel
+                        && label.equals(hasLabel.getLabel()))
+                .single();
+        return !((com.vaadin.flow.component.HasValue<?, ?>) field).isReadOnly();
     }
 
     public boolean showsEditorButton(String text) {

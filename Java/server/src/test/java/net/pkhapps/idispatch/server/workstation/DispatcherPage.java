@@ -220,6 +220,10 @@ public class DispatcherPage extends AppShell {
 
     // --- The list of all resources ---
 
+    public List<String> listedResources() {
+        return resources().column(t("Resource"));
+    }
+
     public String stateOf(String callSign) {
         return resources().rowWhere(t("Resource"), callSign).get(t("State"));
     }

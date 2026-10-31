@@ -5,12 +5,11 @@ import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractServiceBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,13 +18,12 @@ import java.util.Optional;
 class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceStatusService {
 
     private final ResourceStatusRepository resourceStatusRepository;
-    private final ArchivedResourceStatusRepository archivedResourceStatusRepository;
     private final ResourceQueries resourceQueries;
 
-    ResourceStatusServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ResourceStatusRepository resourceStatusRepository, ArchivedResourceStatusRepository archivedResourceStatusRepository, ResourceQueries resourceQueries) {
+    ResourceStatusServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager,
+                              ResourceStatusRepository resourceStatusRepository, ResourceQueries resourceQueries) {
         super(applicationContext, txManager);
         this.resourceStatusRepository = resourceStatusRepository;
-        this.archivedResourceStatusRepository = archivedResourceStatusRepository;
         this.resourceQueries = resourceQueries;
     }
 
@@ -35,58 +33,47 @@ class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceS
         if (resource == null) {
             return Optional.empty();
         }
-        return resourceStatusRepository.findByActiveResourceId(resource.value());
+        return resourceStatusRepository.findOfActiveResource(resource);
     }
 
     @Override
     public void setResourceState(ResourceId resource, ResourceState resourceState) {
         logger.debug("Attempting to set the state of resource {} to {}", resource, resourceState);
-        attemptStatusChangeOperation(resource, status -> {
-            if (status.getAllValidNextStates().contains(resourceState)) {
-                status.setState(resourceState);
-                return true;
+        attemptStatusChange(resource, (status, now) -> {
+            if (status.allValidNextStates().contains(resourceState)) {
+                return Optional.of(status.withState(resourceState, now));
             }
             logger.debug("Cannot change the state of resource {} to {}", resource, resourceState);
-            return false;
+            return Optional.empty();
         });
     }
 
     @Override
     public void setResourceAssignment(ResourceId resource, AssignmentId assignment) {
         logger.debug("Attempting to assign resource {} to assignment {}", resource, assignment);
-        attemptStatusChangeOperation(resource, status -> {
+        attemptStatusChange(resource, (status, now) -> {
             if (status.isAvailable()) {
-                status.setState(ResourceState.RESERVED);
-                status.setAssignmentId(assignment);
-                return true;
+                return Optional.of(status.withState(ResourceState.RESERVED, now).withAssignment(assignment, now));
             }
             logger.debug("Cannot assign resource {} to assignment {}", resource, assignment);
-            return false;
+            return Optional.empty();
         });
     }
 
     @Override
     public void clearResourceAssignment(ResourceId resource) {
         logger.debug("Attempting to clear the assignment from resource {}", resource);
-        attemptStatusChangeOperation(resource, status -> {
-            switch (status.getState()) {
-                case RESERVED:
-                    final Optional<ArchivedResourceStatus> previousResourceStatus = findPreviousResourceStatus(resource);
-                    if (previousResourceStatus.isPresent()) {
-                        final ResourceState oldState = previousResourceStatus.get().getState();
-                        logger.debug("Reverting the state of resource {} to {}", resource, oldState);
-                        status.setState(oldState);
-                    } else {
-                        return false;
-                    }
-                case AVAILABLE:
-                case AT_STATION:
-                case OUT_OF_SERVICE:
-                    status.setAssignmentId(null);
-                    return true;
-                default:
-                    logger.debug("Resource {} was in state {}, cannot clear assignment", resource, status.getState());
-                    return false;
+        attemptStatusChange(resource, (status, now) -> switch (status.state()) {
+            // A reserved resource goes back to the state it had before it was reserved
+            case RESERVED -> resourceStatusRepository.findLatestArchived(resource)
+                    .map(previous -> {
+                        logger.debug("Reverting the state of resource {} to {}", resource, previous.state());
+                        return status.withState(previous.state(), now).withAssignment(null, now);
+                    });
+            case AVAILABLE, AT_STATION, OUT_OF_SERVICE -> Optional.of(status.withAssignment(null, now));
+            default -> {
+                logger.debug("Resource {} was in state {}, cannot clear assignment", resource, status.state());
+                yield Optional.empty();
             }
         });
     }
@@ -94,7 +81,8 @@ class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceS
     @Override
     public void clearAssignmentFromAllResources(AssignmentId assignment) {
         logger.debug("Attempting to clear the assignment from all resources associated with {}", assignment);
-        resourceStatusRepository.findByAssignmentId(assignment.value()).forEach(status -> clearResourceAssignment(status.getResourceId()));
+        resourceStatusRepository.findReferringTo(assignment)
+                .forEach(status -> clearResourceAssignment(status.resourceId()));
     }
 
     @Override
@@ -106,7 +94,7 @@ class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceS
     @Override
     public List<ResourceStatus> getStatusOfResourcesAssignedToAssignment(AssignmentId assignment) {
         logger.debug("Looking up the status of the resources assigned to {}", assignment);
-        return resourceStatusRepository.findByAssignmentIdAndAssignedTrue(assignment.value());
+        return resourceStatusRepository.findAssignedTo(assignment);
     }
 
     @Override
@@ -118,7 +106,7 @@ class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceS
     @Override
     public List<ResourceStatus> getStatusOfAvailableResources() {
         logger.debug("Looking up the status of the available resources");
-        return resourceStatusRepository.findByActiveTrueAndAvailableTrue();
+        return resourceStatusRepository.findOfActiveResources(true);
     }
 
     @Override
@@ -130,46 +118,42 @@ class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceS
     @Override
     public List<ResourceStatus> getStatusOfAllResources() {
         logger.debug("Looking up the status of all resources");
-        return resourceStatusRepository.findByActiveTrue();
+        return resourceStatusRepository.findOfActiveResources(false);
     }
 
     private List<ResourceListItem> toListItems(List<ResourceStatus> statuses) {
-        return resourceQueries.findByIds(statuses.stream().map(ResourceStatus::getResourceId).toList());
+        return resourceQueries.findByIds(statuses.stream().map(ResourceStatus::resourceId).toList());
     }
 
-    private void attemptStatusChangeOperation(ResourceId resource, StatusChangeOperation operation) {
-        findCurrentStatus(resource)
-                .flatMap(status -> executeStatusChangeOperation(status, operation))
-                .ifPresent(updatedStatus -> getApplicationContext().publishEvent(new ResourceStatusChanged(ResourceStatusServiceBean.this, updatedStatus)));
-    }
-
-    private Optional<ResourceStatus> executeStatusChangeOperation(ResourceStatus currentStatus, StatusChangeOperation operation) {
-        final ArchivedResourceStatus archivedResourceStatus = currentStatus.toArchived();
-        return getTxTemplate().execute(tx -> {
-            if (operation.doOnActiveResourceStatus(currentStatus)) {
-                try {
-                    ResourceStatus updatedStatus = resourceStatusRepository.saveAndFlush(currentStatus);
-                    archivedResourceStatusRepository.saveAndFlush(archivedResourceStatus);
-                    return Optional.of(updatedStatus);
-                } catch (OptimisticLockingFailureException ex) {
-                    tx.setRollbackOnly();
-                }
+    /**
+     * Changes the status of the resource as the change says, unless the resource is deleted or the change refuses.
+     * The previous status is archived. If another change got there first, nothing happens.
+     */
+    private void attemptStatusChange(ResourceId resource, StatusChange change) {
+        Optional<ResourceStatus> updated = getTxTemplate().execute(tx -> {
+            try {
+                return findCurrentStatus(resource).flatMap(current -> change.apply(current, Instant.now())
+                        .map(next -> {
+                            var saved = resourceStatusRepository.update(next);
+                            resourceStatusRepository.archive(current.toArchived());
+                            return saved;
+                        }));
+            } catch (OptimisticLockingFailureException ex) {
+                logger.debug("The status of resource {} was changed at the same time", resource);
+                tx.setRollbackOnly();
+                return Optional.empty();
             }
-            return Optional.empty();
         });
-    }
-
-    private Optional<ArchivedResourceStatus> findPreviousResourceStatus(ResourceId resource) {
-        List<ArchivedResourceStatus> result = archivedResourceStatusRepository.findByResourceId(resource.value(), PageRequest.of(0, 1, Sort.Direction.DESC, ArchivedResourceStatus.PROP_TIMESTAMP));
-        if (result.isEmpty()) {
-            return Optional.empty();
-        } else {
-            return Optional.of(result.iterator().next());
+        if (updated != null) {
+            updated.ifPresent(status -> getApplicationContext().publishEvent(new ResourceStatusChanged(this, status)));
         }
     }
 
     @FunctionalInterface
-    private interface StatusChangeOperation {
-        boolean doOnActiveResourceStatus(ResourceStatus resourceStatus);
+    private interface StatusChange {
+        /**
+         * Returns the next status, or nothing if the change cannot be made from the current one.
+         */
+        Optional<ResourceStatus> apply(ResourceStatus current, Instant now);
     }
 }
