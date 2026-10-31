@@ -7,8 +7,8 @@ import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.RequiredFieldConfigurator;
 import jakarta.validation.constraints.NotBlank;
-import net.pkhapps.idispatch.server.entity.AbstractEntity;
-import net.pkhapps.idispatch.server.entity.Bilingual;
+import net.pkhapps.idispatch.server.shared.AbstractEntity;
+import net.pkhapps.idispatch.server.shared.Bilingual;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
  * The form is buffered: it reads the entity and writes the changes to a copy of it, so the entity shown in the grid
  * stays as it was if the user cancels or saving fails.
  */
-abstract class ManagementForm<E extends AbstractEntity> extends Composite<FormLayout> {
+public abstract class ManagementForm<E extends AbstractEntity> extends Composite<FormLayout> {
 
     protected final BeanValidationBinder<E> binder;
     private @Nullable E formDataObject;

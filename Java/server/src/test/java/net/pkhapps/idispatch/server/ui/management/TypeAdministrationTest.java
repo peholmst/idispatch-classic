@@ -1,5 +1,7 @@
 package net.pkhapps.idispatch.server.ui.management;
 
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeManagementView;
+import net.pkhapps.idispatch.server.resource.ResourceTypeManagementView;
 import net.pkhapps.idispatch.server.ui.UseCaseTest;
 import org.junit.jupiter.api.Test;
 
