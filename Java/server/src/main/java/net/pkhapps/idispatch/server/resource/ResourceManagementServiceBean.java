@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Secured(Roles.ROLE_ADMIN)
@@ -61,7 +62,13 @@ class ResourceManagementServiceBean extends AbstractSoftDeletableManagementServi
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
-    public List<ResourceType> findApplicableTypes() {
-        return resourceTypeRepository.findByActiveTrueOrderByCodeAsc();
+    public List<ResourceTypeListItem> findApplicableTypes() {
+        return resourceTypeRepository.findListItems(false, null);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public Optional<ResourceTypeListItem> findType(ResourceTypeId id) {
+        return resourceTypeRepository.findListItem(id);
     }
 }

@@ -141,7 +141,13 @@ public class TestData {
      * An active resource of a type of its own, in the given state and on no assignment.
      */
     public GivenResource resource(String callSign, ResourceState initialState) {
-        var type = resourceType(unique("RT"), "Test resource type");
+        return resource(callSign, initialState, resourceType(unique("RT"), "Test resource type"));
+    }
+
+    /**
+     * An active resource of the given type, in the given state and on no assignment.
+     */
+    public GivenResource resource(String callSign, ResourceState initialState, GivenResourceType type) {
         var id = dsl.nextval(RESOURCES_SEQ);
         dsl.insertInto(RESOURCES)
                 .set(RESOURCES.ID, id)
