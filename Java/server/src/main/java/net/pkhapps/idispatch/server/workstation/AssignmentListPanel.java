@@ -6,31 +6,39 @@ import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.signals.Signal;
+import com.vaadin.flow.signals.local.ValueSignal;
 import net.pkhapps.idispatch.server.assignment.AssignmentEvent;
 import net.pkhapps.idispatch.server.assignment.AssignmentFormatters;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.AssignmentListItem;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.ui.Formatters;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ApplicationEventMulticaster;
-import org.springframework.lang.Nullable;
 
-import java.util.function.Consumer;
+import java.util.List;
 
 class AssignmentListPanel extends VerticalLayout {
 
     private final AssignmentService assignmentService;
     private final ApplicationEventMulticaster eventMulticaster;
     private final Grid<AssignmentListItem> grid;
+    private final ValueSignal<List<AssignmentListItem>> assignments = new ValueSignal<>(List.of());
+    private final ValueSignal<@Nullable AssignmentId> selected;
     private OwnerUpdater ownerUpdater;
     private final ApplicationListener<AssignmentEvent> assignmentEventListener = event -> ownerUpdater.update(this::refresh);
 
+    /**
+     * @param selected the assignment selected in the list, which the user changes by selecting another one
+     */
     public AssignmentListPanel(AssignmentService assignmentService,
                                ApplicationEventMulticaster eventMulticaster,
-                               Consumer<AssignmentId> onAssignmentSelected) {
+                               ValueSignal<@Nullable AssignmentId> selected) {
         this.assignmentService = assignmentService;
         this.eventMulticaster = eventMulticaster;
+        this.selected = selected;
         addClassName("assignment-list");
 
         setSizeFull();
@@ -52,12 +60,20 @@ class AssignmentListPanel extends VerticalLayout {
         grid.addColumn(AssignmentFormatters::formatMunicipality).setHeader(getTranslation("assignment.municipality"));
         grid.addColumn(AssignmentListItem::address).setHeader(getTranslation("assignment.address"));
 
-        if (onAssignmentSelected != null) {
-            grid.addSelectionListener(event -> onAssignmentSelected.accept(
-                            event.getFirstSelectedItem().map(AssignmentListItem::id).orElse(null)
-                    )
-            );
-        }
+        grid.addSelectionListener(event -> {
+            if (event.isFromClient()) {
+                selected.set(event.getFirstSelectedItem().map(AssignmentListItem::id).orElse(null));
+            }
+        });
+        // Setting the items clears the selection, so the row is selected again after
+        Signal.effect(grid, () -> {
+            grid.setItems(assignments.get());
+            showSelection();
+        });
+        Signal.effect(grid, () -> {
+            selected.get();
+            showSelection();
+        });
 
         add(grid);
     }
@@ -81,17 +97,21 @@ class AssignmentListPanel extends VerticalLayout {
         eventMulticaster.removeApplicationListener(assignmentEventListener);
     }
 
+    /**
+     * Lists the open assignments again. An assignment that has been closed since is no longer selected.
+     */
     private void refresh() {
-        var selectedId = grid.getSelectionModel().getFirstSelectedItem().map(AssignmentListItem::id).orElse(null);
-        grid.setItems(assignmentService.findOpenAssignments());
-        selectAssignmentById(selectedId);
+        var open = assignmentService.findOpenAssignments();
+        assignments.set(open);
+        var selectedId = selected.peek();
+        if (selectedId != null && open.stream().noneMatch(assignment -> assignment.id().equals(selectedId))) {
+            selected.set(null);
+        }
     }
 
-    public void selectAssignmentById(@Nullable AssignmentId id) {
-        if (id == null) {
-            grid.deselectAll();
-        } else {
-            grid.getListDataView().getItems().filter(assignment -> id.equals(assignment.id())).findFirst().ifPresent(grid::select);
-        }
+    private void showSelection() {
+        var selectedId = selected.peek();
+        grid.getListDataView().getItems().filter(assignment -> assignment.id().equals(selectedId)).findFirst()
+                .ifPresentOrElse(grid::select, grid::deselectAll);
     }
 }

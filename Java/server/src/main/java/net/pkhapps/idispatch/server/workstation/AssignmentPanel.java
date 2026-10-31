@@ -56,39 +56,54 @@ import java.util.function.UnaryOperator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * The assignment selected in the dispatcher view, in a form that saves every change right away, with the resources
+ * on it and the actions for dispatching them.
+ * <p>
+ * The form follows signals: the selected assignment's ID, which the view shares with the list, and the assignment as
+ * last saved, which every change replaces. The choices, the resources and the resources the dispatcher has selected
+ * are signals too, and the components are bound to them.
+ */
 class AssignmentPanel extends VerticalLayout {
+
+    /**
+     * The resources on the assignment, with their call signs, loaded together.
+     */
+    private record AssignedResources(List<ResourceStatus> statuses, Map<ResourceId, String> callSigns) {
+
+        static final AssignedResources NONE = new AssignedResources(List.of(), Map.of());
+    }
 
     private final AssignmentService assignmentService;
     private final ResourceStatusService resourceStatusService;
     private final ResourceQueries resourceQueries;
-    // The call signs of the assigned resources, loaded with them
-    private final Map<ResourceId, String> assignedCallSigns = new HashMap<>();
     private final DispatchService dispatchService;
     private final ApplicationEventMulticaster eventMulticaster;
     // The assignment in the form, as last saved, or null when none is selected. The fields show it, and every change a
     // dispatcher makes is saved right away and replaces it.
     private final ValueSignal<@Nullable Assignment> assignment = new ValueSignal<>(null);
-    // The choices, with the type and municipality that the assignment has even if they have been deleted since
+    // The choices, and by ID also the type and municipality that the assignment has even if they have been deleted
+    // since
+    private final ValueSignal<List<AssignmentTypeListItem>> typeChoices = new ValueSignal<>(List.of());
+    private final ValueSignal<List<MunicipalityListItem>> municipalityChoices = new ValueSignal<>(List.of());
     private final ValueSignal<Map<AssignmentTypeId, AssignmentTypeListItem>> types = new ValueSignal<>(Map.of());
     private final ValueSignal<Map<MunicipalityId, MunicipalityListItem>> municipalities = new ValueSignal<>(Map.of());
-    // The ID of the assignment in the form, for refreshing its resources when another session changes them, which
-    // must not read this session's signals
-    private @Nullable AssignmentId shownAssignmentId;
-    private final Component noAssignmentSelected;
-    private final Component assignmentForm;
-    private final ComboBox<AssignmentTypeListItem> assignmentType;
-    private final ComboBox<MunicipalityListItem> municipality;
-    private final ComboBox<ResourceListItem> availableResource;
-
-    private final Grid<ResourceStatus> assignedResources;
+    private final ValueSignal<List<ResourceListItem>> availableResources = new ValueSignal<>(List.of());
+    private final ValueSignal<@Nullable ResourceListItem> resourceToAdd = new ValueSignal<>(null);
+    private final ValueSignal<AssignedResources> assignedResources = new ValueSignal<>(AssignedResources.NONE);
+    private final ValueSignal<Set<ResourceStatus>> selectedResources = new ValueSignal<>(Set.of());
     private OwnerUpdater ownerUpdater;
     private final ApplicationListener<ResourceStatusChanged> resourceStatusChangedListener = event -> ownerUpdater.update(this::updateResources);
 
+    /**
+     * @param selected the assignment to show, or {@code null} for none
+     */
     public AssignmentPanel(AssignmentService assignmentService, ResourceStatusService resourceStatusService,
                            ResourceQueries resourceQueries, DispatchService dispatchService,
-                           ApplicationEventMulticaster eventMulticaster) {
+                           ApplicationEventMulticaster eventMulticaster, Signal<@Nullable AssignmentId> selected) {
         this.assignmentService = assignmentService;
         this.resourceStatusService = resourceStatusService;
         this.resourceQueries = resourceQueries;
@@ -102,14 +117,14 @@ class AssignmentPanel extends VerticalLayout {
         setSpacing(false);
         setPadding(false);
 
-        noAssignmentSelected = createNoAssignmentSelectedComponent();
+        var noAssignmentSelected = createNoAssignmentSelectedComponent();
+        noAssignmentSelected.bindVisible(assignment.map(Objects::isNull));
 
         var assignmentLayout = new VerticalLayout();
-        var assignmentScroller = new Scroller(assignmentLayout);
-        assignmentForm = assignmentScroller;
-
-        assignmentScroller.setSizeFull();
-        assignmentScroller.addClassName("content");
+        var assignmentForm = new Scroller(assignmentLayout);
+        assignmentForm.setSizeFull();
+        assignmentForm.addClassName("content");
+        assignmentForm.bindVisible(assignment.map(Objects::nonNull));
 
         assignmentLayout.setSizeUndefined();
         assignmentLayout.setWidthFull();
@@ -117,12 +132,14 @@ class AssignmentPanel extends VerticalLayout {
         assignmentLayout.setSpacing(true);
         assignmentLayout.setPadding(true);
 
-        assignmentType = new ComboBox<>(getTranslation("assignment.type"));
+        var assignmentType = new ComboBox<AssignmentTypeListItem>(getTranslation("assignment.type"));
         assignmentType.setItemLabelGenerator(AssignmentTypeFormatters::formatAssignmentType);
         assignmentType.setWidthFull();
+        Signal.effect(assignmentType, () -> assignmentType.setItems(typeChoices.get()));
         assignmentType.bindValue(Signal.computed(() -> {
             var current = assignment.get();
-            return current == null || current.typeId() == null ? null : types.get().get(current.typeId());
+            var byId = types.get();
+            return current == null || current.typeId() == null ? null : byId.get(current.typeId());
         }), item -> save(current -> current.withTypeId(item == null ? null : item.id())));
 
         var urgency = new ComboBox<AssignmentUrgency>(getTranslation("assignment.urgency"));
@@ -136,14 +153,15 @@ class AssignmentPanel extends VerticalLayout {
         typeAndUrgency.setWidthFull();
         assignmentLayout.add(typeAndUrgency);
 
-        municipality = new ComboBox<>(getTranslation("assignment.municipality"));
+        var municipality = new ComboBox<MunicipalityListItem>(getTranslation("assignment.municipality"));
         municipality.setItemLabelGenerator(MunicipalityFormatters::formatMunicipality);
         municipality.setWidthFull();
         assignmentLayout.add(municipality);
+        Signal.effect(municipality, () -> municipality.setItems(municipalityChoices.get()));
         municipality.bindValue(Signal.computed(() -> {
             var current = assignment.get();
-            return current == null || current.municipalityId() == null ? null
-                    : municipalities.get().get(current.municipalityId());
+            var byId = municipalities.get();
+            return current == null || current.municipalityId() == null ? null : byId.get(current.municipalityId());
         }), item -> save(current -> current.withMunicipalityId(item == null ? null : item.id())));
 
         var address = new TextField(getTranslation("assignment.address"));
@@ -159,34 +177,40 @@ class AssignmentPanel extends VerticalLayout {
                 value -> save(current -> current.withDescription(value)));
 
         assignmentLayout.add(new H4(getTranslation("dispatch.resources")));
-        availableResource = new ComboBox<>();
+        var availableResource = new ComboBox<ResourceListItem>();
         availableResource.setWidthFull();
         availableResource.setItemLabelGenerator(ResourceListItem::callSign);
         availableResource.setAriaLabel(getTranslation("dispatch.available-resource"));
+        Signal.effect(availableResource, () -> availableResource.setItems(availableResources.get()));
+        availableResource.bindValue(resourceToAdd, resourceToAdd::set);
+        var anySelected = selectedResources.map(resources -> !resources.isEmpty());
         var addToAssignment = new Button(VaadinIcon.PLUS_CIRCLE.create(), event -> addToAssignment());
         var removeFromAssignment = new Button(VaadinIcon.MINUS_CIRCLE.create(), event -> removeFromAssignment());
         addToAssignment.setAriaLabel(getTranslation("dispatch.add-resource"));
         removeFromAssignment.setAriaLabel(getTranslation("dispatch.remove-resources"));
-        removeFromAssignment.setEnabled(false);
+        removeFromAssignment.bindEnabled(anySelected);
         var assignmentActions = new HorizontalLayout(availableResource, addToAssignment, removeFromAssignment);
         assignmentActions.setFlexGrow(1.0, availableResource);
         assignmentActions.setWidthFull();
         assignmentLayout.add(assignmentActions);
 
-        assignedResources = new Grid<>();
-        assignedResources.addThemeVariants(GridVariant.ROW_STRIPES);
-        assignedResources.setWidthFull();
-        assignedResources.setHeight(200, Unit.PIXELS);
-        assignedResources.addColumn(rs -> assignedCallSigns.get(rs.resourceId())).setHeader(getTranslation("dispatch.resource"));
-        assignedResources.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
-        assignedResources.setSelectionMode(Grid.SelectionMode.MULTI);
-        assignedResources.setAriaLabel(getTranslation("dispatch.assigned-resources"));
-        assignmentLayout.add(assignedResources);
+        var assignedResourcesGrid = new Grid<ResourceStatus>();
+        assignedResourcesGrid.addThemeVariants(GridVariant.ROW_STRIPES);
+        assignedResourcesGrid.setWidthFull();
+        assignedResourcesGrid.setHeight(200, Unit.PIXELS);
+        assignedResourcesGrid.addColumn(rs -> assignedResources.peek().callSigns().get(rs.resourceId()))
+                .setHeader(getTranslation("dispatch.resource"));
+        assignedResourcesGrid.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
+        assignedResourcesGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+        assignedResourcesGrid.setAriaLabel(getTranslation("dispatch.assigned-resources"));
+        Signal.effect(assignedResourcesGrid, () -> assignedResourcesGrid.setItems(assignedResources.get().statuses()));
+        assignedResourcesGrid.asMultiSelect().bindValue(selectedResources, selectedResources::set);
+        assignmentLayout.add(assignedResourcesGrid);
 
         var dispatchAll = new Button(getTranslation("dispatch.dispatch-all"), event -> dispatchAll());
         dispatchAll.addThemeVariants(ButtonVariant.ERROR);
         var dispatchSelected = new Button(getTranslation("dispatch.dispatch-selected"), event -> dispatchSelected());
-        dispatchSelected.setEnabled(false);
+        dispatchSelected.bindEnabled(anySelected);
         dispatchSelected.addThemeVariants(ButtonVariant.ERROR);
         var dispatchReserved = new Button(getTranslation("dispatch.dispatch-reserved"), event -> dispatchReserved());
         dispatchReserved.addThemeVariants(ButtonVariant.PRIMARY, ButtonVariant.ERROR);
@@ -198,14 +222,10 @@ class AssignmentPanel extends VerticalLayout {
         closeAssignment.addThemeVariants(ButtonVariant.TERTIARY);
         assignmentLayout.add(closeAssignment);
 
-        assignedResources.addSelectionListener(event -> {
-            removeFromAssignment.setEnabled(event.getAllSelectedItems().size() > 0);
-            dispatchSelected.setEnabled(event.getAllSelectedItems().size() > 0);
-        });
-
         add(noAssignmentSelected);
         add(assignmentForm);
-        hideForm();
+
+        Signal.effect(this, () -> open(selected.get()));
     }
 
     private Component createNoAssignmentSelectedComponent() {
@@ -223,21 +243,24 @@ class AssignmentPanel extends VerticalLayout {
         btn.addThemeVariants(ButtonVariant.SMALL);
         btn.addClassName(ResourceFormatters.resourceStateClassName(resourceStatus.state()));
         btn.addClickListener(event -> new ChangeResourceStatusDialog(resourceStatusService, resourceStatus,
-                assignedCallSigns.get(resourceStatus.resourceId())).open());
+                assignedResources.peek().callSigns().get(resourceStatus.resourceId())).open());
         return btn;
     }
 
+    /**
+     * Loads the resources that are available and the ones on the assignment in the form.
+     */
     private void updateResources() {
-        availableResource.setItems(resourceStatusService.getAvailableResources());
-        var statuses = shownAssignmentId == null ? List.<ResourceStatus>of()
-                : resourceStatusService.getStatusOfResourcesAssignedToAssignment(shownAssignmentId);
-        assignedCallSigns.clear();
-        assignedCallSigns.putAll(resourceQueries.findCallSigns(statuses.stream().map(ResourceStatus::resourceId).toList()));
-        assignedResources.setItems(statuses);
+        availableResources.set(resourceStatusService.getAvailableResources());
+        var current = assignment.peek();
+        var statuses = current == null ? List.<ResourceStatus>of()
+                : resourceStatusService.getStatusOfResourcesAssignedToAssignment(current.id());
+        assignedResources.set(new AssignedResources(statuses,
+                resourceQueries.findCallSigns(statuses.stream().map(ResourceStatus::resourceId).toList())));
     }
 
     private void addToAssignment() {
-        var resource = availableResource.getValue();
+        var resource = resourceToAdd.peek();
         var current = assignment.peek();
         if (resource != null && current != null) {
             resourceStatusService.setResourceAssignment(resource.id(), current.id());
@@ -245,8 +268,8 @@ class AssignmentPanel extends VerticalLayout {
     }
 
     private void removeFromAssignment() {
-        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::resourceId).collect(Collectors.toSet());
-        resources.forEach(resourceStatusService::clearResourceAssignment);
+        selectedResources.peek().stream().map(ResourceStatus::resourceId).collect(Collectors.toSet())
+                .forEach(resourceStatusService::clearResourceAssignment);
     }
 
     private void dispatchAll() {
@@ -261,9 +284,9 @@ class AssignmentPanel extends VerticalLayout {
     }
 
     private void dispatchSelected() {
-        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::resourceId).collect(Collectors.toSet());
+        var resources = selectedResources.peek().stream().map(ResourceStatus::resourceId).collect(Collectors.toSet());
         var assignment = this.assignment.peek();
-        if (resources.size() > 0 && assignment != null) {
+        if (!resources.isEmpty() && assignment != null) {
             try {
                 dispatchService.dispatchSelectedResources(assignment, resources);
             } catch (AssignmentNotReadyForDispatchException ex) {
@@ -301,7 +324,10 @@ class AssignmentPanel extends VerticalLayout {
         }
     }
 
-    public void setAssignmentId(@Nullable AssignmentId id) {
+    /**
+     * Shows the assignment with the given ID in the form, or empties the form for {@code null}.
+     */
+    private void open(@Nullable AssignmentId id) {
         var current = assignment.peek();
         if (Objects.equals(id, current == null ? null : current.id())) {
             return;
@@ -350,22 +376,17 @@ class AssignmentPanel extends VerticalLayout {
             assignmentService.findMunicipality(assignment.municipalityId())
                     .ifPresent(municipality -> municipalitiesById.put(municipality.id(), municipality));
         }
-        assignmentType.setItems(typeChoices);
-        municipality.setItems(municipalityChoices);
+        this.typeChoices.set(typeChoices);
+        this.municipalityChoices.set(municipalityChoices);
         types.set(Map.copyOf(typesById));
         municipalities.set(Map.copyOf(municipalitiesById));
         this.assignment.set(assignment);
-        shownAssignmentId = assignment.id();
         updateResources();
-        noAssignmentSelected.setVisible(false);
-        assignmentForm.setVisible(true);
     }
 
     private void hideForm() {
         assignment.set(null);
-        shownAssignmentId = null;
-        noAssignmentSelected.setVisible(true);
-        assignmentForm.setVisible(false);
+        assignedResources.set(AssignedResources.NONE);
     }
 
     @Override
