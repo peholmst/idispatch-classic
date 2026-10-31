@@ -4,6 +4,7 @@ import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
+import net.pkhapps.idispatch.server.dispatch.AssignmentNotReadyForDispatchException;
 import net.pkhapps.idispatch.server.dispatch.DispatchService;
 import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.resource.ResourceState;
@@ -38,19 +39,19 @@ public class HandledAssignments {
     public record Handled(Assignment assignment, String type, String municipality) {
 
         public String number() {
-            return assignment.getId().toString();
+            return String.valueOf(assignment.id().value());
         }
 
         public String opened() {
-            return Formatters.formatDateTime(assignment.getOpened());
+            return Formatters.formatDateTime(assignment.opened());
         }
 
         public String closed() {
-            return Formatters.formatDateTime(assignment.getClosed());
+            return Formatters.formatDateTime(assignment.closed());
         }
 
         public LocalDate closedOn() {
-            return LocalDate.ofInstant(assignment.getClosed(), ZoneId.systemDefault());
+            return LocalDate.ofInstant(assignment.closed(), ZoneId.systemDefault());
         }
     }
 
@@ -86,18 +87,18 @@ public class HandledAssignments {
             var resources = resourceStatusService.getAllResources().stream()
                     .filter(r -> resourceIds.contains(r.getId())).toList();
             var opened = assignmentService.findAssignment(assignmentService.openAssignment()).orElseThrow();
-            opened.setTypeId(new AssignmentTypeId(givenType.id()));
-            opened.setMunicipalityId(new MunicipalityId(givenMunicipality.id()));
-            opened.setAddress("Report Road 7");
-            opened.setDescription("Smoke seen");
-            opened.setUrgency(AssignmentUrgency.B);
-            var updated = assignmentService.updateAssignment(opened).getData().orElseThrow();
+            var filledIn = opened.withTypeId(new AssignmentTypeId(givenType.id()))
+                    .withMunicipalityId(new MunicipalityId(givenMunicipality.id()))
+                    .withAddress("Report Road 7")
+                    .withDescription("Smoke seen")
+                    .withUrgency(AssignmentUrgency.B);
+            var updated = assignmentService.updateAssignment(filledIn).getData().orElseThrow();
             for (var resource : resources) {
-                resourceStatusService.setResourceAssignment(resource, updated.getAssignmentId());
+                resourceStatusService.setResourceAssignment(resource, updated.id());
             }
             try {
                 dispatchService.dispatchAllResources(updated);
-            } catch (ValidationFailedException ex) {
+            } catch (AssignmentNotReadyForDispatchException ex) {
                 throw new AssertionError("The assignment could not be dispatched", ex);
             }
             for (var resource : resources) {
@@ -105,10 +106,10 @@ public class HandledAssignments {
                 resourceStatusService.setResourceState(resource, ResourceState.ON_SCENE);
                 resourceStatusService.setResourceState(resource, ResourceState.AVAILABLE);
             }
-            if (!assignmentService.closeAssignment(updated)) {
+            if (!assignmentService.closeAssignment(updated.id())) {
                 throw new AssertionError("The assignment could not be closed");
             }
-            return assignmentService.findAssignment(updated.getId()).orElseThrow();
+            return assignmentService.findAssignment(updated.id()).orElseThrow();
         });
         return new Handled(assignment, code + " - Building fire", givenMunicipality.nameFi());
     }
@@ -124,7 +125,7 @@ public class HandledAssignments {
      * The report as it is stored.
      */
     public AssignmentReport reportOf(Handled handled) {
-        return asDispatcher(() -> reportService.findReportByAssignmentId(handled.assignment().getId()).orElseThrow()
+        return asDispatcher(() -> reportService.findReportByAssignmentId(handled.assignment().id().value()).orElseThrow()
                 .getReport());
     }
 

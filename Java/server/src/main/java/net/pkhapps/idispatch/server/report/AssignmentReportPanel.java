@@ -30,8 +30,9 @@ import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.i18n.I18NProvider;
 import com.vaadin.flow.signals.Signal;
-import net.pkhapps.idispatch.server.assignment.AssignmentFormatters;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
+import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
 import net.pkhapps.idispatch.server.shared.ValidationFailedException;
@@ -120,7 +121,7 @@ class AssignmentReportPanel extends VerticalLayout {
         type.setWidthFull();
         formLayout.addFormItem(type, getTranslation("assignment.type"));
         binder.forField(type)
-                .bindReadOnly(dto -> nullToEmpty(AssignmentFormatters.formatAssignmentType(dto.getAssignment())));
+                .bindReadOnly(dto -> nullToEmpty(AssignmentTypeFormatters.formatAssignmentType(dto.getType())));
 
         var description = new TextArea();
         description.setWidthFull();
@@ -133,7 +134,7 @@ class AssignmentReportPanel extends VerticalLayout {
         municipality.setWidthFull();
         formLayout.addFormItem(municipality, getTranslation("assignment.municipality"));
         binder.forField(municipality)
-                .bindReadOnly(dto -> nullToEmpty(AssignmentFormatters.formatMunicipality(dto.getAssignment())));
+                .bindReadOnly(dto -> nullToEmpty(MunicipalityFormatters.formatMunicipality(dto.getMunicipality())));
 
         var address = new TextField();
         address.setWidthFull();

@@ -12,11 +12,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static net.pkhapps.idispatch.server.jooq.Sequences.ASSIGNMENTS_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.ASSIGNMENT_TYPES_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.MUNICIPALITIES_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCES_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_STATUS_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_TYPES_SEQ;
+import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENTS;
 import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENT_TYPES;
 import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATION_RESOURCES;
@@ -138,6 +140,26 @@ public class TestData {
         dsl.update(MUNICIPALITIES).set(MUNICIPALITIES.ACTIVE, false)
                 .set(MUNICIPALITIES.VERSION, MUNICIPALITIES.VERSION.plus(1))
                 .where(MUNICIPALITIES.ID.eq(municipality.id())).execute();
+    }
+
+    /**
+     * An open assignment of urgency A, filled in so that resources can be dispatched to it.
+     *
+     * @return the assignment's ID
+     */
+    public long openAssignment(GivenMunicipality municipality, GivenAssignmentType type, String address) {
+        var id = dsl.nextval(ASSIGNMENTS_SEQ);
+        dsl.insertInto(ASSIGNMENTS)
+                .set(ASSIGNMENTS.ID, id)
+                .set(ASSIGNMENTS.VERSION, 0L)
+                .set(ASSIGNMENTS.OPENED, OffsetDateTime.now())
+                .set(ASSIGNMENTS.URGENCY, "A")
+                .set(ASSIGNMENTS.TYPE_ID, type.id())
+                .set(ASSIGNMENTS.MUNICIPALITY_ID, municipality.id())
+                .set(ASSIGNMENTS.ADDRESS, address)
+                .set(ASSIGNMENTS.DESCRIPTION, "")
+                .execute();
+        return id;
     }
 
     public GivenResourceType resourceType(String code, String description) {

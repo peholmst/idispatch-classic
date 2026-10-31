@@ -166,6 +166,14 @@ public class Dispatcher {
         return page.urgency();
     }
 
+    public void writesDescription(String description) {
+        page.enterDescription(description);
+    }
+
+    public String description() {
+        return page.description();
+    }
+
     public String address() {
         return page.address();
     }

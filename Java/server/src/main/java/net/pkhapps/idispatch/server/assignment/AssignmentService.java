@@ -6,45 +6,47 @@ import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Service interface for assignment operations.
+ * Lets dispatchers open, fill in and close assignments.
  */
 public interface AssignmentService {
 
-    /**
-     * Finds the assignment with the specified ID. If the ID is {@code null}, or the assignment does not exist, an empty
-     * {@code Optional} is returned.
-     */
-    Optional<Assignment> findAssignment(Long id);
+    Optional<Assignment> findAssignment(AssignmentId id);
 
     /**
-     * Creates a new assignment, stores it, publishes an {@link AssignmentOpened} event and returns the assignment ID.
+     * Opens a new, empty assignment, publishes an {@link AssignmentOpened} event and returns the assignment's ID.
      */
-    Long openAssignment();
+    AssignmentId openAssignment();
 
     /**
-     * Saves the existing assignment, publishes an {@link AssignmentUpdated} event and returns:
+     * Saves what a dispatcher has filled in, publishes an {@link AssignmentUpdated} event and returns:
      * <ul>
-     * <li>{@link UpdateResult.Success} if the operation was successful.</li>
-     * <li>{@link UpdateResult.Conflict} if the assignment had been modified by another user.</li>
-     * <li>{@link UpdateResult.NoChange} if the assignment did not exist or was closed.</li>
-     * </ui>
+     * <li>{@link UpdateResult.Success} with the assignment as saved, with its new version.</li>
+     * <li>{@link UpdateResult.Conflict} with the assignment as it now is, if it had been changed by another user.</li>
+     * <li>{@link UpdateResult.NoChange} if the assignment is closed.</li>
+     * </ul>
      */
     UpdateResult<Assignment> updateAssignment(Assignment assignment);
 
     /**
-     * Closes the assignment and fires an {@link AssignmentClosed} event. If the assignment is already closed, or there
-     * are still resources assigned to the assignment, nothing happens and false is returned.
+     * Closes the assignment and publishes an {@link AssignmentClosed} event. If the assignment is already closed, or
+     * resources are still assigned to it, nothing happens and false is returned.
      */
-    boolean closeAssignment(Assignment assignment);
+    boolean closeAssignment(AssignmentId id);
 
     /**
-     * Finds all currently open assignments.
+     * Finds the open assignments, oldest first.
      */
-    List<Assignment> findOpenAssignments();
+    List<AssignmentListItem> findOpenAssignments();
+
+    /**
+     * Finds the assignments with the given IDs, open or closed, oldest first.
+     */
+    List<AssignmentListItem> findAssignments(Collection<AssignmentId> ids);
 
     /**
      * Finds the municipalities that an assignment can be in, which are the ones not deleted, in no particular order.

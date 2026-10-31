@@ -61,12 +61,12 @@ public class DispatchNotification extends AbstractTimestampedEntity {
     public DispatchNotification(Assignment assignment, Collection<Resource> assignedResources, Collection<Destination> destinations) {
         this.assignedResources = newHashSet(checkNotNull(assignedResources));
         this.destinations = newHashSet(checkNotNull(destinations));
-        this.assignmentId = checkNotNull(assignment).getAssignmentId().value();
-        municipalityId = checkNotNull(assignment.getMunicipalityId(), "The assignment has no municipality").value();
-        address = assignment.getAddress();
-        assignmentTypeId = checkNotNull(assignment.getTypeId(), "The assignment has no type").value();
-        urgency = assignment.getUrgency();
-        description = assignment.getDescription();
+        this.assignmentId = checkNotNull(assignment).id().value();
+        municipalityId = checkNotNull(assignment.municipalityId(), "The assignment has no municipality").value();
+        address = assignment.address();
+        assignmentTypeId = checkNotNull(assignment.typeId(), "The assignment has no type").value();
+        urgency = assignment.urgency();
+        description = assignment.description();
     }
 
     public Set<Resource> getAssignedResources() {

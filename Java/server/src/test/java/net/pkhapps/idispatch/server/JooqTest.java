@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.server;
 
-import net.pkhapps.idispatch.server.assignment.Assignment;
-import net.pkhapps.idispatch.server.assignment.AssignmentRepository;
+import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceRepository;
 import net.pkhapps.idispatch.server.jooq.Public;
 import org.jooq.DSLContext;
 import org.jooq.Table;
@@ -16,7 +16,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENTS;
+import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_TYPES_SEQ;
+import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCES;
+import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCE_TYPES;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -30,7 +32,7 @@ class JooqTest {
     @Autowired
     DSLContext dsl;
     @Autowired
-    AssignmentRepository assignmentRepository;
+    ResourceRepository resourceRepository;
     @Autowired
     PlatformTransactionManager txManager;
 
@@ -54,19 +56,24 @@ class JooqTest {
     @Test
     void jooqSeesWhatJpaHasFlushedInTheSameTransaction() {
         var tx = new TransactionTemplate(txManager);
-        var address = "jOOQ " + System.nanoTime();
+        var callSign = "jOOQ " + System.nanoTime();
+        var typeId = dsl.nextval(RESOURCE_TYPES_SEQ);
+        dsl.insertInto(RESOURCE_TYPES).set(RESOURCE_TYPES.ID, typeId).set(RESOURCE_TYPES.VERSION, 0L)
+                .set(RESOURCE_TYPES.CODE, callSign).set(RESOURCE_TYPES.DESCRIPTION_FI, "jOOQ")
+                .set(RESOURCE_TYPES.DESCRIPTION_SV, "").set(RESOURCE_TYPES.ACTIVE, true).execute();
 
         var seen = tx.execute(status -> {
-            var assignment = new Assignment();
-            assignment.setAddress(address);
-            assignmentRepository.saveAndFlush(assignment);
-            var count = dsl.fetchCount(ASSIGNMENTS, ASSIGNMENTS.ADDRESS.eq(address));
+            var resource = new Resource();
+            resource.setCallSign(callSign);
+            resource.setTypeId(typeId);
+            resourceRepository.saveAndFlush(resource);
+            var count = dsl.fetchCount(RESOURCES, RESOURCES.CALL_SIGN.eq(callSign));
             status.setRollbackOnly();
             return count;
         });
 
         assertThat(seen).isEqualTo(1);
-        assertThat(dsl.fetchCount(ASSIGNMENTS, ASSIGNMENTS.ADDRESS.eq(address))).as("Rolled back").isZero();
+        assertThat(dsl.fetchCount(RESOURCES, RESOURCES.CALL_SIGN.eq(callSign))).as("Rolled back").isZero();
     }
 
     private static Map<String, String> columnsByTable(Table<?>... tables) {

@@ -2,7 +2,8 @@ package net.pkhapps.idispatch.server.report;
 
 import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.assignment.Assignment;
-import net.pkhapps.idispatch.server.assignment.AssignmentRepository;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
+import net.pkhapps.idispatch.server.assignment.AssignmentQueries;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
@@ -36,7 +37,7 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
     private final ArchivedResourceStatusRepository archivedResourceStatusRepository;
 
-    private final AssignmentRepository assignmentRepository;
+    private final AssignmentQueries assignmentQueries;
 
     private final AssignmentReportRepository assignmentReportRepository;
 
@@ -48,10 +49,10 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
     private final Validator validator;
 
-    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ArchivedResourceStatusRepository archivedResourceStatusRepository, AssignmentRepository assignmentRepository, AssignmentReportRepository assignmentReportRepository, ClosedAssignmentQuery closedAssignmentQuery, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, Validator validator) {
+    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ArchivedResourceStatusRepository archivedResourceStatusRepository, AssignmentQueries assignmentQueries, AssignmentReportRepository assignmentReportRepository, ClosedAssignmentQuery closedAssignmentQuery, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, Validator validator) {
         super(applicationContext, txManager);
         this.archivedResourceStatusRepository = archivedResourceStatusRepository;
-        this.assignmentRepository = assignmentRepository;
+        this.assignmentQueries = assignmentQueries;
         this.assignmentReportRepository = assignmentReportRepository;
         this.closedAssignmentQuery = closedAssignmentQuery;
         this.municipalityQueries = municipalityQueries;
@@ -61,14 +62,18 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
     @Override
     public Optional<ReportDTO> findReportByAssignmentId(long assignmentId) {
-        Assignment assignment = assignmentRepository.findById(assignmentId).orElse(null);
-        if (assignment == null || assignment.isAssignmentOpen()) {
+        Assignment assignment = assignmentQueries.findById(new AssignmentId(assignmentId)).orElse(null);
+        if (assignment == null || assignment.isOpen()) {
             return Optional.empty();
         } else {
             List<ReportResourceDTO> reportResources = new ReportResourceGenerator(assignment).getReportResources();
-            AssignmentReport report = assignmentReportRepository.findByAssignmentId(assignment.getId())
-                    .orElseGet(() -> new AssignmentReport(assignment.getAssignmentId()));
-            return Optional.of(new ReportDTO(assignment, reportResources, report));
+            AssignmentReport report = assignmentReportRepository.findByAssignmentId(assignment.id().value())
+                    .orElseGet(() -> new AssignmentReport(assignment.id()));
+            var type = assignment.typeId() == null ? null
+                    : assignmentTypeQueries.findById(assignment.typeId()).orElse(null);
+            var municipality = assignment.municipalityId() == null ? null
+                    : municipalityQueries.findById(assignment.municipalityId()).orElse(null);
+            return Optional.of(new ReportDTO(assignment, type, municipality, reportResources, report));
         }
     }
 
@@ -85,13 +90,13 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
     @Override
     public List<MunicipalityListItem> findMunicipalitiesOfClosedAssignments() {
-        return municipalityQueries.findByIds(assignmentRepository.findMunicipalityIdsOfClosedAssignments().stream()
+        return municipalityQueries.findByIds(closedAssignmentQuery.findMunicipalityIds().stream()
                 .map(MunicipalityId::new).toList());
     }
 
     @Override
     public List<AssignmentTypeListItem> findTypesOfClosedAssignments() {
-        return assignmentTypeQueries.findByIds(assignmentRepository.findTypeIdsOfClosedAssignments().stream()
+        return assignmentTypeQueries.findByIds(closedAssignmentQuery.findTypeIds().stream()
                 .map(AssignmentTypeId::new).toList());
     }
 
@@ -211,7 +216,7 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         }
 
         private void process() {
-            archivedResourceStatusRepository.findByAssignmentId(assignment.getId()).forEach(this::process);
+            archivedResourceStatusRepository.findByAssignmentId(assignment.id().value()).forEach(this::process);
             dtoList.addAll(builderMap.values().stream().map(ReportResourceDTO.Builder::build).toList());
         }
 

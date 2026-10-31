@@ -8,9 +8,9 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
-import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentFormatters;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
+import net.pkhapps.idispatch.server.assignment.AssignmentListItem;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.resource.ResourceFormatters;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
@@ -23,13 +23,14 @@ import org.springframework.context.event.ApplicationEventMulticaster;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class ResourceListPanel extends VerticalLayout {
 
     private final ResourceStatusService resourceStatusService;
     private final AssignmentService assignmentService;
     // The assignments that the listed resources are on, loaded with the list
-    private final Map<AssignmentId, Assignment> assignments = new HashMap<>();
+    private final Map<AssignmentId, AssignmentListItem> assignments = new HashMap<>();
     private final ApplicationEventMulticaster eventMulticaster;
     private final Grid<ResourceStatus> grid;
     private OwnerUpdater ownerUpdater;
@@ -86,13 +87,11 @@ public class ResourceListPanel extends VerticalLayout {
     private void refresh() {
         var statuses = resourceStatusService.getStatusOfAllResources();
         assignments.clear();
-        assignmentService.findOpenAssignments()
-                .forEach(assignment -> assignments.put(new AssignmentId(assignment.getId()), assignment));
+        assignmentService.findOpenAssignments().forEach(assignment -> assignments.put(assignment.id(), assignment));
         // Resources can still refer to an assignment that has been closed
-        statuses.stream().map(ResourceStatus::getAssignmentId).filter(Objects::nonNull).distinct()
-                .filter(id -> !assignments.containsKey(id))
-                .forEach(id -> assignmentService.findAssignment(id.value())
-                        .ifPresent(assignment -> assignments.put(id, assignment)));
+        var others = statuses.stream().map(ResourceStatus::getAssignmentId).filter(Objects::nonNull)
+                .filter(id -> !assignments.containsKey(id)).collect(Collectors.toSet());
+        assignmentService.findAssignments(others).forEach(assignment -> assignments.put(assignment.id(), assignment));
         grid.setItems(statuses);
     }
 }
