@@ -18,8 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>
  * The browserless application holds the lock of every session, so these stories cannot catch a view that updates
  * another session's UI without locking it (vaadin/browserless-test#295). For the same reason, {@code OwnerUpdater}
- * updates the other dispatcher's view directly instead of through {@code UI.access}, with the wrong session current,
- * so a story in which both dispatchers have an assignment open fails on the signals of the assignment form.
+ * updates the other dispatcher's view directly instead of through {@code UI.access}, making that dispatcher's UI
+ * current so that the signals of their view update right away.
  */
 class TwoDispatchersTest extends UseCaseTest {
 
@@ -45,6 +45,37 @@ class TwoDispatchersTest extends UseCaseTest {
         bob.receivesUpdates();
 
         assertThat(bob.stateOf(resource.callSign())).isEqualTo("Reserved");
+    }
+
+    @Test
+    void resourceAddedByOneDispatcherShowsOnTheAssignmentTheOtherHasOpen() {
+        var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
+        var alice = new Dispatcher(user("alice", "DISPATCHER"));
+        var bob = new Dispatcher(user("bob", "DISPATCHER"));
+        var number = alice.opensANewAssignment();
+        bob.receivesUpdates();
+        bob.selectsAssignment(number);
+
+        alice.addsResource(resource.callSign());
+        bob.receivesUpdates();
+
+        assertThat(bob.resourcesOnAssignment()).contains(resource.callSign());
+        assertThat(bob.availableResources()).doesNotContain(resource.callSign());
+    }
+
+    @Test
+    void assignmentClosedByOneDispatcherLeavesTheOtherWithNothingSelected() {
+        var alice = new Dispatcher(user("alice", "DISPATCHER"));
+        var bob = new Dispatcher(user("bob", "DISPATCHER"));
+        var number = alice.opensANewAssignment();
+        bob.receivesUpdates();
+        bob.selectsAssignment(number);
+
+        alice.closesTheAssignment();
+        bob.receivesUpdates();
+
+        assertThat(bob.seesAssignment(number)).isFalse();
+        assertThat(bob.isToldNoAssignmentIsSelected()).isTrue();
     }
 
     @Test

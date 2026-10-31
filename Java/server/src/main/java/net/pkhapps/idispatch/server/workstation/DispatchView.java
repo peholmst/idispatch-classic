@@ -10,6 +10,8 @@ import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
+import com.vaadin.flow.signals.local.ValueSignal;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.dispatch.DispatchService;
 import net.pkhapps.idispatch.server.resource.ResourceQueries;
@@ -17,6 +19,7 @@ import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.ViewTitle;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.event.ApplicationEventMulticaster;
 
 @Route(value = "dws", layout = RootLayout.class)
@@ -24,9 +27,8 @@ import org.springframework.context.event.ApplicationEventMulticaster;
 public class DispatchView extends VerticalLayout implements HasDynamicTitle {
 
     private final AssignmentService assignmentService;
-    private final AssignmentPanel assignmentPanel;
-    private final AssignmentListPanel assignmentListPanel;
-    private final ResourceListPanel resourceListPanel;
+    // The assignment open in the assignment panel and selected in the list, or null for none
+    private final ValueSignal<@Nullable AssignmentId> selectedAssignment = new ValueSignal<>(null);
 
     public DispatchView(AssignmentService assignmentService,
                         ResourceStatusService resourceStatusService,
@@ -34,9 +36,11 @@ public class DispatchView extends VerticalLayout implements HasDynamicTitle {
                         DispatchService dispatchService,
                         ApplicationEventMulticaster eventMulticaster) {
         this.assignmentService = assignmentService;
-        assignmentPanel = new AssignmentPanel(assignmentService, resourceStatusService, resourceQueries, dispatchService, eventMulticaster);
-        assignmentListPanel = new AssignmentListPanel(assignmentService, eventMulticaster, assignmentPanel::setAssignmentId);
-        resourceListPanel = new ResourceListPanel(resourceStatusService, assignmentService, resourceQueries, eventMulticaster);
+        var assignmentPanel = new AssignmentPanel(assignmentService, resourceStatusService, resourceQueries,
+                dispatchService, eventMulticaster, selectedAssignment);
+        var assignmentListPanel = new AssignmentListPanel(assignmentService, eventMulticaster, selectedAssignment);
+        var resourceListPanel = new ResourceListPanel(resourceStatusService, assignmentService, resourceQueries,
+                eventMulticaster);
         setSizeFull();
         setMargin(false);
         setSpacing(false);
@@ -70,8 +74,8 @@ public class DispatchView extends VerticalLayout implements HasDynamicTitle {
     }
 
     private void newAssignment() {
-        var newId = assignmentService.openAssignment();
-        assignmentListPanel.selectAssignmentById(newId);
+        // Opening the assignment refreshes the list right away, so the new assignment is there to be selected
+        selectedAssignment.set(assignmentService.openAssignment());
     }
 
     @Override
