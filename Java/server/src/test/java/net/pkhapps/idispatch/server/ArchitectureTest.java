@@ -27,11 +27,13 @@ class ArchitectureTest {
             BASE + ".dispatch..",
             BASE + ".report..",
             BASE + ".dispatcher..",
+            BASE + ".dashboard..",
     };
 
     /**
      * {@code municipality} and {@code assignmenttype} ← {@code assignment} ← {@code resource} ← {@code dispatch} ←
-     * {@code dispatcher}, with {@code report} on {@code assignment} and {@code resource}. Only dependencies between the
+     * {@code dispatcher}, with {@code report} on {@code assignment} and {@code resource}. {@code dashboard} reads the
+     * tables straight and depends on no feature, and no feature depends on it. Only dependencies between the
      * features count here; the rules below cover the packages around them.
      */
     @ArchTest
@@ -44,13 +46,15 @@ class ArchitectureTest {
             .layer("Dispatch").definedBy(BASE + ".dispatch..")
             .layer("Report").definedBy(BASE + ".report..")
             .layer("Dispatcher").definedBy(BASE + ".dispatcher..")
+            .layer("Dashboard").definedBy(BASE + ".dashboard..")
             .whereLayer("Municipality").mayOnlyBeAccessedByLayers("Assignment", "Resource", "Dispatch", "Report", "Dispatcher")
             .whereLayer("AssignmentType").mayOnlyBeAccessedByLayers("Assignment", "Resource", "Dispatch", "Report", "Dispatcher")
             .whereLayer("Assignment").mayOnlyBeAccessedByLayers("Resource", "Dispatch", "Report", "Dispatcher")
             .whereLayer("Resource").mayOnlyBeAccessedByLayers("Dispatch", "Report", "Dispatcher")
             .whereLayer("Dispatch").mayOnlyBeAccessedByLayers("Dispatcher")
             .whereLayer("Report").mayNotBeAccessedByAnyLayer()
-            .whereLayer("Dispatcher").mayNotBeAccessedByAnyLayer();
+            .whereLayer("Dispatcher").mayNotBeAccessedByAnyLayer()
+            .whereLayer("Dashboard").mayNotBeAccessedByAnyLayer();
 
     @ArchTest
     static final ArchRule sharedKnowsNoFeature = noClasses()

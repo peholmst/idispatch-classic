@@ -18,6 +18,7 @@ import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeManagementView;
+import net.pkhapps.idispatch.server.dashboard.DashboardView;
 import net.pkhapps.idispatch.server.dispatch.DestinationManagementView;
 import net.pkhapps.idispatch.server.dispatcher.DispatchView;
 import net.pkhapps.idispatch.server.municipality.MunicipalityManagementView;
@@ -97,7 +98,7 @@ public class RootLayout extends AppLayout implements RouterLayout {
     private SideNav createViewNavigation() {
         var nav = new SideNav();
         nav.setWidthFull();
-        nav.addItem(new SideNavItem(getTranslation("nav.home"), RootView.class, VaadinIcon.HOME.create()));
+        nav.addItem(new SideNavItem(getTranslation("nav.home"), DashboardView.class, VaadinIcon.HOME.create()));
         if (isUserInRole(Roles.ROLE_DISPATCHER)) {
             nav.addItem(new SideNavItem(getTranslation("nav.dispatcher"), DispatchView.class, VaadinIcon.HEADSET.create()));
         }

@@ -17,6 +17,7 @@ import static net.pkhapps.idispatch.server.jooq.Sequences.ASSIGNMENT_TYPES_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.DESTINATIONS_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.MUNICIPALITIES_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCES_SEQ;
+import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_STATUS_ARCHIVE_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_STATUS_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_TYPES_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENTS;
@@ -28,6 +29,7 @@ import static net.pkhapps.idispatch.server.jooq.Tables.MUNICIPALITIES;
 import static net.pkhapps.idispatch.server.jooq.Tables.RECEIPTS;
 import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCES;
 import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCE_STATUS;
+import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCE_STATUS_ARCHIVE;
 import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCE_TYPES;
 import static net.pkhapps.idispatch.server.jooq.Tables.RUNBOARD_DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.SMS_DESTINATION_PHONE_NUMBERS;
@@ -237,6 +239,36 @@ public class TestData {
                 .set(RESOURCE_STATUS.ASSIGNED, false)
                 .execute();
         return new GivenResource(id, callSign);
+    }
+
+    /**
+     * Records that the resource was in the given state, on the given assignment or none, from the given moment until
+     * its next state, as the archive keeps the states before the current one.
+     */
+    public void pastStatus(GivenResource resource, ResourceState state, @Nullable Long assignmentId,
+                           OffsetDateTime from) {
+        dsl.insertInto(RESOURCE_STATUS_ARCHIVE)
+                .set(RESOURCE_STATUS_ARCHIVE.ID, dsl.nextval(RESOURCE_STATUS_ARCHIVE_SEQ))
+                .set(RESOURCE_STATUS_ARCHIVE.TS, from)
+                .set(RESOURCE_STATUS_ARCHIVE.STATE, state.name())
+                .set(RESOURCE_STATUS_ARCHIVE.ASSIGNMENT_ID, assignmentId)
+                .set(RESOURCE_STATUS_ARCHIVE.RESOURCE_ID, resource.id())
+                .execute();
+    }
+
+    /**
+     * Puts the resource in the given state on the given assignment since the given moment, as its current state.
+     */
+    public void currentStatus(GivenResource resource, ResourceState state, long assignmentId, OffsetDateTime since) {
+        dsl.update(RESOURCE_STATUS)
+                .set(RESOURCE_STATUS.TS, since)
+                .set(RESOURCE_STATUS.STATE, state.name())
+                .set(RESOURCE_STATUS.ASSIGNMENT_ID, assignmentId)
+                .set(RESOURCE_STATUS.AVAILABLE, state.isAvailableForNewAssignments())
+                .set(RESOURCE_STATUS.ASSIGNED, true)
+                .set(RESOURCE_STATUS.VERSION, RESOURCE_STATUS.VERSION.plus(1))
+                .where(RESOURCE_STATUS.RESOURCE_ID.eq(resource.id()))
+                .execute();
     }
 
     public GivenResource resourceCalled(String callSign) {

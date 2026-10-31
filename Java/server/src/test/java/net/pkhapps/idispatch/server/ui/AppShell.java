@@ -24,7 +24,7 @@ public class AppShell {
     }
 
     public void openHome() {
-        window.navigate(RootView.class);
+        openAddress("");
     }
 
     /**
@@ -51,10 +51,6 @@ public class AppShell {
     public boolean showsNotFound() {
         window.activate();
         return window.getCurrentView() instanceof com.vaadin.flow.router.RouteNotFoundError;
-    }
-
-    public String welcomeText() {
-        return window.findH1().component().getText();
     }
 
     /**
