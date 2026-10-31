@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.time.LocalTime;
 
-public class ClockView extends JComponent {
+class ClockView extends JComponent {
 
     // The second hand jumps once a second, so repaint once a second, just after the second changes.
     private final Timer repaintTimer = new Timer(0, e -> {

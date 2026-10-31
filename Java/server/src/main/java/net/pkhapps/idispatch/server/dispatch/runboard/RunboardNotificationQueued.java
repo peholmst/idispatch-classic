@@ -7,7 +7,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Event published when a dispatch notification is waiting to be picked up by a runboard.
  */
-public class RunboardNotificationQueued extends ApplicationEvent {
+class RunboardNotificationQueued extends ApplicationEvent {
 
     private final String runboardKey;
 

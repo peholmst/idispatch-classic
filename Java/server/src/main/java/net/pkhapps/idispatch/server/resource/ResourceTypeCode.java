@@ -8,7 +8,7 @@ import static java.util.Objects.requireNonNull;
  * The short code of a {@link ResourceType}, such as {@code 103}, shown in front of its description. Unique among the
  * resource types, which the database checks.
  */
-public record ResourceTypeCode(String value) {
+record ResourceTypeCode(String value) {
 
     public ResourceTypeCode {
         requireNonNull(value);

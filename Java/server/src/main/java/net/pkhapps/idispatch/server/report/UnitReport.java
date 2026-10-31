@@ -9,7 +9,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param lastEdit who last changed the answers, or {@code null} if nobody has
  */
-public record UnitReport(UnitAnswers answers, @Nullable UserStamp lastEdit) {
+record UnitReport(UnitAnswers answers, @Nullable UserStamp lastEdit) {
 
     public static final UnitReport EMPTY = new UnitReport(UnitAnswers.EMPTY, null);
 

@@ -13,7 +13,7 @@ import static java.util.Objects.requireNonNull;
  * What an administrator enters for a {@link Destination}: everything about it except its identity, version and whether
  * it has been deleted.
  */
-public sealed interface DestinationDetails permits SmsDestinationDetails, RunboardDestinationDetails {
+sealed interface DestinationDetails permits SmsDestinationDetails, RunboardDestinationDetails {
 
     @Nullable DestinationDescription description();
 

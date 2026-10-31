@@ -7,7 +7,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Event published when a dispatch notification has been received by a destination.
  */
-public class DispatchNotificationReceived extends ApplicationEvent {
+class DispatchNotificationReceived extends ApplicationEvent {
 
     private final Receipt receipt;
 

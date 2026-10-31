@@ -8,7 +8,7 @@ import static java.util.Objects.requireNonNull;
  * Confirms that a destination received a {@link DispatchNotification}. A destination confirms each notification at
  * most once, which the database checks.
  */
-public record Receipt(DestinationId destination, DispatchNotificationId notification, Instant timestamp) {
+record Receipt(DestinationId destination, DispatchNotificationId notification, Instant timestamp) {
 
     public Receipt {
         requireNonNull(destination);

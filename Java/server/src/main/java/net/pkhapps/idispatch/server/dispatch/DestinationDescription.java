@@ -8,7 +8,7 @@ import static java.util.Objects.requireNonNull;
  * Free text that tells destinations apart in the management console. It is never sent to the destination. A
  * destination without one has none, not an empty one.
  */
-public record DestinationDescription(String value) {
+record DestinationDescription(String value) {
 
     public static final int MAX_LENGTH = 255;
 

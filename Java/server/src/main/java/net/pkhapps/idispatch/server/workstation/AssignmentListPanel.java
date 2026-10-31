@@ -18,7 +18,7 @@ import org.springframework.lang.Nullable;
 
 import java.util.function.Consumer;
 
-public class AssignmentListPanel extends VerticalLayout {
+class AssignmentListPanel extends VerticalLayout {
 
     private final AssignmentService assignmentService;
     private final ApplicationEventMulticaster eventMulticaster;

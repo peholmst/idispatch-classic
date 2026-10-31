@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
  * @param closed   who closed the report, or {@code null} while it is open
  * @param units    the units that have reported, or have been shown a form to report in
  */
-public record AssignmentReport(AssignmentId assignmentId, @Nullable Long version, SceneDetails scene,
+record AssignmentReport(AssignmentId assignmentId, @Nullable Long version, SceneDetails scene,
                                @Nullable UserStamp lastEdit, @Nullable UserStamp closed,
                                Map<ResourceId, UnitReport> units) {
 

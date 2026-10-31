@@ -10,7 +10,7 @@ import static java.util.Objects.requireNonNull;
  * What happened on scene as a whole: how the situation developed and how many people were involved, injured and
  * killed. A count is {@code null} until someone fills it in.
  */
-public record SceneDetails(ReportText situationDevelopment, @Nullable Integer peopleInvolved,
+record SceneDetails(ReportText situationDevelopment, @Nullable Integer peopleInvolved,
                            @Nullable Integer lightlyInjured, @Nullable Integer seriouslyInjured,
                            @Nullable Integer deceased) {
 

@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.Optional;
 
-public class Configuration extends net.pkhapps.idispatch.runboard.client.Configuration {
+class Configuration extends net.pkhapps.idispatch.runboard.client.Configuration {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

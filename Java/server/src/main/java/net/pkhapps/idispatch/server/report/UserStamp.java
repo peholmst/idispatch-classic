@@ -14,7 +14,7 @@ import static java.util.Objects.requireNonNull;
  * ID in Keycloak, which stays the same even if the user changes their name. The names are copied from the ID token at
  * the time, and are {@code null} if the token had none.
  */
-public record UserStamp(String subject, @Nullable String firstName, @Nullable String lastName, Instant timestamp) {
+record UserStamp(String subject, @Nullable String firstName, @Nullable String lastName, Instant timestamp) {
 
     public UserStamp {
         requireNonNull(subject);

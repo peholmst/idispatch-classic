@@ -8,7 +8,7 @@ import java.util.Locale;
 /**
  * A resource type as it is listed in grids and offered in combo boxes, flattened to what they show.
  */
-public record ResourceTypeListItem(ResourceTypeId id, String code, String descriptionFi, String descriptionSv,
+record ResourceTypeListItem(ResourceTypeId id, String code, String descriptionFi, String descriptionSv,
                                    boolean active) {
 
     /**

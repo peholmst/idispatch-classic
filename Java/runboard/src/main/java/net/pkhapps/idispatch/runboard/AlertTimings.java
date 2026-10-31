@@ -11,5 +11,5 @@ import java.time.Duration;
  * @param speechRepeats          how many times each notification is read out loud
  * @param speechPause            the silence before each reading
  */
-public record AlertTimings(int alarmPlays, int alarmPlaysBeforeSpeech, int speechRepeats, Duration speechPause) {
+record AlertTimings(int alarmPlays, int alarmPlaysBeforeSpeech, int speechRepeats, Duration speechPause) {
 }
