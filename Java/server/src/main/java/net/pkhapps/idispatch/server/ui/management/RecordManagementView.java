@@ -68,6 +68,10 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
     private final MasterDetailLayout masterDetail;
     private final ValueSignal<String> searchTerm = new ValueSignal<>("");
     private final ValueSignal<Boolean> includeDeleted = new ValueSignal<>(false);
+    private final Signal<DefaultFilter> filter = Signal.computed(
+            () -> new DefaultFilter(includeDeleted.get(), searchTerm.get()));
+    // The list items as last loaded with the filter; the grid shows them
+    private final ValueSignal<List<I>> items = new ValueSignal<>(List.of());
     // Compared by identity, so that opening the same record again, or adding again, gives a fresh form
     private final ValueSignal<@Nullable Editing<R>> editing = new ValueSignal<>(null, (a, b) -> a == b);
     private @Nullable RecordForm<D> form;
@@ -135,7 +139,12 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
         }));
         addAndExpand(masterDetail);
 
-        Signal.effect(grid, () -> showItems(new DefaultFilter(includeDeleted.get(), searchTerm.get())));
+        Signal.effect(grid, () -> loadItems(filter.get()));
+        // Setting the items clears the selection, so the record being edited is selected again after
+        Signal.effect(grid, () -> {
+            grid.setItems(items.get());
+            showSelection();
+        });
         Signal.effect(masterDetail, () -> showDetail(editing.get()));
     }
 
@@ -235,13 +244,15 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
         }
     }
 
+    /**
+     * Loads the list items again with the current filter, to show changes made since they were loaded.
+     */
     private void refresh() {
-        showItems(new DefaultFilter(includeDeleted.peek(), searchTerm.peek()));
+        loadItems(filter.peek());
     }
 
-    private void showItems(DefaultFilter filter) {
-        grid.setItems(findItems(filter));
-        showSelection();
+    private void loadItems(DefaultFilter filter) {
+        items.set(findItems(filter));
     }
 
     private void showSelection() {
