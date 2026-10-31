@@ -19,10 +19,18 @@ public class App {
         mainView.setModel(model);
         mainView.setUndecorated(configuration.isUndecorated());
         mainView.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        final Alarm alarm = new Alarm(new Speech(configuration), configuration.getAlertTimings());
+        final Outputs outputs = new Outputs(configuration);
+        outputs.initialize();
+        // The flashing light is on while notifications are shown.
+        model.addObserver((o, arg) -> outputs.setLight(!model.getVisibleNotifications().isEmpty()));
+        final Alarm alarm = new Alarm(new Speech(configuration), outputs, configuration.getAlertTimings());
         model.addObserver(alarm);
-        // Release the speech engine's native resources before the JVM exits, or their destructors can crash it.
-        Runtime.getRuntime().addShutdownHook(Thread.ofPlatform().name("shutdown").unstarted(alarm::close));
+        // Release the speech engine's native resources before the JVM exits, or their destructors can crash it, and
+        // leave the amplifier and the flashing light off.
+        Runtime.getRuntime().addShutdownHook(Thread.ofPlatform().name("shutdown").unstarted(() -> {
+            alarm.close();
+            outputs.close();
+        }));
     }
 
     public static void main(String[] args) throws Exception {
