@@ -232,6 +232,10 @@ public class ReportUser {
         return page.situationDevelopment();
     }
 
+    public String errorOfCount(String question) {
+        return page.countError(question);
+    }
+
     public Integer count(String question) {
         return page.count(question);
     }

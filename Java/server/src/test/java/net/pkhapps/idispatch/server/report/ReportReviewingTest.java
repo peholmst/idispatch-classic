@@ -26,6 +26,26 @@ class ReportReviewingTest extends UseCaseTest {
     }
 
     @Test
+    void reviewerWhoAlsoWritesSavesBeforeClosing() {
+        var closed = handled.closedAssignment(unique("CS"));
+        var wilma = new ReportUser(keycloakUser("wilma", "Wilma", "Writer", "REPORT_WRITER", "REPORT_REVIEWER"));
+        wilma.opensTheReportOf(closed);
+        wilma.writesHowTheSituationDeveloped("Written while reviewing");
+
+        wilma.closesTheReport();
+
+        assertThat(wilma.wasToldThat("Save or throw away your changes before closing the report.")).isTrue();
+        assertThat(wilma.reportStatus()).isEqualTo("Open");
+        assertThat(handled.reportOf(closed).closed()).isFalse();
+
+        wilma.savesTheReport();
+        wilma.closesTheReport();
+
+        assertThat(wilma.reportStatus()).isEqualTo("Closed");
+        assertThat(handled.reportOf(closed).situationDevelopment()).isEqualTo("Written while reviewing");
+    }
+
+    @Test
     void reviewerClosesTheReportAndThenNobodyCanChangeIt() {
         var callSign = unique("CS");
         var closed = handled.closedAssignment(callSign);
@@ -48,9 +68,9 @@ class ReportReviewingTest extends UseCaseTest {
         assertThat(rita.canCloseTheReport()).isFalse();
         assertThat(rita.canReopenTheReport()).isTrue();
         var stored = handled.reportOf(closed);
-        assertThat(stored.isClosed()).isTrue();
-        assertThat(stored.getClosed().getSubject()).isEqualTo("subject-rita");
-        assertThat(stored.getLastEdit().getSubject()).as("Closing isn't editing").isEqualTo("subject-erik");
+        assertThat(stored.closed()).isTrue();
+        assertThat(stored.closedBy()).isEqualTo("subject-rita");
+        assertThat(stored.lastEditedBy()).as("Closing isn't editing").isEqualTo("subject-erik");
 
         erik.refreshes();
         erik.opensTheReportOf(closed);
@@ -75,7 +95,7 @@ class ReportReviewingTest extends UseCaseTest {
         assertThat(erik.wasToldThat("A reviewer closed this report")).isTrue();
         assertThat(erik.situationDevelopment()).isEqualTo("Before closing");
         assertThat(erik.canSave()).isFalse();
-        assertThat(handled.reportOf(closed).getSituationDevelopment()).isEqualTo("Before closing");
+        assertThat(handled.reportOf(closed).situationDevelopment()).isEqualTo("Before closing");
     }
 
     @Test
@@ -90,14 +110,14 @@ class ReportReviewingTest extends UseCaseTest {
 
         assertThat(rita.wasToldThat("Report re-opened")).isTrue();
         assertThat(rita.reportStatus()).isEqualTo("Open");
-        assertThat(handled.reportOf(closed).isClosed()).isFalse();
+        assertThat(handled.reportOf(closed).closed()).isFalse();
 
         var erik = erik();
         erik.opensTheReportOf(closed);
         erik.writesHowTheSituationDeveloped("Second version");
         erik.savesTheReport();
 
-        assertThat(handled.reportOf(closed).getSituationDevelopment()).isEqualTo("Second version");
+        assertThat(handled.reportOf(closed).situationDevelopment()).isEqualTo("Second version");
     }
 
     @Test
@@ -117,7 +137,7 @@ class ReportReviewingTest extends UseCaseTest {
         assertThat(rita.situationDevelopment()).as("The latest version is shown")
                 .isEqualTo("Written after the reviewer read it");
         assertThat(rita.reportStatus()).isEqualTo("Open");
-        assertThat(handled.reportOf(closed).isClosed()).isFalse();
+        assertThat(handled.reportOf(closed).closed()).isFalse();
     }
 
     @Test
@@ -129,7 +149,7 @@ class ReportReviewingTest extends UseCaseTest {
         rita.closesTheReport();
 
         assertThat(rita.reportStatus()).isEqualTo("Closed");
-        assertThat(handled.reportOf(closed).isClosed()).isTrue();
+        assertThat(handled.reportOf(closed).closed()).isTrue();
     }
 
     @Test

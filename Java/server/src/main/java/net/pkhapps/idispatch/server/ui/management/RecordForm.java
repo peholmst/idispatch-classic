@@ -100,6 +100,14 @@ public abstract class RecordForm<D> extends Composite<FormLayout> {
         return fieldChanges.stream().anyMatch(Signal::peek);
     }
 
+    /**
+     * Whether any field holds something else than it started with, as a signal for effects that follow it. Read it once
+     * every field has been bound.
+     */
+    public Signal<Boolean> changed() {
+        return Signal.computed(() -> fieldChanges.stream().anyMatch(Signal::get));
+    }
+
     public void setReadOnly(boolean readOnly) {
         this.readOnly.set(readOnly);
     }

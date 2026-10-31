@@ -3,7 +3,6 @@ package net.pkhapps.idispatch.server.report;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
-import net.pkhapps.idispatch.server.shared.ValidationFailedException;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -13,7 +12,7 @@ public interface ReportService {
 
     /**
      * Finds the report of the closed assignment with the specified ID. If nobody has filled in what happened on scene
-     * yet, the report contains a new, unsaved {@link AssignmentReport}.
+     * yet, the report contains an empty, unsaved {@link AssignmentReport}.
      */
     Optional<ReportDTO> findReportByAssignmentId(long assignmentId);
 
@@ -40,15 +39,18 @@ public interface ReportService {
     List<AssignmentTypeListItem> findTypesOfClosedAssignments();
 
     /**
-     * Validates and saves what happened on scene, and returns:
+     * Saves what a writer filled in, recording the edit on the parts they changed, and returns:
      * <ul>
      * <li>{@link UpdateResult.Success} with the saved report if the operation was successful.</li>
-     * <li>{@link UpdateResult.Conflict} with the other user's report if another user saved the report first.</li>
+     * <li>{@link UpdateResult.Conflict} with the other user's report if another user saved the report after the writer
+     * read it.</li>
      * <li>{@link UpdateResult.NoChange} with the closed report if a reviewer has closed it; closed reports can't be
      * changed.</li>
      * </ul>
+     *
+     * @param seen the report as the writer read it, whose version must still be the stored one
      */
-    UpdateResult<AssignmentReport> saveReport(AssignmentReport report) throws ValidationFailedException;
+    UpdateResult<AssignmentReport> saveReport(AssignmentReport seen, ReportDraft draft);
 
     /**
      * Closes the report after a reviewer has checked it, so that nobody can change it. The report must be the version
