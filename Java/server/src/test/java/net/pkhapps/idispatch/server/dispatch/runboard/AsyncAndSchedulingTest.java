@@ -33,6 +33,6 @@ class AsyncAndSchedulingTest {
     void runboardDispatcherCleanUp_isScheduled() {
         assertThat(scheduledTaskHolder.getScheduledTasks())
                 .extracting(task -> task.getTask().getRunnable().toString())
-                .anyMatch(name -> name.contains("RunboardDispatcherBean.cleanUp"));
+                .anyMatch(name -> name.contains("RunboardDispatcher.cleanUp"));
     }
 }

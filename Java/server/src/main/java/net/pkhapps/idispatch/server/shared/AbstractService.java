@@ -7,7 +7,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-public abstract class AbstractServiceBean {
+public abstract class AbstractService {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -15,7 +15,7 @@ public abstract class AbstractServiceBean {
 
     private final TransactionTemplate txTemplate;
 
-    protected AbstractServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager) {
+    protected AbstractService(ApplicationContext applicationContext, PlatformTransactionManager txManager) {
         this.applicationContext = applicationContext;
         txTemplate = new TransactionTemplate(txManager);
         txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
