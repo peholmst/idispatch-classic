@@ -1,17 +1,17 @@
 package net.pkhapps.idispatch.server.ui.management;
 
 import com.vaadin.flow.component.textfield.TextField;
-import net.pkhapps.idispatch.server.entity.AbstractEntity;
+import net.pkhapps.idispatch.server.shared.AbstractEntity;
 
 /**
  * Form for the assignment and resource types, which both have a {@code code} and a description in Finnish
  * ({@code descriptionFi}) and Swedish ({@code descriptionSv}).
  */
-class CodeAndDescriptionForm<E extends AbstractEntity> extends ManagementForm<E> {
+public class CodeAndDescriptionForm<E extends AbstractEntity> extends ManagementForm<E> {
 
     private final TextField code;
 
-    CodeAndDescriptionForm(Class<E> entityType) {
+    public CodeAndDescriptionForm(Class<E> entityType) {
         super(entityType);
 
         code = new TextField(getTranslation("management.code"));

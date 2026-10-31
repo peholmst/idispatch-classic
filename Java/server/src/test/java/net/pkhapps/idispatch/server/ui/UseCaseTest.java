@@ -3,9 +3,10 @@ package net.pkhapps.idispatch.server.ui;
 import com.vaadin.browserless.BrowserlessUserContext;
 import com.vaadin.browserless.SecuredBrowserlessApplicationContext;
 import com.vaadin.browserless.SpringBrowserlessApplicationContext;
+import net.pkhapps.idispatch.server.ServerApp;
 import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
-import net.pkhapps.idispatch.server.ui.reports.HandledAssignments;
+import net.pkhapps.idispatch.server.report.HandledAssignments;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,8 @@ public abstract class UseCaseTest {
 
     @BeforeEach
     void openTheApplication() {
-        app = SpringBrowserlessApplicationContext.createSecured(spring, RootView.class);
+        // The views are spread over the feature packages, so scan them all from the root package
+        app = SpringBrowserlessApplicationContext.createSecured(spring, ServerApp.class);
     }
 
     @AfterEach

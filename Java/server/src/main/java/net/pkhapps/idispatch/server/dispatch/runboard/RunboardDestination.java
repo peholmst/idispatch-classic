@@ -1,0 +1,34 @@
+package net.pkhapps.idispatch.server.dispatch.runboard;
+
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import net.pkhapps.idispatch.server.dispatch.Destination;
+
+import java.util.UUID;
+
+@Entity
+@Table(name = "runboard_destinations")
+public class RunboardDestination extends Destination {
+
+    public static final String PROP_RUNBOARD_KEY = "runboardKey";
+
+    @Column(name = "runboard_key", nullable = false, unique = true)
+    @NotBlank(message = "{idispatch.runboard-destination.runboard-key.required}")
+    private String runboardKey = UUID.randomUUID().toString();
+
+    public String getRunboardKey() {
+        return runboardKey;
+    }
+
+    public void setRunboardKey(String runboardKey) {
+        this.runboardKey = runboardKey;
+    }
+
+    @Override
+    public String getType() {
+        return "Runboard";
+    }
+}

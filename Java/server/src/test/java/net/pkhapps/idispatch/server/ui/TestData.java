@@ -1,7 +1,18 @@
 package net.pkhapps.idispatch.server.ui;
 
-import net.pkhapps.idispatch.server.entity.*;
-import net.pkhapps.idispatch.server.entity.repository.*;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeRepository;
+import net.pkhapps.idispatch.server.dispatch.Destination;
+import net.pkhapps.idispatch.server.dispatch.DestinationRepository;
+import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.municipality.MunicipalityRepository;
+import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceRepository;
+import net.pkhapps.idispatch.server.resource.ResourceState;
+import net.pkhapps.idispatch.server.resource.ResourceStatus;
+import net.pkhapps.idispatch.server.resource.ResourceStatusRepository;
+import net.pkhapps.idispatch.server.resource.ResourceType;
+import net.pkhapps.idispatch.server.resource.ResourceTypeRepository;
 import org.springframework.boot.test.context.TestComponent;
 
 import java.util.UUID;
