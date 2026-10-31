@@ -20,7 +20,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
@@ -37,7 +37,7 @@ import java.util.function.UnaryOperator;
  * reviewers close and re-open the reports.
  */
 @Service
-@Secured({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER})
+@PreAuthorize(Roles.HAS_ANY_REPORT_ROLE)
 public class ReportService extends AbstractService {
 
     private final AssignmentQueries assignmentQueries;
@@ -128,7 +128,7 @@ public class ReportService extends AbstractService {
      *
      * @param seen the report as the writer read it, whose version must still be the stored one
      */
-    @Secured(Roles.ROLE_REPORT_WRITER)
+    @PreAuthorize(Roles.HAS_REPORT_WRITER)
     public UpdateResult<AssignmentReport> saveReport(AssignmentReport seen, ReportDraft draft) {
         logger.debug("Saving the report of assignment {} version {}", seen.assignmentId().value(), seen.version());
         final UserStamp edit = stampForCurrentUser();
@@ -143,7 +143,7 @@ public class ReportService extends AbstractService {
      * <li>{@link UpdateResult.Conflict} with the current report if it has changed since the reviewer read it.</li>
      * </ul>
      */
-    @Secured(Roles.ROLE_REPORT_REVIEWER)
+    @PreAuthorize(Roles.HAS_REPORT_REVIEWER)
     public UpdateResult<AssignmentReport> closeReport(AssignmentReport seen) {
         logger.debug("Closing the report of assignment {}", seen.assignmentId().value());
         final UserStamp closed = stampForCurrentUser();
@@ -154,7 +154,7 @@ public class ReportService extends AbstractService {
      * Re-opens a closed report, so that it can be changed again. Returns the same results as
      * {@link #closeReport(AssignmentReport)}.
      */
-    @Secured(Roles.ROLE_REPORT_REVIEWER)
+    @PreAuthorize(Roles.HAS_REPORT_REVIEWER)
     public UpdateResult<AssignmentReport> reopenReport(AssignmentReport seen) {
         logger.debug("Re-opening the report of assignment {}", seen.assignmentId().value());
         return changeReport(seen, false, AssignmentReport::reopened);

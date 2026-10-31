@@ -11,7 +11,7 @@ import net.pkhapps.idispatch.server.shared.AbstractService;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -23,7 +23,7 @@ import java.util.Optional;
  * Lets dispatchers open, fill in and close assignments.
  */
 @Service
-@Secured(Roles.ROLE_DISPATCHER)
+@PreAuthorize(Roles.HAS_DISPATCHER)
 public class AssignmentService extends AbstractService {
 
     private final AssignmentRepository assignmentRepository;
