@@ -171,6 +171,23 @@ class ResourceTypeAdministrationTest extends UseCaseTest {
 
 
     @Test
+    void puttingBackWhatWasThereIsNoChange() {
+        var first = unique("RT");
+        given.resourceType(first, "First");
+        var second = unique("RT");
+        given.resourceType(second, "Second");
+        var admin = administratorAtWork();
+        admin.opens(first);
+        admin.fillsIn(FINNISH_DESCRIPTION, "Edited");
+        admin.fillsIn(FINNISH_DESCRIPTION, "First");
+
+        admin.opens(second);
+
+        assertThat(admin.isAskedAnything()).as("Nothing to discard").isFalse();
+        assertThat(admin.valueOf(FINNISH_DESCRIPTION)).isEqualTo("Second");
+    }
+
+    @Test
     void administratorChangesDeletesAndRestoresAResourceType() {
         var code = unique("RT");
         given.resourceType(code, "Original");

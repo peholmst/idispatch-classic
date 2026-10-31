@@ -1,16 +1,20 @@
 package net.pkhapps.idispatch.server.ui.management;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.HasValidation;
 import com.vaadin.flow.component.HasValueAndElement;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.signals.Signal;
 import com.vaadin.flow.signals.local.ValueSignal;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+
+import static net.pkhapps.idispatch.server.ui.SignalBindings.bindErrorMessage;
 
 /**
  * Base class for the forms in the detail area of a {@link RecordManagementView}. Each field is bound to a signal, and
@@ -21,6 +25,9 @@ import java.util.Optional;
  * A field shows its error once the user has changed it, or once the user has tried to save. Fields whose errors depend
  * on each other, such as the two versions of a bilingual text, share one "touched" signal so that changing either shows
  * the error on both.
+ * <p>
+ * The form has changes while any field holds something else than it started with; a field changed and then changed
+ * back is no change.
  *
  * @param <D> the domain value the form creates
  */
@@ -28,7 +35,7 @@ public abstract class RecordForm<D> extends Composite<FormLayout> {
 
     private final ValueSignal<Boolean> readOnly = new ValueSignal<>(false);
     private final ValueSignal<Boolean> saveAttempted = new ValueSignal<>(false);
-    private final List<Signal<Boolean>> touched = new ArrayList<>();
+    private final List<Signal<Boolean>> fieldChanges = new ArrayList<>();
 
     protected RecordForm() {
         var formLayout = getContent();
@@ -41,9 +48,7 @@ public abstract class RecordForm<D> extends Composite<FormLayout> {
      * Returns a new signal that becomes {@code true} when the user changes any field bound with it.
      */
     protected ValueSignal<Boolean> touchedSignal() {
-        var signal = new ValueSignal<>(false);
-        touched.add(signal);
-        return signal;
+        return new ValueSignal<>(false);
     }
 
     /**
@@ -61,6 +66,7 @@ public abstract class RecordForm<D> extends Composite<FormLayout> {
                 touched.set(true);
             }
         });
+        fieldChanges.add(value.map(current -> !Objects.equals(current, initialValue)));
         return value;
     }
 
@@ -69,14 +75,9 @@ public abstract class RecordForm<D> extends Composite<FormLayout> {
      *
      * @param error the error message, or {@code null} while the field is valid
      */
-    protected void showError(TextField field, Signal<@Nullable String> error, Signal<Boolean> touched) {
-        // The form decides what is valid, so the field must not reset the invalid state with its own constraints
-        field.setManualValidation(true);
-        Signal.effect(field, () -> {
-            var message = saveAttempted.get() || touched.get() ? error.get() : null;
-            field.setInvalid(message != null);
-            field.setErrorMessage(message == null ? "" : message);
-        });
+    protected <F extends Component & HasValidation> void showError(F field, Signal<@Nullable String> error,
+                                                                    Signal<Boolean> touched) {
+        bindErrorMessage(field, Signal.computed(() -> saveAttempted.get() || touched.get() ? error.get() : null));
     }
 
     /**
@@ -93,10 +94,10 @@ public abstract class RecordForm<D> extends Composite<FormLayout> {
     }
 
     /**
-     * Whether the user has changed any field.
+     * Whether any field holds something else than it started with.
      */
     public boolean hasChanges() {
-        return touched.stream().anyMatch(Signal::peek);
+        return fieldChanges.stream().anyMatch(Signal::peek);
     }
 
     public void setReadOnly(boolean readOnly) {
