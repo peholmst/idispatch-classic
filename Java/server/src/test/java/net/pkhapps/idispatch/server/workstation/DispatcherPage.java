@@ -4,6 +4,7 @@ import com.vaadin.browserless.BrowserlessUIContext;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.ComboBoxLocator;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSelectionColumn;
 import com.vaadin.flow.component.html.ListItem;
 import net.pkhapps.idispatch.server.ui.AppShell;
 import net.pkhapps.idispatch.server.ui.GridRows;
@@ -175,6 +176,18 @@ public class DispatcherPage extends AppShell {
         assigned().selectRowWhere(t("Resource"), callSign);
     }
 
+    /**
+     * Whether the select-all box in the header of the resources on the assignment is ticked, as the browser shows it
+     * after the round trip.
+     */
+    public boolean allResourcesOnAssignmentTicked() {
+        window.roundTrip();
+        return findGrid("Resources on the assignment").getChildren()
+                .filter(GridSelectionColumn.class::isInstance).findFirst()
+                .map(column -> column.getElement().getProperty("selectAll", false))
+                .orElse(false);
+    }
+
     public boolean canRemoveResources() {
         return window.findButton().withAriaLabel("Remove selected resources from the assignment").component().isEnabled();
     }
@@ -279,11 +292,14 @@ public class DispatcherPage extends AppShell {
     }
 
     private GridRows grid(String englishName) {
+        return GridRows.of(window, findGrid(englishName));
+    }
+
+    private Grid<?> findGrid(String englishName) {
         var name = t(englishName);
-        Grid<?> grid = window.find(Grid.class)
+        return window.find(Grid.class)
                 .withCondition(g -> g.getAriaLabel().filter(name::equals).isPresent())
                 .single();
-        return GridRows.of(window, grid);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
