@@ -5,6 +5,7 @@ import net.pkhapps.idispatch.server.entity.AssignmentReport;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
@@ -16,8 +17,8 @@ public interface AssignmentReportRepository extends JpaRepository<AssignmentRepo
     Optional<AssignmentReport> findByAssignment(Assignment assignment);
 
     /**
-     * Returns the IDs of the assignments whose reports a reviewer has closed.
+     * Returns the IDs of those of the specified assignments whose reports a reviewer has closed.
      */
-    @Query("select r.assignment.id from AssignmentReport r where r.closed.subject is not null")
-    Set<Long> findAssignmentIdsOfClosedReports();
+    @Query("select r.assignment.id from AssignmentReport r where r.closed.subject is not null and r.assignment.id in :assignmentIds")
+    Set<Long> findAssignmentIdsOfClosedReports(Collection<Long> assignmentIds);
 }

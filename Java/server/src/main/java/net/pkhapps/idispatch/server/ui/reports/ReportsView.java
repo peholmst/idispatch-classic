@@ -11,7 +11,7 @@ import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.grid.dataview.GridListDataView;
+import com.vaadin.flow.component.grid.dataview.GridLazyDataView;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.masterdetaillayout.MasterDetailLayout;
@@ -24,8 +24,10 @@ import com.vaadin.flow.router.BeforeLeaveObserver;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-import net.pkhapps.idispatch.server.boundary.AssignmentService;
+import net.pkhapps.idispatch.server.boundary.ClosedAssignmentDTO;
+import net.pkhapps.idispatch.server.boundary.ClosedAssignmentFilter;
 import net.pkhapps.idispatch.server.boundary.ReportService;
+import net.pkhapps.idispatch.server.entity.AbstractEntity;
 import net.pkhapps.idispatch.server.entity.Assignment;
 import net.pkhapps.idispatch.server.entity.AssignmentType;
 import net.pkhapps.idispatch.server.entity.Municipality;
@@ -37,59 +39,63 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.Month;
-import java.time.ZoneId;
 import java.time.format.TextStyle;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 @Route(value = "reports", layout = RootLayout.class)
 @RolesAllowed({Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER})
 public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, BeforeLeaveObserver {
 
-    private final AssignmentService assignmentService;
     private final ReportService reportService;
-    private final Grid<Assignment> assignmentsGrid;
+    private final Grid<ClosedAssignmentDTO> assignmentsGrid;
     private final DatePicker closedFrom;
     private final DatePicker closedTo;
     private final ComboBox<Municipality> municipalityFilter;
     private final ComboBox<AssignmentType> typeFilter;
     private final ComboBox<ReportStatus> reportStatusFilter;
-    private Set<Long> closedReports = new HashSet<>();
-    private GridListDataView<Assignment> assignmentsDataView;
+    private final GridLazyDataView<ClosedAssignmentDTO> assignmentsDataView;
 
     private final AssignmentReportPanel reportPanel;
     private boolean revertingSelection;
     private ConfirmDialog discardDialog;
     private SerializableRunnable actionAfterDiscard;
 
-    public ReportsView(AssignmentService assignmentService, ReportService reportService) {
-        this.assignmentService = assignmentService;
+    public ReportsView(ReportService reportService) {
         this.reportService = reportService;
 
+        // The database sorts the assignments by the sort properties
         assignmentsGrid = new Grid<>();
-        assignmentsGrid.addColumn(Assignment::getId).setHeader(getTranslation("report.number"))
-                .setSortable(true).setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setFlexGrow(0);
-        assignmentsGrid.addComponentColumn(assignment -> reportStatus(assignment).createBadge()).setHeader(getTranslation("report.report"))
-                .setComparator(this::reportStatus).setAutoWidth(true).setFlexGrow(0);
-        var closedColumn = assignmentsGrid.addColumn(assignment -> Formatters.formatDateTime(assignment.getClosed()))
-                .setHeader(getTranslation("report.closed")).setComparator(Assignment::getClosed).setAutoWidth(true).setFlexGrow(0);
-        assignmentsGrid.addColumn(Assignment::getUrgency).setHeader(getTranslation("assignment.urgency"))
-                .setComparator(Assignment::getUrgency).setAutoWidth(true).setFlexGrow(0);
-        assignmentsGrid.addColumn(assignment -> Formatters.formatAssignmentType(assignment.getType())).setHeader(getTranslation("assignment.type"))
-                .setSortable(true).setResizable(true);
-        assignmentsGrid.addColumn(assignment -> Formatters.formatMunicipality(assignment.getMunicipality()))
-                .setHeader(getTranslation("assignment.municipality")).setSortable(true).setResizable(true);
-        assignmentsGrid.addColumn(Assignment::getAddress).setHeader(getTranslation("assignment.address"))
-                .setSortable(true).setResizable(true);
+        assignmentsGrid.addColumn(item -> item.assignment().getId()).setHeader(getTranslation("report.number"))
+                .setSortProperty(AbstractEntity.PROP_ID).setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setFlexGrow(0);
+        assignmentsGrid.addComponentColumn(item -> ReportStatus.of(item.reportClosed()).createBadge())
+                .setHeader(getTranslation("report.report")).setSortProperty(ClosedAssignmentDTO.SORT_REPORT_CLOSED)
+                .setAutoWidth(true).setFlexGrow(0);
+        var closedColumn = assignmentsGrid.addColumn(item -> Formatters.formatDateTime(item.assignment().getClosed()))
+                .setHeader(getTranslation("report.closed")).setSortProperty(Assignment.PROP_CLOSED).setAutoWidth(true)
+                .setFlexGrow(0);
+        assignmentsGrid.addColumn(item -> item.assignment().getUrgency()).setHeader(getTranslation("assignment.urgency"))
+                .setSortProperty(Assignment.PROP_URGENCY).setAutoWidth(true).setFlexGrow(0);
+        assignmentsGrid.addColumn(item -> Formatters.formatAssignmentType(item.assignment().getType()))
+                .setHeader(getTranslation("assignment.type"))
+                .setSortProperty(Assignment.PROP_TYPE + "." + AssignmentType.PROP_CODE,
+                        Assignment.PROP_TYPE + "." + AssignmentType.PROP_DESCRIPTION)
+                .setResizable(true);
+        assignmentsGrid.addColumn(item -> Formatters.formatMunicipality(item.assignment().getMunicipality()))
+                .setHeader(getTranslation("assignment.municipality"))
+                .setSortProperty(Assignment.PROP_MUNICIPALITY + "." + Municipality.PROP_NAME).setResizable(true);
+        assignmentsGrid.addColumn(item -> item.assignment().getAddress()).setHeader(getTranslation("assignment.address"))
+                .setSortProperty(Assignment.PROP_ADDRESS).setResizable(true);
         assignmentsGrid.sort(GridSortOrder.desc(closedColumn).build());
+        assignmentsDataView = assignmentsGrid.setItemsPageable(
+                pageable -> reportService.findClosedAssignments(currentFilter(), pageable),
+                pageable -> reportService.countClosedAssignments(currentFilter()));
+        // The report status changes when a reviewer closes or re-opens the report, but it is still the same row
+        assignmentsDataView.setIdentifierProvider(item -> item.assignment().getId());
+        assignmentsGrid.setEmptyStateText(getTranslation("report.empty"));
         assignmentsGrid.setSizeFull();
         assignmentsGrid.addThemeVariants(GridVariant.NO_BORDER, GridVariant.ROW_STRIPES);
 
@@ -100,16 +106,11 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
                 authorities.contains(Roles.ROLE_REPORT_REVIEWER));
         reportPanel.setSizeFull();
         // Keeps the Report column and the status filter up to date when the user closes or re-opens a report
-        reportPanel.setReportChangeListener(report -> {
-            if (report.isClosed()) {
-                closedReports.add(report.getAssignment().getId());
-            } else {
-                closedReports.remove(report.getAssignment().getId());
-            }
-            assignmentsDataView.refreshAll();
-        });
+        reportPanel.setReportChangeListener(report -> assignmentsDataView.refreshAll());
 
-        var refreshButton = new Button(VaadinIcon.REFRESH.create(), event -> discardChangesThen(this::refresh));
+        var refreshButton = new Button(getTranslation("report.refresh"), VaadinIcon.REFRESH.create(),
+                event -> discardChangesThen(this::refresh));
+        refreshButton.addThemeVariants(ButtonVariant.TERTIARY);
 
         assignmentsGrid.asSingleSelect().addValueChangeListener(event -> {
             if (revertingSelection) {
@@ -127,7 +128,7 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
                 return;
             }
             var report = Optional.ofNullable(event.getValue())
-                    .flatMap(assignment -> reportService.findReportByAssignmentId(assignment.nullSafeId()))
+                    .flatMap(item -> reportService.findReportByAssignmentId(item.assignment().nullSafeId()))
                     .orElse(null);
             reportPanel.setBean(report);
             setDetail(report == null ? null : reportPanel);
@@ -153,11 +154,7 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
         reportStatusFilter.setWidth("9em");
 
         for (var filter : List.<HasValue<?, ?>>of(closedFrom, closedTo, municipalityFilter, typeFilter, reportStatusFilter)) {
-            filter.addValueChangeListener(event -> {
-                if (assignmentsDataView != null) {
-                    assignmentsDataView.refreshAll();
-                }
-            });
+            filter.addValueChangeListener(event -> assignmentsDataView.refreshAll());
         }
 
         var clearFilters = new Button(getTranslation("report.filter.clear"), VaadinIcon.CLOSE_SMALL.create(), event -> {
@@ -170,14 +167,14 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
         clearFilters.addThemeVariants(ButtonVariant.TERTIARY);
 
         var filterBar = new HorizontalLayout(closedFrom, closedTo, municipalityFilter, typeFilter, reportStatusFilter,
-                clearFilters);
+                clearFilters, refreshButton);
         filterBar.setWrap(true);
         filterBar.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
         filterBar.addClassName("toolbar");
         filterBar.setWidthFull();
         filterBar.setPadding(true);
 
-        var toolbar = new HorizontalLayout(new ViewTitle(getTranslation("nav.reports")), refreshButton);
+        var toolbar = new HorizontalLayout(new ViewTitle(getTranslation("nav.reports")));
         toolbar.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         toolbar.setWidthFull();
         toolbar.setPadding(true);
@@ -194,7 +191,7 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
         setDetailSize("40em");
         setExpandMaster(true);
         setMaster(master);
-        setDetailPlaceholder(new Span(getTranslation("assignment.none-selected")));
+        setDetailPlaceholder(new VerticalLayout(new Span(getTranslation("assignment.none-selected"))));
 
         // When the report is shown on top of the list, closing it deselects the assignment, which asks first if there
         // are unsaved changes
@@ -285,37 +282,24 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
 
     private void refresh() {
         assignmentsGrid.deselectAll();
-        var assignments = assignmentService.findClosedAssignments();
-        closedReports = new HashSet<>(reportService.findAssignmentIdsWithClosedReports());
-        assignmentsDataView = assignmentsGrid.setItems(assignments);
-        assignmentsDataView.setFilter(this::matchesFilters);
         // Offer only the municipalities and types that some closed assignment has, so every choice matches something
-        updateChoices(municipalityFilter, assignments.stream().map(Assignment::getMunicipality),
-                Comparator.comparing(Municipality::getName));
-        updateChoices(typeFilter, assignments.stream().map(Assignment::getType),
-                Comparator.comparing(AssignmentType::getFormattedDescription));
+        updateChoices(municipalityFilter, reportService.findMunicipalitiesOfClosedAssignments());
+        updateChoices(typeFilter, reportService.findTypesOfClosedAssignments());
+        assignmentsDataView.refreshAll();
     }
 
-    private static <T> void updateChoices(ComboBox<T> comboBox, Stream<T> values, Comparator<T> order) {
+    private static <T> void updateChoices(ComboBox<T> comboBox, List<T> choices) {
         var selected = comboBox.getValue();
-        var choices = values.filter(Objects::nonNull).distinct().sorted(order).toList();
         comboBox.setItems(choices);
         if (selected != null && choices.contains(selected)) {
             comboBox.setValue(selected);
         }
     }
 
-    private boolean matchesFilters(Assignment assignment) {
-        var closedDate = LocalDate.ofInstant(assignment.getClosed(), ZoneId.systemDefault());
-        return (closedFrom.getValue() == null || !closedDate.isBefore(closedFrom.getValue()))
-                && (closedTo.getValue() == null || !closedDate.isAfter(closedTo.getValue()))
-                && (municipalityFilter.getValue() == null || municipalityFilter.getValue().equals(assignment.getMunicipality()))
-                && (typeFilter.getValue() == null || typeFilter.getValue().equals(assignment.getType()))
-                && (reportStatusFilter.getValue() == null || reportStatusFilter.getValue() == reportStatus(assignment));
-    }
-
-    private ReportStatus reportStatus(Assignment assignment) {
-        return ReportStatus.of(closedReports.contains(assignment.getId()));
+    private ClosedAssignmentFilter currentFilter() {
+        var reportStatus = reportStatusFilter.getValue();
+        return new ClosedAssignmentFilter(closedFrom.getValue(), closedTo.getValue(), municipalityFilter.getValue(),
+                typeFilter.getValue(), reportStatus == null ? null : reportStatus == ReportStatus.CLOSED);
     }
 
     @Override

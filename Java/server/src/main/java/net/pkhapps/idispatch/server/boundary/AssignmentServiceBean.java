@@ -110,13 +110,6 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
     }
 
     @Override
-    @Secured({Roles.ROLE_DISPATCHER, Roles.ROLE_REPORT_READER, Roles.ROLE_REPORT_WRITER, Roles.ROLE_REPORT_REVIEWER})
-    public List<Assignment> findClosedAssignments() {
-        logger.debug("Looking up closed assignments");
-        return assignmentRepository.findByClosedIsNotNull();
-    }
-
-    @Override
     public List<Municipality> findApplicableMunicipalities() {
         return municipalityRepository.findByActiveTrueOrderByNameAsc();
     }

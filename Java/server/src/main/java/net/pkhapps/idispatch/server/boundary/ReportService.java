@@ -1,11 +1,15 @@
 package net.pkhapps.idispatch.server.boundary;
 
+import net.pkhapps.idispatch.server.entity.Assignment;
 import net.pkhapps.idispatch.server.entity.AssignmentReport;
+import net.pkhapps.idispatch.server.entity.AssignmentType;
+import net.pkhapps.idispatch.server.entity.Municipality;
 import net.pkhapps.idispatch.server.entity.ValidationFailedException;
 import net.pkhapps.idispatch.server.util.UpdateResult;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface ReportService {
 
@@ -16,10 +20,26 @@ public interface ReportService {
     Optional<ReportDTO> findReportByAssignmentId(long assignmentId);
 
     /**
-     * Returns the IDs of the assignments whose reports a reviewer has closed. The reports of all other closed
-     * assignments are open, including those that nobody has written anything in yet.
+     * Finds one page of the closed assignments that match the filter, sorted by the page request. Besides the
+     * properties of {@link Assignment}, the page request can sort by {@link ClosedAssignmentDTO#SORT_REPORT_CLOSED}.
+     * A report is open until a reviewer closes it, including when nobody has written anything in it yet.
      */
-    Set<Long> findAssignmentIdsWithClosedReports();
+    List<ClosedAssignmentDTO> findClosedAssignments(ClosedAssignmentFilter filter, Pageable pageable);
+
+    /**
+     * Counts the closed assignments that match the filter.
+     */
+    int countClosedAssignments(ClosedAssignmentFilter filter);
+
+    /**
+     * Returns the municipalities that at least one closed assignment is in, by name.
+     */
+    List<Municipality> findMunicipalitiesOfClosedAssignments();
+
+    /**
+     * Returns the types that at least one closed assignment has, by code and description.
+     */
+    List<AssignmentType> findTypesOfClosedAssignments();
 
     /**
      * Validates and saves what happened on scene, and returns:
