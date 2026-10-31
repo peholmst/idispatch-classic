@@ -1,4 +1,4 @@
-package net.pkhapps.idispatch.server.workstation;
+package net.pkhapps.idispatch.server.dispatcher;
 
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static net.pkhapps.idispatch.server.workstation.DispatchViewModelTest.NOW;
-import static net.pkhapps.idispatch.server.workstation.DispatchViewModelTest.assignment;
+import static net.pkhapps.idispatch.server.dispatcher.DispatchViewModelTest.NOW;
+import static net.pkhapps.idispatch.server.dispatcher.DispatchViewModelTest.assignment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

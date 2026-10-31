@@ -19,12 +19,12 @@ import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeManagementView;
 import net.pkhapps.idispatch.server.dispatch.DestinationManagementView;
+import net.pkhapps.idispatch.server.dispatcher.DispatchView;
 import net.pkhapps.idispatch.server.municipality.MunicipalityManagementView;
 import net.pkhapps.idispatch.server.report.ReportsView;
 import net.pkhapps.idispatch.server.resource.ResourceManagementView;
 import net.pkhapps.idispatch.server.resource.ResourceTypeManagementView;
 import net.pkhapps.idispatch.server.security.Roles;
-import net.pkhapps.idispatch.server.workstation.DispatchView;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 

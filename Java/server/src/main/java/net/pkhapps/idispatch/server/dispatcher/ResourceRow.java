@@ -1,4 +1,4 @@
-package net.pkhapps.idispatch.server.workstation;
+package net.pkhapps.idispatch.server.dispatcher;
 
 import net.pkhapps.idispatch.server.assignment.AssignmentListItem;
 import net.pkhapps.idispatch.server.resource.ResourceId;

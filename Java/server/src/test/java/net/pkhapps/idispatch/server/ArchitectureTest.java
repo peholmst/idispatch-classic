@@ -26,12 +26,12 @@ class ArchitectureTest {
             BASE + ".resource..",
             BASE + ".dispatch..",
             BASE + ".report..",
-            BASE + ".workstation..",
+            BASE + ".dispatcher..",
     };
 
     /**
      * {@code municipality} and {@code assignmenttype} ← {@code assignment} ← {@code resource} ← {@code dispatch} ←
-     * {@code workstation}, with {@code report} on {@code assignment} and {@code resource}. Only dependencies between the
+     * {@code dispatcher}, with {@code report} on {@code assignment} and {@code resource}. Only dependencies between the
      * features count here; the rules below cover the packages around them.
      */
     @ArchTest
@@ -43,14 +43,14 @@ class ArchitectureTest {
             .layer("Resource").definedBy(BASE + ".resource..")
             .layer("Dispatch").definedBy(BASE + ".dispatch..")
             .layer("Report").definedBy(BASE + ".report..")
-            .layer("Workstation").definedBy(BASE + ".workstation..")
-            .whereLayer("Municipality").mayOnlyBeAccessedByLayers("Assignment", "Resource", "Dispatch", "Report", "Workstation")
-            .whereLayer("AssignmentType").mayOnlyBeAccessedByLayers("Assignment", "Resource", "Dispatch", "Report", "Workstation")
-            .whereLayer("Assignment").mayOnlyBeAccessedByLayers("Resource", "Dispatch", "Report", "Workstation")
-            .whereLayer("Resource").mayOnlyBeAccessedByLayers("Dispatch", "Report", "Workstation")
-            .whereLayer("Dispatch").mayOnlyBeAccessedByLayers("Workstation")
+            .layer("Dispatcher").definedBy(BASE + ".dispatcher..")
+            .whereLayer("Municipality").mayOnlyBeAccessedByLayers("Assignment", "Resource", "Dispatch", "Report", "Dispatcher")
+            .whereLayer("AssignmentType").mayOnlyBeAccessedByLayers("Assignment", "Resource", "Dispatch", "Report", "Dispatcher")
+            .whereLayer("Assignment").mayOnlyBeAccessedByLayers("Resource", "Dispatch", "Report", "Dispatcher")
+            .whereLayer("Resource").mayOnlyBeAccessedByLayers("Dispatch", "Report", "Dispatcher")
+            .whereLayer("Dispatch").mayOnlyBeAccessedByLayers("Dispatcher")
             .whereLayer("Report").mayNotBeAccessedByAnyLayer()
-            .whereLayer("Workstation").mayNotBeAccessedByAnyLayer();
+            .whereLayer("Dispatcher").mayNotBeAccessedByAnyLayer();
 
     @ArchTest
     static final ArchRule sharedKnowsNoFeature = noClasses()
