@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class ReportDTO implements Serializable {
+class ReportDTO implements Serializable {
 
     private final Assignment assignment;
     private final @Nullable AssignmentTypeListItem type;

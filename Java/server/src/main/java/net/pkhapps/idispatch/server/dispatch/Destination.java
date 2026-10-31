@@ -9,7 +9,7 @@ import java.util.Set;
 /**
  * Where the dispatch notifications of some resources go: a runboard at the station, or phone numbers by SMS.
  */
-public sealed interface Destination permits SmsDestination, RunboardDestination {
+sealed interface Destination permits SmsDestination, RunboardDestination {
 
     DestinationId id();
 

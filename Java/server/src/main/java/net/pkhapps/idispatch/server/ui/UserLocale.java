@@ -13,7 +13,7 @@ import java.util.Optional;
  * claim of the ID token. The application reads the claim when the user opens it, so a user who changes their language
  * sees it after logging out and back in. Users without a supported language get {@link #DEFAULT}.
  */
-public final class UserLocale {
+final class UserLocale {
 
     public static final Locale ENGLISH = Locale.ENGLISH;
     public static final Locale SWEDISH = Locale.of("sv");

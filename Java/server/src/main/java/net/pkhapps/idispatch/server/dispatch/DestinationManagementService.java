@@ -25,7 +25,7 @@ import java.util.Optional;
  */
 @Service
 @Secured(Roles.ROLE_ADMIN)
-public class DestinationManagementService {
+class DestinationManagementService {
 
     private static final Logger log = LoggerFactory.getLogger(DestinationManagementService.class);
 

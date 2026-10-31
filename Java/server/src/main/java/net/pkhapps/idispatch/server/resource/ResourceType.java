@@ -10,7 +10,7 @@ import static java.util.Objects.requireNonNull;
  * @param version incremented on every change, so that a change based on an older version can be refused
  * @param active  {@code false} once the type has been deleted; deleted types are kept for the resources that have them
  */
-public record ResourceType(ResourceTypeId id, long version, ResourceTypeCode code, BilingualText description,
+record ResourceType(ResourceTypeId id, long version, ResourceTypeCode code, BilingualText description,
                            boolean active) {
 
     public ResourceType {

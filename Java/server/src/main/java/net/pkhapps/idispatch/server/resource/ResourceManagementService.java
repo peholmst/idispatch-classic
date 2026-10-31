@@ -20,7 +20,7 @@ import java.util.Optional;
  */
 @Service
 @Secured(Roles.ROLE_ADMIN)
-public class ResourceManagementService {
+class ResourceManagementService {
 
     private static final Logger log = LoggerFactory.getLogger(ResourceManagementService.class);
 

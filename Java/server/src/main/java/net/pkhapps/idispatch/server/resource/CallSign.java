@@ -8,7 +8,7 @@ import static java.util.Objects.requireNonNull;
  * The call sign of a {@link Resource}, such as {@code PAR101}, by which dispatchers and the notifications name it.
  * Unique among the resources, which the database checks.
  */
-public record CallSign(String value) {
+record CallSign(String value) {
 
     public CallSign {
         requireNonNull(value);

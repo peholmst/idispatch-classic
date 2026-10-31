@@ -13,7 +13,7 @@ import java.time.Instant;
  *
  * @param reportClosed whether a reviewer has closed the assignment's report
  */
-public record ClosedAssignmentListItem(
+record ClosedAssignmentListItem(
         AssignmentId id,
         Instant closed,
         AssignmentUrgency urgency,

@@ -5,7 +5,7 @@ import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import java.io.Serializable;
 import java.time.Instant;
 
-public class ReportResourceDTO implements Serializable {
+class ReportResourceDTO implements Serializable {
 
     public static final String PROP_CALL_SIGN = "callSign";
     public static final String PROP_DISPATCHED = "dispatched";

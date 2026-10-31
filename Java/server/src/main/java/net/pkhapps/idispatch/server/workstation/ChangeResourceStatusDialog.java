@@ -10,7 +10,7 @@ import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 
 
-public class ChangeResourceStatusDialog extends Dialog {
+class ChangeResourceStatusDialog extends Dialog {
 
     private final ResourceStatusService resourceStatusService;
     private final ResourceId resource;

@@ -8,7 +8,7 @@ import static java.util.Objects.requireNonNull;
  * The short code of an {@link AssignmentType}, such as {@code 401}, shown in front of its description and in the
  * dispatch notifications. Unique among the assignment types, which the database checks.
  */
-public record AssignmentTypeCode(String value) {
+record AssignmentTypeCode(String value) {
 
     public AssignmentTypeCode {
         requireNonNull(value);

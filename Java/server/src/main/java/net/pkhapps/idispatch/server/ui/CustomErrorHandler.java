@@ -24,7 +24,7 @@ import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.Optional;
 
-public class CustomErrorHandler implements ErrorHandler {
+class CustomErrorHandler implements ErrorHandler {
 
     private static final Logger log = LoggerFactory.getLogger(CustomErrorHandler.class);
     private final SecureRandom rnd;

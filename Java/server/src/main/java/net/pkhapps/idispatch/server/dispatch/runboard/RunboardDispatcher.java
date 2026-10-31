@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * notification was last queued for it.
  */
 @Component
-public class RunboardDispatcher extends AbstractDispatcher {
+class RunboardDispatcher extends AbstractDispatcher {
 
     private static final Duration EXPIRY = Duration.ofMinutes(2);
 

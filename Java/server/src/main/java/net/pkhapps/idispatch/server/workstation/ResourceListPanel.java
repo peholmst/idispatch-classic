@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class ResourceListPanel extends VerticalLayout {
+class ResourceListPanel extends VerticalLayout {
 
     private final ResourceStatusService resourceStatusService;
     private final AssignmentService assignmentService;

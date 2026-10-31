@@ -58,7 +58,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class AssignmentPanel extends VerticalLayout {
+class AssignmentPanel extends VerticalLayout {
 
     private final AssignmentService assignmentService;
     private final ResourceStatusService resourceStatusService;

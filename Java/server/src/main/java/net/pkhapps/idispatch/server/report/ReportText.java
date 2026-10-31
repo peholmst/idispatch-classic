@@ -8,7 +8,7 @@ import static java.util.Objects.requireNonNull;
  * Free text in a report, such as how the situation developed. It may be empty, but not longer than the database
  * column.
  */
-public record ReportText(String value) {
+record ReportText(String value) {
 
     public static final int MAX_LENGTH = 4000;
     public static final ReportText EMPTY = new ReportText("");
