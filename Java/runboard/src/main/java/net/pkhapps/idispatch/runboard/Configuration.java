@@ -71,6 +71,31 @@ class Configuration extends net.pkhapps.idispatch.runboard.client.Configuration 
     }
 
     /**
+     * Returns the gain of the alarm and the error beep in decibels, at most 0. The sound files are close to full scale,
+     * far louder than speech even after it has been normalized, so they are attenuated to suit the speech. Default:
+     * -12 dB, which puts the alarm a few decibels above the speech.
+     */
+    public double getAlarmVolume() {
+        final String property = "idispatch.alarm.volume";
+        final double defaultValue = -12;
+        final String value = getProperty(property, null);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            final double result = Double.parseDouble(value.strip());
+            if (result <= 0) {
+                return result;
+            }
+        } catch (NumberFormatException ignored) {
+            // Falls through to the warning below
+        }
+        logger.warn("Invalid value '{}' for {}, must be a number of decibels of at most 0; using {}", value, property,
+                defaultValue);
+        return defaultValue;
+    }
+
+    /**
      * Returns the name of the driver that switches the amplifier and the flashing light, or {@link Outputs#NONE} (the
      * default) for none.
      */
