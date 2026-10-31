@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Sounds the alarm for new notifications and then reads them out loud. Without speech, the alarm plays for longer
  * instead. {@link AlertTimings} sets how many times each part plays. Sound is played on a thread of its own, one alert
- * at a time.
+ * or beep at a time, with the amplifier switched on.
  */
 class Alarm implements Observer {
 
@@ -25,13 +25,15 @@ class Alarm implements Observer {
     private final ExecutorService audioExecutor = Executors.newSingleThreadExecutor(
             Thread.ofPlatform().name("audio").daemon().factory());
     private final Speech speech;
+    private final Outputs outputs;
     private final AlertTimings timings;
     private Clip alarmClip;
     private Clip beepClip;
     private Set<Notification> seenNotifications = new HashSet<>();
 
-    Alarm(Speech speech, AlertTimings timings) {
+    Alarm(Speech speech, Outputs outputs, AlertTimings timings) {
         this.speech = speech;
+        this.outputs = outputs;
         this.timings = timings;
         try {
             alarmClip = openClip("/sounds/alarm.wav");
@@ -67,11 +69,22 @@ class Alarm implements Observer {
     }
 
     void soundBeep() {
+        audioExecutor.execute(this::beep);
+    }
+
+    private void beep() {
+        if (beepClip == null) {
+            return;
+        }
         try {
-            beepClip.stop();
-            beepClip.loop(1);
+            outputs.switchOnAmplifier();
+            startClip(beepClip, 2).await();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
         } catch (Exception ex) {
             logger.error("Error playing beep", ex);
+        } finally {
+            outputs.switchOffAmplifier();
         }
     }
 
@@ -97,11 +110,12 @@ class Alarm implements Observer {
 
     private void alert(List<Notification> notifications) {
         try {
+            outputs.switchOnAmplifier();
             // Synthesize while the alarm plays, so that the speech is ready when it ends.
             final boolean speechExpected = notifications.stream()
                     .anyMatch(n -> speech.supportsLanguage(speech.languageOf(n)));
             final int alarmPlays = speechExpected ? timings.alarmPlaysBeforeSpeech() : timings.alarmPlays();
-            final AlarmPlayback alarm = startAlarm(alarmPlays);
+            final ClipPlayback alarm = startAlarm(alarmPlays);
             final List<SpeechAudio> announcements = notifications.stream()
                     .flatMap(n -> {
                         final String language = speech.languageOf(n);
@@ -128,19 +142,28 @@ class Alarm implements Observer {
             Thread.currentThread().interrupt();
         } catch (Exception ex) {
             logger.error("Error playing alert", ex);
+        } finally {
+            outputs.switchOffAmplifier();
         }
     }
 
     /**
      * Starts playing the alarm the given number of times and returns without waiting for it to finish.
      */
-    private AlarmPlayback startAlarm(int plays) {
-        final AlarmPlayback playback = new AlarmPlayback(plays);
-        if (alarmClip != null) {
-            alarmClip.stop();
-            alarmClip.setFramePosition(0);
-            alarmClip.addLineListener(playback);
-            alarmClip.loop(plays - 1);
+    private ClipPlayback startAlarm(int plays) {
+        return startClip(alarmClip, plays);
+    }
+
+    /**
+     * Starts playing the clip from the start the given number of times and returns without waiting for it to finish.
+     */
+    private ClipPlayback startClip(Clip clip, int plays) {
+        final ClipPlayback playback = new ClipPlayback(clip, plays);
+        if (clip != null) {
+            clip.stop();
+            clip.setFramePosition(0);
+            clip.addLineListener(playback);
+            clip.loop(plays - 1);
         } else {
             playback.stopped.countDown();
         }
@@ -156,14 +179,16 @@ class Alarm implements Observer {
         }
     }
 
-    private class AlarmPlayback implements LineListener {
+    private class ClipPlayback implements LineListener {
 
         private final CountDownLatch stopped = new CountDownLatch(1);
+        private final Clip clip;
         private final long timeoutMilliseconds;
 
-        private AlarmPlayback(int plays) {
-            // Give up waiting a little after the alarm should have ended, in case the STOP event never arrives.
-            timeoutMilliseconds = alarmClip == null ? 0 : alarmClip.getMicrosecondLength() * plays / 1000 + 2000;
+        private ClipPlayback(Clip clip, int plays) {
+            this.clip = clip;
+            // Give up waiting a little after the clip should have ended, in case the STOP event never arrives.
+            timeoutMilliseconds = clip == null ? 0 : clip.getMicrosecondLength() * plays / 1000 + 2000;
         }
 
         @Override
@@ -176,11 +201,11 @@ class Alarm implements Observer {
         void await() throws InterruptedException {
             try {
                 if (!stopped.await(timeoutMilliseconds, TimeUnit.MILLISECONDS)) {
-                    logger.warn("Alarm did not stop in time, continuing");
+                    logger.warn("Sound did not stop in time, continuing");
                 }
             } finally {
-                if (alarmClip != null) {
-                    alarmClip.removeLineListener(this);
+                if (clip != null) {
+                    clip.removeLineListener(this);
                 }
             }
         }
