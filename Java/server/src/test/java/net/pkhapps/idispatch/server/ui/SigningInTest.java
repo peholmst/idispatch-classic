@@ -32,7 +32,7 @@ class SigningInTest extends UseCaseTest {
 
         user.openHome();
 
-        assertThat(user.welcomeText()).isEqualTo("Welcome to iDispatch!");
+        assertThat(user.viewTitle()).contains("Home");
         assertThat(user.userName()).isEqualTo("drawer-user");
     }
 

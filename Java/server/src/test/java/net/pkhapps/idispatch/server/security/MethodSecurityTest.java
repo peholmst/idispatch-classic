@@ -3,6 +3,7 @@ package net.pkhapps.idispatch.server.security;
 import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
+import net.pkhapps.idispatch.server.dashboard.DashboardService;
 import net.pkhapps.idispatch.server.municipality.MunicipalityManagementService;
 import net.pkhapps.idispatch.server.report.ClosedAssignmentFilter;
 import net.pkhapps.idispatch.server.report.ReportService;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -38,6 +40,20 @@ class MethodSecurityTest {
     ResourceStatusService resourceStatusService;
     @Autowired
     ReportService reportService;
+    @Autowired
+    DashboardService dashboardService;
+
+    @Test
+    void anonymous_cannotReadTheDashboard() {
+        assertThatThrownBy(() -> dashboardService.getFigures())
+                .isInstanceOf(AuthenticationCredentialsNotFoundException.class);
+    }
+
+    @Test
+    @WithMockUser
+    void anyUser_canReadTheDashboard() {
+        assertThatCode(() -> dashboardService.getFigures()).doesNotThrowAnyException();
+    }
 
     @Test
     @WithMockUser(roles = "DISPATCHER")

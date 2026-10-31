@@ -1,0 +1,16 @@
+/* The home view: the figures as cards above the list of units */
+.dashboard-figure {
+    min-width: 12rem;
+}
+
+.dashboard-figure-value {
+    font-size: var(--aura-font-size-xl);
+    font-weight: var(--aura-font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+}
+
+.dashboard-heading {
+    font-size: var(--aura-font-size-m);
+    font-weight: var(--aura-font-weight-semibold);
+    margin: 0;
+}
