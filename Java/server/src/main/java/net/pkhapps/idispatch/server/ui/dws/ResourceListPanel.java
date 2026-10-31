@@ -40,6 +40,7 @@ public class ResourceListPanel extends VerticalLayout {
                 GridVariant.ROW_STRIPES
         );
         grid.setSelectionMode(Grid.SelectionMode.NONE);
+        grid.setAriaLabel(getTranslation("dispatch.all-resources"));
         add(grid);
 
         grid.addColumn(rs -> Formatters.formatResource(rs.getResource())).setHeader(getTranslation("dispatch.resource"));

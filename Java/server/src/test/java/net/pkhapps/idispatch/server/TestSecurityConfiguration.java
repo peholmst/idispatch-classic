@@ -10,7 +10,7 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 /**
  * Replaces the Keycloak client registration with one that names its endpoints, so that the application context starts
  * without fetching the realm's OpenID configuration from a running Keycloak. Tests authenticate with
- * {@code @WithMockUser} and never log in through Keycloak.
+ * {@code @WithMockUser} or as browserless users (see {@code UseCaseTest}) and never log in through Keycloak.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestSecurityConfiguration {

@@ -19,17 +19,20 @@ public class TestData {
     private final ResourceTypeRepository resourceTypeRepository;
     private final ResourceRepository resourceRepository;
     private final ResourceStatusRepository resourceStatusRepository;
+    private final DestinationRepository destinationRepository;
 
     TestData(MunicipalityRepository municipalityRepository,
              AssignmentTypeRepository assignmentTypeRepository,
              ResourceTypeRepository resourceTypeRepository,
              ResourceRepository resourceRepository,
-             ResourceStatusRepository resourceStatusRepository) {
+             ResourceStatusRepository resourceStatusRepository,
+             DestinationRepository destinationRepository) {
         this.municipalityRepository = municipalityRepository;
         this.assignmentTypeRepository = assignmentTypeRepository;
         this.resourceTypeRepository = resourceTypeRepository;
         this.resourceRepository = resourceRepository;
         this.resourceStatusRepository = resourceStatusRepository;
+        this.destinationRepository = destinationRepository;
     }
 
     /**
@@ -98,7 +101,18 @@ public class TestData {
         return resource;
     }
 
+    public Resource resourceCalled(String callSign) {
+        return resourceRepository.findByCallSign(callSign);
+    }
+
     public ResourceStatus statusOf(Resource resource) {
         return resourceStatusRepository.findByResource(resource);
+    }
+
+    /**
+     * Returns the active destinations that receive the notifications of the given resource.
+     */
+    public java.util.List<Destination> destinationsFor(Resource resource) {
+        return destinationRepository.findDestinationsForResource(resource);
     }
 }
