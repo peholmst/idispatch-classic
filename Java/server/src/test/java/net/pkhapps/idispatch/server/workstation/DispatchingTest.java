@@ -219,6 +219,7 @@ class DispatchingTest extends UseCaseTest {
         dispatcher.removesResource(resource.callSign());
 
         assertThat(dispatcher.resourcesOnAssignment()).isEmpty();
+        assertThat(dispatcher.seesAllResourcesOnAssignmentSelected()).as("An empty list has nothing selected").isFalse();
         assertThat(stateOf(resource)).isEqualTo(ResourceState.AT_STATION);
         assertThat(given.statusOf(resource).assignmentId()).isNull();
     }

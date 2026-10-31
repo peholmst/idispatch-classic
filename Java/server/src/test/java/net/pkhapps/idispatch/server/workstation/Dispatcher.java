@@ -206,6 +206,13 @@ public class Dispatcher {
         return page.statesOnAssignment();
     }
 
+    /**
+     * Whether the box for selecting every resource on the assignment is ticked.
+     */
+    public boolean seesAllResourcesOnAssignmentSelected() {
+        return page.allResourcesOnAssignmentTicked();
+    }
+
     public boolean canRemoveResources() {
         return page.canRemoveResources();
     }
