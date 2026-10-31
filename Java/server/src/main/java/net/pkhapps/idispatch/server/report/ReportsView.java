@@ -1,7 +1,5 @@
 package net.pkhapps.idispatch.server.report;
 
-import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -23,6 +21,8 @@ import com.vaadin.flow.router.BeforeLeaveEvent;
 import com.vaadin.flow.router.BeforeLeaveObserver;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.signals.Signal;
+import com.vaadin.flow.signals.local.ValueSignal;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
@@ -33,15 +33,16 @@ import net.pkhapps.idispatch.server.shared.Bilingual;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.ViewTitle;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 @Route(value = "reports", layout = RootLayout.class)
@@ -50,20 +51,45 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
 
     private final ReportService reportService;
     private final Grid<ClosedAssignmentListItem> assignmentsGrid;
-    private final DatePicker closedFrom;
-    private final DatePicker closedTo;
-    private final ComboBox<MunicipalityListItem> municipalityFilter;
-    private final ComboBox<AssignmentTypeListItem> typeFilter;
-    private final ComboBox<ReportStatus> reportStatusFilter;
     private final GridLazyDataView<ClosedAssignmentListItem> assignmentsDataView;
-
     private final AssignmentReportPanel reportPanel;
-    private boolean revertingSelection;
-    private ConfirmDialog discardDialog;
-    private SerializableRunnable actionAfterDiscard;
+
+    private final ValueSignal<@Nullable LocalDate> closedFrom = new ValueSignal<>(null);
+    private final ValueSignal<@Nullable LocalDate> closedTo = new ValueSignal<>(null);
+    private final ValueSignal<@Nullable MunicipalityListItem> municipality = new ValueSignal<>(null);
+    private final ValueSignal<@Nullable AssignmentTypeListItem> type = new ValueSignal<>(null);
+    private final ValueSignal<@Nullable ReportStatus> reportStatus = new ValueSignal<>(null);
+    private final Signal<ClosedAssignmentFilter> filter;
+    // Only the municipalities and types that some closed assignment has, so every choice matches something
+    private final ValueSignal<List<MunicipalityListItem>> municipalityChoices;
+    private final ValueSignal<List<AssignmentTypeListItem>> typeChoices;
+
+    // The assignment selected in the list, and its report
+    private final ValueSignal<@Nullable ClosedAssignmentListItem> selected = new ValueSignal<>(null);
+    private final ValueSignal<@Nullable ReportDTO> shownReport = new ValueSignal<>(null);
+    // What to do once the user agrees to throw away their unsaved changes; the question is open while there is one
+    private final ValueSignal<@Nullable SerializableRunnable> actionAfterDiscard = new ValueSignal<>(null);
 
     public ReportsView(ReportService reportService) {
         this.reportService = reportService;
+
+        filter = Signal.computed(() -> {
+            var municipality = this.municipality.get();
+            var type = this.type.get();
+            var reportStatus = this.reportStatus.get();
+            return new ClosedAssignmentFilter(closedFrom.get(), closedTo.get(),
+                    municipality == null ? null : municipality.id(), type == null ? null : type.id(),
+                    reportStatus == null ? null : reportStatus == ReportStatus.CLOSED);
+        });
+        municipalityChoices = new ValueSignal<>(findMunicipalityChoices());
+        typeChoices = new ValueSignal<>(findTypeChoices());
+
+        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+        reportPanel = new AssignmentReportPanel(reportService, shownReport,
+                authorities.contains(Roles.ROLE_REPORT_WRITER), authorities.contains(Roles.ROLE_REPORT_REVIEWER));
+        reportPanel.setSizeFull();
 
         // The database sorts the assignments by the sort properties
         assignmentsGrid = new Grid<>();
@@ -95,84 +121,75 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
         assignmentsGrid.addColumn(ClosedAssignmentListItem::address).setHeader(getTranslation("assignment.address"))
                 .setSortProperty(ClosedAssignmentListItem.SORT_ADDRESS).setResizable(true);
         assignmentsGrid.sort(GridSortOrder.desc(closedColumn).build());
+        // The data provider runs outside any effect, so it peeks at the filter; the effect below refreshes the list
+        // when the filter changes
         assignmentsDataView = assignmentsGrid.setItemsPageable(
-                pageable -> reportService.findClosedAssignments(currentFilter(), pageable),
-                pageable -> reportService.countClosedAssignments(currentFilter()));
+                pageable -> reportService.findClosedAssignments(filter.peek(), pageable),
+                pageable -> reportService.countClosedAssignments(filter.peek()));
         // The report status changes when a reviewer closes or re-opens the report, but it is still the same row
         assignmentsDataView.setIdentifierProvider(ClosedAssignmentListItem::id);
         assignmentsGrid.setEmptyStateText(getTranslation("report.empty"));
         assignmentsGrid.setSizeFull();
         assignmentsGrid.addThemeVariants(GridVariant.NO_BORDER, GridVariant.ROW_STRIPES);
-
-        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList();
-        reportPanel = new AssignmentReportPanel(reportService, authorities.contains(Roles.ROLE_REPORT_WRITER),
-                authorities.contains(Roles.ROLE_REPORT_REVIEWER));
-        reportPanel.setSizeFull();
         // Keeps the Report column and the status filter up to date when the user closes or re-opens a report
         reportPanel.setReportChangeListener(report -> assignmentsDataView.refreshAll());
+        Signal.effect(assignmentsGrid, () -> {
+            filter.get();
+            assignmentsDataView.refreshAll();
+        });
+        Signal.effect(assignmentsGrid, () -> assignmentsGrid.asSingleSelect().setValue(selected.get()));
+        assignmentsGrid.asSingleSelect().addValueChangeListener(event -> {
+            if (!event.isFromClient()) {
+                return;
+            }
+            if (reportPanel.hasUnsavedChanges()) {
+                // Keep the report with the unsaved changes selected until the user decides to throw them away
+                showSelection();
+            }
+            var item = event.getValue();
+            discardChangesThen(() -> open(item));
+        });
+
 
         var refreshButton = new Button(getTranslation("report.refresh"), VaadinIcon.REFRESH.create(),
                 event -> discardChangesThen(this::refresh));
         refreshButton.addThemeVariants(ButtonVariant.TERTIARY);
 
-        assignmentsGrid.asSingleSelect().addValueChangeListener(event -> {
-            if (revertingSelection) {
-                return;
-            }
-            if (reportPanel.hasUnsavedChanges()) {
-                // Keep the report with the unsaved changes selected until the user decides to throw them away
-                revertingSelection = true;
-                try {
-                    assignmentsGrid.asSingleSelect().setValue(event.getOldValue());
-                } finally {
-                    revertingSelection = false;
-                }
-                discardChangesThen(() -> assignmentsGrid.asSingleSelect().setValue(event.getValue()));
-                return;
-            }
-            var report = Optional.ofNullable(event.getValue())
-                    .flatMap(item -> reportService.findReportByAssignmentId(item.id().value()))
-                    .orElse(null);
-            reportPanel.setBean(report);
-            setDetail(report == null ? null : reportPanel);
-        });
+        var closedFromPicker = createDatePicker(getTranslation("report.filter.closed-from"));
+        closedFromPicker.bindValue(closedFrom, closedFrom::set);
+        closedFromPicker.bindMax(closedTo);
+        var closedToPicker = createDatePicker(getTranslation("report.filter.closed-to"));
+        closedToPicker.bindValue(closedTo, closedTo::set);
+        closedToPicker.bindMin(closedFrom);
 
-        closedFrom = createDatePicker(getTranslation("report.filter.closed-from"));
-        closedTo = createDatePicker(getTranslation("report.filter.closed-to"));
-        closedFrom.addValueChangeListener(event -> closedTo.setMin(event.getValue()));
-        closedTo.addValueChangeListener(event -> closedFrom.setMax(event.getValue()));
-
-        municipalityFilter = new ComboBox<>(getTranslation("assignment.municipality"));
+        var municipalityFilter = new ComboBox<MunicipalityListItem>(getTranslation("assignment.municipality"));
         municipalityFilter.setItemLabelGenerator(MunicipalityFormatters::formatMunicipality);
-        typeFilter = new ComboBox<>(getTranslation("assignment.type"));
+        bindChoices(municipalityFilter, municipalityChoices, municipality);
+        var typeFilter = new ComboBox<AssignmentTypeListItem>(getTranslation("assignment.type"));
         typeFilter.setItemLabelGenerator(AssignmentTypeFormatters::formatAssignmentType);
+        bindChoices(typeFilter, typeChoices, type);
         for (var comboBox : List.of(municipalityFilter, typeFilter)) {
             comboBox.setClearButtonVisible(true);
             comboBox.setWidth("12em");
         }
-        reportStatusFilter = new ComboBox<>(getTranslation("report.report"));
+        var reportStatusFilter = new ComboBox<ReportStatus>(getTranslation("report.report"));
         reportStatusFilter.setItems(ReportStatus.values());
         reportStatusFilter.setItemLabelGenerator(ReportStatus::getLabel);
         reportStatusFilter.setClearButtonVisible(true);
         reportStatusFilter.setWidth("9em");
-
-        for (var filter : List.<HasValue<?, ?>>of(closedFrom, closedTo, municipalityFilter, typeFilter, reportStatusFilter)) {
-            filter.addValueChangeListener(event -> assignmentsDataView.refreshAll());
-        }
+        reportStatusFilter.bindValue(reportStatus, reportStatus::set);
 
         var clearFilters = new Button(getTranslation("report.filter.clear"), VaadinIcon.CLOSE_SMALL.create(), event -> {
-            closedFrom.clear();
-            closedTo.clear();
-            municipalityFilter.clear();
-            typeFilter.clear();
-            reportStatusFilter.clear();
+            closedFrom.set(null);
+            closedTo.set(null);
+            municipality.set(null);
+            type.set(null);
+            reportStatus.set(null);
         });
         clearFilters.addThemeVariants(ButtonVariant.TERTIARY);
 
-        var filterBar = new HorizontalLayout(closedFrom, closedTo, municipalityFilter, typeFilter, reportStatusFilter,
-                clearFilters, refreshButton);
+        var filterBar = new HorizontalLayout(closedFromPicker, closedToPicker, municipalityFilter, typeFilter,
+                reportStatusFilter, clearFilters, refreshButton);
         filterBar.setWrap(true);
         filterBar.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
         filterBar.addClassName("toolbar");
@@ -197,11 +214,61 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
         setExpandMaster(true);
         setMaster(master);
         setDetailPlaceholder(new VerticalLayout(new Span(getTranslation("assignment.none-selected"))));
+        Signal.effect(this, () -> setDetail(shownReport.get() == null ? null : reportPanel));
 
         // When the report is shown on top of the list, closing it deselects the assignment, which asks first if there
         // are unsaved changes
-        addBackdropClickListener(event -> assignmentsGrid.asSingleSelect().clear());
-        addDetailEscapePressListener(event -> assignmentsGrid.asSingleSelect().clear());
+        addBackdropClickListener(event -> discardChangesThen(() -> open(null)));
+        addDetailEscapePressListener(event -> discardChangesThen(() -> open(null)));
+
+        var discardDialog = new ConfirmDialog();
+        discardDialog.setHeader(getTranslation("report.discard.title"));
+        discardDialog.setText(getTranslation("report.discard.text"));
+        discardDialog.setCancelable(true);
+        discardDialog.setCancelText(getTranslation("report.discard.keep-editing"));
+        discardDialog.setConfirmText(getTranslation("report.discard.throw-away"));
+        discardDialog.setConfirmButtonTheme("error primary");
+        discardDialog.addConfirmListener(event -> {
+            var action = actionAfterDiscard.peek();
+            actionAfterDiscard.set(null);
+            open(null);
+            if (action != null) {
+                action.run();
+            }
+        });
+        // However the dialog closes, even with Esc, the next unsaved change must be able to ask again
+        discardDialog.addOpenedChangeListener(event -> {
+            if (!event.isOpened()) {
+                actionAfterDiscard.set(null);
+            }
+        });
+        Signal.effect(this, () -> discardDialog.setOpened(actionAfterDiscard.get() != null));
+    }
+
+    /**
+     * Binds the combo box to the filter, and offers the choices. Setting the items clears the combo box, and through
+     * the binding the filter, so {@link #refresh()} puts the filter back afterwards.
+     */
+    private static <T> void bindChoices(ComboBox<T> comboBox, Signal<List<T>> choices,
+                                        ValueSignal<@Nullable T> selection) {
+        Signal.effect(comboBox, () -> comboBox.setItems(choices.get()));
+        comboBox.bindValue(selection, selection::set);
+    }
+
+    /**
+     * Opens the report of the given assignment, or closes the report if {@code null}.
+     */
+    private void open(@Nullable ClosedAssignmentListItem item) {
+        selected.set(item);
+        shownReport.set(item == null ? null
+                : reportService.findReportByAssignmentId(item.id().value()).orElse(null));
+    }
+
+    /**
+     * Selects the assignment of the report shown, undoing a selection that the user has not yet confirmed.
+     */
+    private void showSelection() {
+        assignmentsGrid.asSingleSelect().setValue(selected.peek());
     }
 
     /**
@@ -210,41 +277,10 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
      * older one, so that the user is asked only once.
      */
     private void discardChangesThen(SerializableRunnable action) {
-        if (!reportPanel.hasUnsavedChanges()) {
+        if (reportPanel.hasUnsavedChanges()) {
+            actionAfterDiscard.set(action);
+        } else {
             action.run();
-            return;
-        }
-        actionAfterDiscard = action;
-        if (discardDialog != null) {
-            return;
-        }
-        discardDialog = new ConfirmDialog();
-        discardDialog.setHeader(getTranslation("report.discard.title"));
-        discardDialog.setText(getTranslation("report.discard.text"));
-        discardDialog.setCancelable(true);
-        discardDialog.setCancelText(getTranslation("report.discard.keep-editing"));
-        discardDialog.setConfirmText(getTranslation("report.discard.throw-away"));
-        discardDialog.setConfirmButtonTheme("error primary");
-        discardDialog.addConfirmListener(event -> {
-            var actionToRun = actionAfterDiscard;
-            closeDiscardDialog();
-            reportPanel.setBean(null);
-            actionToRun.run();
-        });
-        discardDialog.addCancelListener(event -> closeDiscardDialog());
-        // However the dialog closes, even with Esc, the next unsaved change must be able to open a new one
-        discardDialog.addOpenedChangeListener(event -> {
-            if (!event.isOpened() && event.getSource() == discardDialog) {
-                discardDialog = null;
-                actionAfterDiscard = null;
-            }
-        });
-        discardDialog.open();
-    }
-
-    private void closeDiscardDialog() {
-        if (discardDialog != null) {
-            discardDialog.close();
         }
     }
 
@@ -285,14 +321,32 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
         return text.isEmpty() ? text : text.substring(0, 1).toUpperCase(locale) + text.substring(1);
     }
 
+    /**
+     * Closes the report, offers the choices that closed assignments have now, keeping the filters that are still
+     * among them, and lists the assignments again.
+     */
     private void refresh() {
-        assignmentsGrid.deselectAll();
-        // Offer only the municipalities and types that some closed assignment has, so every choice matches something
-        updateChoices(municipalityFilter, Formatters.sortedByLabel(reportService.findMunicipalitiesOfClosedAssignments(),
-                MunicipalityFormatters::formatMunicipality));
-        updateChoices(typeFilter, Formatters.sortedByLabel(reportService.findTypesOfClosedAssignments(),
-                AssignmentTypeFormatters::formatAssignmentType));
+        open(null);
+        updateChoices(municipalityChoices, findMunicipalityChoices(), municipality);
+        updateChoices(typeChoices, findTypeChoices(), type);
         assignmentsDataView.refreshAll();
+    }
+
+    private List<MunicipalityListItem> findMunicipalityChoices() {
+        return Formatters.sortedByLabel(reportService.findMunicipalitiesOfClosedAssignments(),
+                MunicipalityFormatters::formatMunicipality);
+    }
+
+    private List<AssignmentTypeListItem> findTypeChoices() {
+        return Formatters.sortedByLabel(reportService.findTypesOfClosedAssignments(),
+                AssignmentTypeFormatters::formatAssignmentType);
+    }
+
+    private static <T> void updateChoices(ValueSignal<List<T>> choices, List<T> newChoices,
+                                          ValueSignal<@Nullable T> selection) {
+        var selected = selection.peek();
+        choices.set(newChoices);
+        selection.set(selected != null && newChoices.contains(selected) ? selected : null);
     }
 
     /**
@@ -304,28 +358,6 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
         return Bilingual.isSwedish(getLocale())
                 ? Stream.of(swedishProperty, finnishProperty)
                 : Stream.of(finnishProperty, swedishProperty);
-    }
-
-    private static <T> void updateChoices(ComboBox<T> comboBox, List<T> choices) {
-        var selected = comboBox.getValue();
-        comboBox.setItems(choices);
-        if (selected != null && choices.contains(selected)) {
-            comboBox.setValue(selected);
-        }
-    }
-
-    private ClosedAssignmentFilter currentFilter() {
-        var reportStatus = reportStatusFilter.getValue();
-        var municipality = municipalityFilter.getValue();
-        var type = typeFilter.getValue();
-        return new ClosedAssignmentFilter(closedFrom.getValue(), closedTo.getValue(),
-                municipality == null ? null : municipality.id(), type == null ? null : type.id(),
-                reportStatus == null ? null : reportStatus == ReportStatus.CLOSED);
-    }
-
-    @Override
-    protected void onAttach(AttachEvent attachEvent) {
-        refresh();
     }
 
     @Override
