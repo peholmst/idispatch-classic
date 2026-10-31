@@ -16,7 +16,7 @@ import static com.vaadin.flow.spring.security.VaadinSecurityConfigurer.vaadin;
  * roles come from the ID token (see {@link KeycloakRolesMapper}).
  */
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true)
+@EnableMethodSecurity
 @Configuration
 class SecurityConfig {
 

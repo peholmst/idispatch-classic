@@ -5,7 +5,7 @@ import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -17,7 +17,7 @@ import java.util.Optional;
  * Keeps the current state of each resource and the assignment it is on, archiving every state it leaves.
  */
 @Service
-@Secured(Roles.ROLE_DISPATCHER)
+@PreAuthorize(Roles.HAS_DISPATCHER)
 public class ResourceStatusService extends AbstractService {
 
     private final ResourceStatusRepository resourceStatusRepository;

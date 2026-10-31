@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Verifies that the {@code @Secured} annotations on the services are enforced.
+ * Verifies that the {@code @PreAuthorize} annotations on the services are enforced.
  */
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, TestSecurityConfiguration.class})

@@ -4,7 +4,7 @@ import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +19,7 @@ import java.util.Optional;
  * {@link org.springframework.dao.OptimisticLockingFailureException}.
  */
 @Service
-@Secured(Roles.ROLE_ADMIN)
+@PreAuthorize(Roles.HAS_ADMIN)
 class ResourceManagementService {
 
     private static final Logger log = LoggerFactory.getLogger(ResourceManagementService.class);
