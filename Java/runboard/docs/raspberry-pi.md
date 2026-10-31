@@ -57,7 +57,8 @@ nano runboard.properties              # set idispatch.server.url and idispatch.r
 ./download-voices.command             # about 120 MB
 ```
 
-`runboard.properties.template` describes every setting. On a small screen, set `idispatch.lowres=true` if the text
+`runboard.properties.template` describes every setting. Set `idispatch.hideCursor=true`, or the mouse cursor stays
+in the middle of the screen even without a mouse. On a small screen, set `idispatch.lowres=true` if the text
 doesn't fit. To update, unzip a new version over the old one; that keeps `runboard.properties` and the voices.
 
 ## 4. Set up the sound

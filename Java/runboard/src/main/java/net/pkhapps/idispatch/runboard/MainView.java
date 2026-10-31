@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import javax.swing.Timer;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.*;
 
 class MainView extends JFrame implements Observer {
@@ -16,14 +17,18 @@ class MainView extends JFrame implements Observer {
     private final Timer cardFlipperTimer;
     private final Map<Notification, NotificationView> views = new HashMap<>();
     private final boolean lowRes;
+    private final Cursor blankCursor;
     private Model model;
     private final JTabbedPane notifications;
     private final ClockView clockView = new ClockView();
     private JDialog errorDialog;
 
-    MainView(boolean lowRes) {
+    MainView(boolean lowRes, boolean hideCursor) {
         super("iDispatch Runboard");
         this.lowRes = lowRes;
+        blankCursor = hideCursor ? Toolkit.getDefaultToolkit()
+                .createCustomCursor(new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB), new Point(), "blank")
+                : null;
         setExtendedState(MAXIMIZED_BOTH);
         setMinimumSize(new Dimension(400, 400));
         notifications = new JTabbedPane();
@@ -31,6 +36,23 @@ class MainView extends JFrame implements Observer {
         cardFlipperTimer = new Timer(10000, e -> flipCard());
         cardFlipperTimer.start();
         setGlassPane(clockView);
+        hideCursorIn(this);
+    }
+
+    /**
+     * Gives the component and everything in it the blank cursor, when the cursor is hidden. Components such as text
+     * panes set a cursor of their own instead of inheriting the window's, so each one must be given it.
+     */
+    private void hideCursorIn(Component component) {
+        if (blankCursor == null) {
+            return;
+        }
+        component.setCursor(blankCursor);
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                hideCursorIn(child);
+            }
+        }
     }
 
     private void flipCard() {
@@ -67,6 +89,7 @@ class MainView extends JFrame implements Observer {
         errorDialog.setModal(false);
         errorDialog.setUndecorated(true);
         errorDialog.add(errorPanel);
+        hideCursorIn(errorDialog);
         errorDialog.pack();
         errorDialog.setLocationRelativeTo(this);
         errorDialog.setVisible(true);
@@ -105,6 +128,7 @@ class MainView extends JFrame implements Observer {
     private void addCard(Notification notification) {
         logger.info("Adding card for notification {}", notification);
         final NotificationView view = new NotificationView(notification, lowRes);
+        hideCursorIn(view);
         views.put(notification, view);
         notifications.addTab(String.format("Assignment %d (Notification %d)", notification.getAssignmentId(), notification.getId()), view);
     }
