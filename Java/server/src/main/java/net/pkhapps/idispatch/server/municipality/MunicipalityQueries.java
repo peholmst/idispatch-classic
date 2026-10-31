@@ -1,5 +1,8 @@
 package net.pkhapps.idispatch.server.municipality;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -9,20 +12,34 @@ import java.util.Optional;
  * the dispatch notifications. Read-only and not secured, as it also serves dispatching in the background; the views
  * and services that use it decide who may see what.
  */
-public interface MunicipalityQueries {
+@Service
+@Transactional(readOnly = true)
+public class MunicipalityQueries {
+
+    private final MunicipalityRepository repository;
+
+    MunicipalityQueries(MunicipalityRepository repository) {
+        this.repository = repository;
+    }
 
     /**
      * Finds the municipalities that an assignment can be in, which are the ones not deleted, in no particular order.
      */
-    List<MunicipalityListItem> findActive();
+    public List<MunicipalityListItem> findActive() {
+        return repository.findListItems(false, null);
+    }
 
     /**
      * Finds the municipality with the given ID, whether deleted or not.
      */
-    Optional<MunicipalityListItem> findById(MunicipalityId id);
+    public Optional<MunicipalityListItem> findById(MunicipalityId id) {
+        return repository.findListItem(id);
+    }
 
     /**
      * Finds the municipalities with the given IDs, whether deleted or not, in no particular order.
      */
-    List<MunicipalityListItem> findByIds(Collection<MunicipalityId> ids);
+    public List<MunicipalityListItem> findByIds(Collection<MunicipalityId> ids) {
+        return ids.isEmpty() ? List.of() : repository.findListItems(ids);
+    }
 }

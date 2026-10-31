@@ -1,6 +1,8 @@
 package net.pkhapps.idispatch.server.resource;
 
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -12,34 +14,52 @@ import java.util.Map;
  * and the reports. Read-only and not secured, as it also serves dispatching in the background; the views and services
  * that use it decide who may see what.
  */
-public interface ResourceQueries {
+@Service
+@Transactional(readOnly = true)
+public class ResourceQueries {
+
+    private final ResourceRepository resourceRepository;
+    private final ResourceStatusRepository resourceStatusRepository;
+
+    ResourceQueries(ResourceRepository resourceRepository, ResourceStatusRepository resourceStatusRepository) {
+        this.resourceRepository = resourceRepository;
+        this.resourceStatusRepository = resourceStatusRepository;
+    }
 
     /**
      * Finds the resources that can be assigned and dispatched, which are the ones not deleted, in call sign order.
      */
-    List<ResourceListItem> findActive();
+    public List<ResourceListItem> findActive() {
+        return resourceRepository.findListItems(false, null);
+    }
 
     /**
      * Finds the resources with the given IDs, whether deleted or not, in call sign order.
      */
-    List<ResourceListItem> findByIds(Collection<ResourceId> ids);
+    public List<ResourceListItem> findByIds(Collection<ResourceId> ids) {
+        return ids.isEmpty() ? List.of() : resourceRepository.findListItems(ids);
+    }
 
     /**
      * Finds the resources whose call sign contains the search term, ignoring case, whether deleted or not, in call
      * sign order.
      */
-    List<ResourceListItem> findByCallSignContaining(String searchTerm);
+    public List<ResourceListItem> findByCallSignContaining(String searchTerm) {
+        return resourceRepository.findListItems(true, searchTerm);
+    }
 
     /**
      * Finds the past states of every resource that has been on the assignment, oldest first.
      */
-    List<ArchivedResourceStatus> findPastStatesOn(AssignmentId assignment);
+    public List<ArchivedResourceStatus> findPastStatesOn(AssignmentId assignment) {
+        return resourceStatusRepository.findArchivedOn(assignment);
+    }
 
     /**
      * Returns the call signs of the resources with the given IDs, whether deleted or not. An ID that matches no
      * resource is left out.
      */
-    default Map<ResourceId, String> findCallSigns(Collection<ResourceId> ids) {
+    public Map<ResourceId, String> findCallSigns(Collection<ResourceId> ids) {
         var callSigns = new HashMap<ResourceId, String>();
         findByIds(ids).forEach(item -> callSigns.put(item.id(), item.callSign()));
         return callSigns;
