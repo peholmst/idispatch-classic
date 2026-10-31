@@ -3,6 +3,7 @@ package net.pkhapps.idispatch.server.report;
 import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.badge.BadgeVariant;
 import com.vaadin.flow.i18n.I18NProvider;
+import com.vaadin.flow.signals.Signal;
 
 /**
  * Whether a reviewer has closed a report. Shown the same way in the list of assignments and in the report itself.
@@ -26,13 +27,16 @@ enum ReportStatus {
     }
 
     Badge createBadge() {
-        var badge = new Badge();
-        applyTo(badge);
+        var badge = new Badge(getLabel());
+        badge.setThemeVariant(BadgeVariant.SUCCESS, this == CLOSED);
         return badge;
     }
 
-    void applyTo(Badge badge) {
-        badge.setText(getLabel());
-        badge.setThemeVariant(BadgeVariant.SUCCESS, this == CLOSED);
+    /**
+     * Binds the badge to show the status that the signal holds.
+     */
+    static void bind(Badge badge, Signal<ReportStatus> status) {
+        badge.bindText(status.map(ReportStatus::getLabel));
+        badge.bindThemeVariant(BadgeVariant.SUCCESS, status.map(CLOSED::equals));
     }
 }
