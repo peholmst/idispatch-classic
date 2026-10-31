@@ -1,4 +1,4 @@
-package net.pkhapps.idispatch.server.workstation;
+package net.pkhapps.idispatch.server.dispatcher;
 
 
 import com.vaadin.flow.component.AttachEvent;
@@ -28,7 +28,7 @@ import org.springframework.context.event.ApplicationEventMulticaster;
  * The dispatcher's main view. Its state and actions are in a {@link DispatchViewModel}; the view lays out the panels
  * that bind to it, and tells it when the services' events say that assignments or resources have changed.
  */
-@Route(value = "dws", layout = RootLayout.class)
+@Route(value = "dispatcher", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_DISPATCHER)
 public class DispatchView extends VerticalLayout implements HasDynamicTitle {
 

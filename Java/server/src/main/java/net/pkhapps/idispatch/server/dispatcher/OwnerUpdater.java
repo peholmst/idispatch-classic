@@ -1,4 +1,4 @@
-package net.pkhapps.idispatch.server.workstation;
+package net.pkhapps.idispatch.server.dispatcher;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.UIDetachedException;

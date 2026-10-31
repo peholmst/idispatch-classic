@@ -1,4 +1,4 @@
-package net.pkhapps.idispatch.server.workstation;
+package net.pkhapps.idispatch.server.dispatcher;
 
 import com.vaadin.browserless.BrowserlessUIContext;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -6,6 +6,7 @@ import com.vaadin.flow.component.combobox.ComboBoxLocator;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSelectionColumn;
 import com.vaadin.flow.component.html.ListItem;
+import com.vaadin.flow.data.provider.SortDirection;
 import net.pkhapps.idispatch.server.ui.AppShell;
 import net.pkhapps.idispatch.server.ui.GridRows;
 
@@ -34,7 +35,8 @@ public class DispatcherPage extends AppShell {
                 Map.entry("Open assignments", "Öppna uppdrag"), Map.entry("All resources", "Alla enheter"),
                 Map.entry("Resources on the assignment", "Enheter på uppdraget"),
                 Map.entry("Available resource", "Tillgänglig enhet"),
-                Map.entry("Add resource to the assignment", "Lägg till enheten i uppdraget")));
+                Map.entry("Add resource to the assignment", "Lägg till enheten i uppdraget"),
+                Map.entry("Filter resources by call sign", "Filtrera enheterna enligt anropsnamn")));
         public static final Language FINNISH = new Language(Map.ofEntries(
                 Map.entry("New Assignment", "Uusi tehtävä"), Map.entry("Type", "Tyyppi"),
                 Map.entry("Municipality", "Kunta"), Map.entry("Address", "Osoite"),
@@ -43,7 +45,8 @@ public class DispatcherPage extends AppShell {
                 Map.entry("Open assignments", "Avoimet tehtävät"), Map.entry("All resources", "Kaikki yksiköt"),
                 Map.entry("Resources on the assignment", "Tehtävän yksiköt"),
                 Map.entry("Available resource", "Vapaa yksikkö"),
-                Map.entry("Add resource to the assignment", "Lisää yksikkö tehtävään")));
+                Map.entry("Add resource to the assignment", "Lisää yksikkö tehtävään"),
+                Map.entry("Filter resources by call sign", "Suodata yksiköt tunnuksella")));
 
         String text(String english) {
             return fromEnglish.getOrDefault(english, english);
@@ -243,6 +246,18 @@ public class DispatcherPage extends AppShell {
 
     public String assignmentOf(String callSign) {
         return resources().rowWhere(t("Resource"), callSign).get(t("Assignment"));
+    }
+
+    public void filterResources(String text) {
+        window.findTextField().withAriaLabel(t("Filter resources by call sign")).setValue(text);
+    }
+
+    public void sortResourcesBy(String header, SortDirection direction) {
+        resources().sortBy(t(header), direction);
+    }
+
+    public int indexInResourceList(String callSign) {
+        return resources().indexOfRowWhere(t("Resource"), callSign);
     }
 
     public void clickStateInResourceList(String callSign) {

@@ -1,4 +1,4 @@
-package net.pkhapps.idispatch.server.workstation;
+package net.pkhapps.idispatch.server.dispatcher;
 
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
@@ -128,6 +128,48 @@ class DispatchViewModelTest {
         assertEquals(List.of("RVS101", "RVS102"), rows.stream().map(ResourceRow::callSign).toList());
         assertEquals(new AssignmentId(1), rows.get(0).assignment().id());
         assertNull(rows.get(1).assignment());
+    }
+
+    @Test
+    void theFilterListsOnlyResourcesWhoseCallSignContainsItIgnoringCase() {
+        givenOpenAssignments();
+        var first = new ResourceStatus(new ResourceId(10), 0, ResourceState.AVAILABLE, null, NOW);
+        var second = new ResourceStatus(new ResourceId(11), 0, ResourceState.AVAILABLE, null, NOW);
+        var unnamed = new ResourceStatus(new ResourceId(12), 0, ResourceState.AVAILABLE, null, NOW);
+        when(resourceStatusService.getStatusOfAllResources()).thenReturn(List.of(first, second, unnamed));
+        when(resourceQueries.findCallSigns(any())).thenReturn(Map.of(new ResourceId(10), "RVS101",
+                new ResourceId(11), "PAR201"));
+        viewModel.refresh();
+
+        viewModel.filterResources(" vs1 ");
+
+        assertEquals(List.of(new ResourceId(10)), resourceIds());
+
+        viewModel.filterResources("");
+
+        assertEquals(List.of(new ResourceId(10), new ResourceId(11), new ResourceId(12)), resourceIds());
+    }
+
+    @Test
+    void theFilterStaysWhenTheResourcesChange() {
+        givenOpenAssignments();
+        when(resourceQueries.findCallSigns(any())).thenReturn(Map.of(new ResourceId(10), "RVS101",
+                new ResourceId(11), "PAR201"));
+        when(resourceStatusService.getStatusOfAllResources()).thenReturn(
+                List.of(new ResourceStatus(new ResourceId(10), 0, ResourceState.AVAILABLE, null, NOW)));
+        viewModel.refresh();
+        viewModel.filterResources("PAR");
+        when(resourceStatusService.getStatusOfAllResources()).thenReturn(List.of(
+                new ResourceStatus(new ResourceId(10), 0, ResourceState.AVAILABLE, null, NOW),
+                new ResourceStatus(new ResourceId(11), 0, ResourceState.AVAILABLE, null, NOW)));
+
+        viewModel.resourcesChanged();
+
+        assertEquals(List.of(new ResourceId(11)), resourceIds());
+    }
+
+    private List<ResourceId> resourceIds() {
+        return viewModel.resources().peek().stream().map(ResourceRow::resourceId).toList();
     }
 
     private void givenOpenAssignments(long... ids) {

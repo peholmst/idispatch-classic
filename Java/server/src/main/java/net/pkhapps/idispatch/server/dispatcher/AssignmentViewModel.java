@@ -1,4 +1,4 @@
-package net.pkhapps.idispatch.server.workstation;
+package net.pkhapps.idispatch.server.dispatcher;
 
 import com.vaadin.flow.signals.Signal;
 import com.vaadin.flow.signals.local.ValueSignal;

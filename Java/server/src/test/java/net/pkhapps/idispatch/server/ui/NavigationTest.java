@@ -17,7 +17,7 @@ class NavigationTest extends UseCaseTest {
 
         assertThat(user.navigationItems()).containsExactly("Home", "Log Out");
         assertThat(user.viewTitle()).contains("Home");
-        assertThat(cannotOpen(user, "dws")).isTrue();
+        assertThat(cannotOpen(user, "dispatcher")).isTrue();
         assertThat(cannotOpen(user, "reports")).isTrue();
     }
 
@@ -59,7 +59,7 @@ class NavigationTest extends UseCaseTest {
                 "Resources", "Resource Types", "Destinations", "Log Out");
         admin.goTo("Municipalities");
         assertThat(admin.viewTitle()).contains("Municipalities");
-        assertThat(cannotOpen(admin, "dws")).isTrue();
+        assertThat(cannotOpen(admin, "dispatcher")).isTrue();
         assertThat(cannotOpen(admin, "reports")).isTrue();
     }
 
@@ -83,7 +83,7 @@ class NavigationTest extends UseCaseTest {
         assertThat(user.navigationItems()).containsExactly("Home", "Reports", "Log Out");
         user.goTo("Reports");
         assertThat(user.viewTitle()).contains("Reports");
-        assertThat(cannotOpen(user, "dws")).isTrue();
+        assertThat(cannotOpen(user, "dispatcher")).isTrue();
         assertThat(cannotOpen(user, "management/resource")).isTrue();
     }
 

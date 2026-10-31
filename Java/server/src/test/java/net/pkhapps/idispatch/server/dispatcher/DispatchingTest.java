@@ -1,5 +1,6 @@
-package net.pkhapps.idispatch.server.workstation;
+package net.pkhapps.idispatch.server.dispatcher;
 
+import com.vaadin.flow.data.provider.SortDirection;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.ui.TestData.GivenResource;
 import net.pkhapps.idispatch.server.ui.UseCaseTest;
@@ -196,6 +197,50 @@ class DispatchingTest extends UseCaseTest {
 
         assertThat(dispatcher.availableResources()).doesNotContain(resource.callSign());
         assertThat(dispatcher.listedResources()).doesNotContain(resource.callSign());
+    }
+
+    @Test
+    void dispatcherFiltersTheResourcesByCallSign() {
+        var prefix = unique("CS");
+        var wanted = given.resource(prefix + "A", ResourceState.AVAILABLE);
+        var other = given.resource(unique("CS"), ResourceState.AVAILABLE);
+        var dispatcher = dispatcherAtWork();
+
+        dispatcher.filtersResourcesBy(prefix.substring(2).toLowerCase());
+
+        assertThat(dispatcher.listedResources()).containsExactly(wanted.callSign());
+
+        dispatcher.filtersResourcesBy("");
+
+        assertThat(dispatcher.listedResources()).contains(wanted.callSign(), other.callSign());
+    }
+
+    @Test
+    void dispatcherSortsTheResourcesByCallSign() {
+        var prefix = unique("CS");
+        var first = given.resource(prefix + "A", ResourceState.AVAILABLE);
+        var second = given.resource(prefix + "B", ResourceState.AVAILABLE);
+        var dispatcher = dispatcherAtWork();
+
+        dispatcher.sortsResourcesBy("Resource", SortDirection.ASCENDING);
+        assertThat(dispatcher.seesResourceAbove(first.callSign(), second.callSign())).isTrue();
+
+        dispatcher.sortsResourcesBy("Resource", SortDirection.DESCENDING);
+        assertThat(dispatcher.seesResourceAbove(second.callSign(), first.callSign())).isTrue();
+    }
+
+    @Test
+    void dispatcherSortsTheResourcesByState() {
+        var prefix = unique("CS");
+        var reserved = given.resource(prefix + "B", ResourceState.RESERVED);
+        var outOfService = given.resource(prefix + "A", ResourceState.OUT_OF_SERVICE);
+        var dispatcher = dispatcherAtWork();
+
+        dispatcher.sortsResourcesBy("State", SortDirection.ASCENDING);
+        assertThat(dispatcher.seesResourceAbove(reserved.callSign(), outOfService.callSign())).isTrue();
+
+        dispatcher.sortsResourcesBy("State", SortDirection.DESCENDING);
+        assertThat(dispatcher.seesResourceAbove(outOfService.callSign(), reserved.callSign())).isTrue();
     }
 
     @Test

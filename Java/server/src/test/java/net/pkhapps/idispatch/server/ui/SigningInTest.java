@@ -15,7 +15,7 @@ class SigningInTest extends UseCaseTest {
 
     @Test
     void visitorWhoIsNotLoggedInIsSentToKeycloak() {
-        for (var address : List.of("", "dws", "reports", "management/municipality")) {
+        for (var address : List.of("", "dispatcher", "reports", "management/municipality")) {
             var visitor = new AppShell(visitor().newWindow());
 
             visitor.openAddress(address);
