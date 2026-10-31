@@ -95,6 +95,7 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
                 pageable -> reportService.countClosedAssignments(currentFilter()));
         // The report status changes when a reviewer closes or re-opens the report, but it is still the same row
         assignmentsDataView.setIdentifierProvider(item -> item.assignment().getId());
+        assignmentsGrid.setEmptyStateText(getTranslation("report.empty"));
         assignmentsGrid.setSizeFull();
         assignmentsGrid.addThemeVariants(GridVariant.NO_BORDER, GridVariant.ROW_STRIPES);
 
@@ -190,7 +191,7 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
         setDetailSize("40em");
         setExpandMaster(true);
         setMaster(master);
-        setDetailPlaceholder(new Span(getTranslation("assignment.none-selected")));
+        setDetailPlaceholder(new VerticalLayout(new Span(getTranslation("assignment.none-selected"))));
 
         // When the report is shown on top of the list, closing it deselects the assignment, which asks first if there
         // are unsaved changes

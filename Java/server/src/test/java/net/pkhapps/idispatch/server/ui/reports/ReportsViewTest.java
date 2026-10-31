@@ -211,6 +211,17 @@ class ReportsViewTest extends AbstractUITest {
     }
 
     @Test
+    void filtersThatMatchNothing_explainTheEmptyList() {
+        navigate(ReportsView.class);
+
+        datePicker("Closed from").setValue(LocalDate.now().plusDays(1));
+
+        assertThat(test(assignments()).size()).isZero();
+        assertThat(assignments().getEmptyStateText())
+                .isEqualTo("No reports match the filters, or there are no reports yet.");
+    }
+
+    @Test
     void clearingFilters_showsEverythingAgain() {
         var first = handledAssignment(unique("CS"));
         var second = handledAssignment(unique("CS"));
