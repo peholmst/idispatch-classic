@@ -61,18 +61,7 @@ public class AppShell {
      * The URL the browser was sent to outside the application, such as the login page.
      */
     public String externalAddress() {
-        window.activate();
-        var url = window.getExternalNavigationURL();
-        if (url != null) {
-            return url;
-        }
-        // Vaadin sends the browser to the login page with JavaScript
-        return window.getUI().getInternals().dumpPendingJavaScriptInvocations().stream()
-                .flatMap(invocation -> invocation.getInvocation().getParameters().stream())
-                .map(String::valueOf)
-                .filter(parameter -> parameter.contains("/oauth2/"))
-                .findFirst()
-                .orElse(null);
+        return window.getExternalNavigationURL();
     }
 
     public List<String> navigationItems() {
