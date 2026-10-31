@@ -93,7 +93,7 @@ public class HandledAssignments {
             opened.setUrgency(AssignmentUrgency.B);
             var updated = assignmentService.updateAssignment(opened).getData().orElseThrow();
             for (var resource : resources) {
-                resourceStatusService.setResourceAssignment(resource, updated);
+                resourceStatusService.setResourceAssignment(resource, updated.getAssignmentId());
             }
             try {
                 dispatchService.dispatchAllResources(updated);

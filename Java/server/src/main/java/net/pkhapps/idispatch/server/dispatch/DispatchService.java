@@ -2,6 +2,7 @@ package net.pkhapps.idispatch.server.dispatch;
 
 
 import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
@@ -49,7 +50,7 @@ public interface DispatchService {
     /**
      * Finds all dispatch notifications for the specified assignment.
      */
-    List<DispatchNotification> findDispatchNotificationsForAssignment(Assignment assignment);
+    List<DispatchNotification> findDispatchNotificationsForAssignment(AssignmentId assignment);
 
     /**
      * Finds all receipts for the specified dispatch notification.

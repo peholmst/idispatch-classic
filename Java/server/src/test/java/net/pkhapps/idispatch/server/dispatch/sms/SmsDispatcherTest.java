@@ -28,7 +28,7 @@ class SmsDispatcherTest {
 
     @Test
     void messageText_hasTheMunicipalityInTheLanguageOfTheDestination() {
-        var assignment = new Assignment();
+        var assignment = new SavedAssignment(3L);
         assignment.setMunicipalityId(PARAINEN.id());
         assignment.setTypeId(BUILDING_FIRE.id());
         assignment.setUrgency(AssignmentUrgency.A);
@@ -40,6 +40,16 @@ class SmsDispatcherTest {
 
         assertThat(dispatcher.buildMessageText(notification, Bilingual.FINNISH)).startsWith("Parainen,103A,");
         assertThat(dispatcher.buildMessageText(notification, Bilingual.SWEDISH)).startsWith("Pargas,103A,");
+    }
+
+    /**
+     * An assignment as the dispatch service gets it, which has been saved and so has an ID.
+     */
+    private static final class SavedAssignment extends Assignment {
+
+        SavedAssignment(long id) {
+            setId(id);
+        }
     }
 
     private static final class OneMunicipality implements MunicipalityQueries {

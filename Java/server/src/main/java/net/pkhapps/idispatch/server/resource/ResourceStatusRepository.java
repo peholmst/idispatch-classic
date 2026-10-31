@@ -1,6 +1,5 @@
 package net.pkhapps.idispatch.server.resource;
 
-import net.pkhapps.idispatch.server.assignment.Assignment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -13,12 +12,12 @@ public interface ResourceStatusRepository extends JpaRepository<ResourceStatus, 
 
     ResourceStatus findByResource(Resource resource);
 
-    List<ResourceStatus> findByAssignment(Assignment assignment);
+    List<ResourceStatus> findByAssignmentId(Long assignmentId);
 
     @Query("select rs from ResourceStatus rs where rs.resource.active = TRUE and rs.available = TRUE order by rs.resource.callSign")
     List<ResourceStatus> findByActiveTrueAndAvailableTrue();
 
-    List<ResourceStatus> findByAssignmentAndAssignedTrue(Assignment assignment);
+    List<ResourceStatus> findByAssignmentIdAndAssignedTrue(Long assignmentId);
 
     @Query("select rs from ResourceStatus rs where rs.resource.active = TRUE order by rs.resource.callSign")
     List<ResourceStatus> findByActiveTrue();

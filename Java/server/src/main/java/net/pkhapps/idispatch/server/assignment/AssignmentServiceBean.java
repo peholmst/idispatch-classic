@@ -91,13 +91,13 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
             logger.debug("Assignment {} is already closed, ignoring", assignment);
             return false;
         }
-        if (resourcesOnAssignment.anyAssignedTo(assignment)) {
+        if (resourcesOnAssignment.anyAssignedTo(assignment.getAssignmentId())) {
             logger.debug("Resources are still assigned to assignment {}, ignoring", assignment);
             return false;
         }
         assignment.setClosed(Instant.now());
         final Assignment closedAssignment = getTxTemplate().execute(status -> assignmentRepository.saveAndFlush(assignment));
-        resourcesOnAssignment.releaseAllFrom(closedAssignment);
+        resourcesOnAssignment.releaseAllFrom(closedAssignment.getAssignmentId());
         getApplicationContext().publishEvent(new AssignmentClosed(this, closedAssignment));
         return true;
     }

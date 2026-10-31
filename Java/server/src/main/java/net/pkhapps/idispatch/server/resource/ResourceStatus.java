@@ -1,7 +1,8 @@
 package net.pkhapps.idispatch.server.resource;
 
 import jakarta.persistence.*;
-import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -95,7 +96,7 @@ public class ResourceStatus extends AbstractResourceStateChange {
 
     /**
      * Returns whether the resource is currently assigned to another assignment. Please note that this method can return
-     * false even though {@link #getAssignment()} is not null.
+     * false even though {@link #getAssignmentId()} is not null.
      */
     public boolean isAssigned() {
         return assigned;
@@ -103,13 +104,13 @@ public class ResourceStatus extends AbstractResourceStateChange {
 
     private void updateBooleanFlags() {
         final ResourceState state = getState();
-        assigned = getAssignment() != null && !state.isAvailableForNewAssignments() && state != ResourceState.OUT_OF_SERVICE;
+        assigned = getAssignmentId() != null && !state.isAvailableForNewAssignments() && state != ResourceState.OUT_OF_SERVICE;
         available = state.isAvailableForNewAssignments();
     }
 
     @Override
-    public void setAssignment(Assignment lastAssignment) {
-        super.setAssignment(lastAssignment);
+    public void setAssignmentId(@Nullable AssignmentId lastAssignment) {
+        super.setAssignmentId(lastAssignment);
         setTimestamp(Instant.now());
         updateBooleanFlags();
     }
@@ -128,7 +129,7 @@ public class ResourceStatus extends AbstractResourceStateChange {
                 .add(PROP_VERSION, version)
                 .add(PROP_RESOURCE, resource)
                 .add(PROP_STATE, getState())
-                .add(PROP_ASSIGNMENT, getAssignment())
+                .add(PROP_ASSIGNMENT_ID, getAssignmentId())
                 .add(PROP_TIMESTAMP, getTimestamp())
                 .toString();
     }

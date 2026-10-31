@@ -24,14 +24,11 @@ import com.vaadin.flow.router.BeforeLeaveObserver;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
-import net.pkhapps.idispatch.server.assignment.Assignment;
-import net.pkhapps.idispatch.server.assignment.AssignmentFormatters;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.security.Roles;
-import net.pkhapps.idispatch.server.shared.AbstractEntity;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import net.pkhapps.idispatch.server.ui.RootLayout;
@@ -52,13 +49,13 @@ import java.util.stream.Stream;
 public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, BeforeLeaveObserver {
 
     private final ReportService reportService;
-    private final Grid<ClosedAssignmentDTO> assignmentsGrid;
+    private final Grid<ClosedAssignmentListItem> assignmentsGrid;
     private final DatePicker closedFrom;
     private final DatePicker closedTo;
     private final ComboBox<MunicipalityListItem> municipalityFilter;
     private final ComboBox<AssignmentTypeListItem> typeFilter;
     private final ComboBox<ReportStatus> reportStatusFilter;
-    private final GridLazyDataView<ClosedAssignmentDTO> assignmentsDataView;
+    private final GridLazyDataView<ClosedAssignmentListItem> assignmentsDataView;
 
     private final AssignmentReportPanel reportPanel;
     private boolean revertingSelection;
@@ -70,35 +67,39 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
 
         // The database sorts the assignments by the sort properties
         assignmentsGrid = new Grid<>();
-        assignmentsGrid.addColumn(item -> item.assignment().getId()).setHeader(getTranslation("report.number"))
-                .setSortProperty(AbstractEntity.PROP_ID).setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setFlexGrow(0);
+        assignmentsGrid.addColumn(item -> item.id().value()).setHeader(getTranslation("report.number"))
+                .setSortProperty(ClosedAssignmentListItem.SORT_NUMBER).setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setFlexGrow(0);
         assignmentsGrid.addComponentColumn(item -> ReportStatus.of(item.reportClosed()).createBadge())
-                .setHeader(getTranslation("report.report")).setSortProperty(ClosedAssignmentDTO.SORT_REPORT_CLOSED)
+                .setHeader(getTranslation("report.report")).setSortProperty(ClosedAssignmentListItem.SORT_REPORT_CLOSED)
                 .setAutoWidth(true).setFlexGrow(0);
-        var closedColumn = assignmentsGrid.addColumn(item -> Formatters.formatDateTime(item.assignment().getClosed()))
-                .setHeader(getTranslation("report.closed")).setSortProperty(Assignment.PROP_CLOSED).setAutoWidth(true)
+        var closedColumn = assignmentsGrid.addColumn(item -> Formatters.formatDateTime(item.closed()))
+                .setHeader(getTranslation("report.closed")).setSortProperty(ClosedAssignmentListItem.SORT_CLOSED).setAutoWidth(true)
                 .setFlexGrow(0);
-        assignmentsGrid.addColumn(item -> item.assignment().getUrgency()).setHeader(getTranslation("assignment.urgency"))
-                .setSortProperty(Assignment.PROP_URGENCY).setAutoWidth(true).setFlexGrow(0);
-        assignmentsGrid.addColumn(item -> AssignmentFormatters.formatAssignmentType(item.assignment()))
+        assignmentsGrid.addColumn(ClosedAssignmentListItem::urgency).setHeader(getTranslation("assignment.urgency"))
+                .setSortProperty(ClosedAssignmentListItem.SORT_URGENCY).setAutoWidth(true).setFlexGrow(0);
+        assignmentsGrid.addColumn(item -> item.typeCode() == null ? null
+                        : AssignmentTypeFormatters.formatAssignmentType(item.typeCode(),
+                        Bilingual.select(item.typeDescriptionFi(), item.typeDescriptionSv(), getLocale())))
                 .setHeader(getTranslation("assignment.type"))
-                .setSortProperty(Stream.concat(Stream.of(Assignment.PROP_TYPE_CODE),
-                                inPreferredOrder(Assignment.PROP_TYPE_DESCRIPTION_FI, Assignment.PROP_TYPE_DESCRIPTION_SV))
+                .setSortProperty(Stream.concat(Stream.of(ClosedAssignmentListItem.SORT_TYPE_CODE),
+                                inPreferredOrder(ClosedAssignmentListItem.SORT_TYPE_DESCRIPTION_FI,
+                                        ClosedAssignmentListItem.SORT_TYPE_DESCRIPTION_SV))
                         .toArray(String[]::new))
                 .setResizable(true);
-        assignmentsGrid.addColumn(item -> AssignmentFormatters.formatMunicipality(item.assignment()))
+        assignmentsGrid.addColumn(item -> item.municipalityNameFi() == null && item.municipalityNameSv() == null ? null
+                        : Bilingual.select(item.municipalityNameFi(), item.municipalityNameSv(), getLocale()))
                 .setHeader(getTranslation("assignment.municipality"))
-                .setSortProperty(inPreferredOrder(Assignment.PROP_MUNICIPALITY_NAME_FI, Assignment.PROP_MUNICIPALITY_NAME_SV)
-                        .toArray(String[]::new))
+                .setSortProperty(inPreferredOrder(ClosedAssignmentListItem.SORT_MUNICIPALITY_NAME_FI,
+                        ClosedAssignmentListItem.SORT_MUNICIPALITY_NAME_SV).toArray(String[]::new))
                 .setResizable(true);
-        assignmentsGrid.addColumn(item -> item.assignment().getAddress()).setHeader(getTranslation("assignment.address"))
-                .setSortProperty(Assignment.PROP_ADDRESS).setResizable(true);
+        assignmentsGrid.addColumn(ClosedAssignmentListItem::address).setHeader(getTranslation("assignment.address"))
+                .setSortProperty(ClosedAssignmentListItem.SORT_ADDRESS).setResizable(true);
         assignmentsGrid.sort(GridSortOrder.desc(closedColumn).build());
         assignmentsDataView = assignmentsGrid.setItemsPageable(
                 pageable -> reportService.findClosedAssignments(currentFilter(), pageable),
                 pageable -> reportService.countClosedAssignments(currentFilter()));
         // The report status changes when a reviewer closes or re-opens the report, but it is still the same row
-        assignmentsDataView.setIdentifierProvider(item -> item.assignment().getId());
+        assignmentsDataView.setIdentifierProvider(ClosedAssignmentListItem::id);
         assignmentsGrid.setEmptyStateText(getTranslation("report.empty"));
         assignmentsGrid.setSizeFull();
         assignmentsGrid.addThemeVariants(GridVariant.NO_BORDER, GridVariant.ROW_STRIPES);
@@ -132,7 +133,7 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
                 return;
             }
             var report = Optional.ofNullable(event.getValue())
-                    .flatMap(item -> reportService.findReportByAssignmentId(item.assignment().nullSafeId()))
+                    .flatMap(item -> reportService.findReportByAssignmentId(item.id().value()))
                     .orElse(null);
             reportPanel.setBean(report);
             setDetail(report == null ? null : reportPanel);

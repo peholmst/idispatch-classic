@@ -1,6 +1,6 @@
 package net.pkhapps.idispatch.server.resource;
 
-import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.ResourcesOnAssignment;
 import org.springframework.stereotype.Component;
 
@@ -18,12 +18,12 @@ class ResourcesOnAssignmentAdapter implements ResourcesOnAssignment {
     }
 
     @Override
-    public boolean anyAssignedTo(Assignment assignment) {
+    public boolean anyAssignedTo(AssignmentId assignment) {
         return !resourceStatusService.getStatusOfResourcesAssignedToAssignment(assignment).isEmpty();
     }
 
     @Override
-    public void releaseAllFrom(Assignment assignment) {
+    public void releaseAllFrom(AssignmentId assignment) {
         resourceStatusService.clearAssignmentFromAllResources(assignment);
     }
 }

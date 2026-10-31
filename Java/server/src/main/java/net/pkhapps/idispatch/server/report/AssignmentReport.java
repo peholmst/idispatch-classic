@@ -5,7 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
-import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.shared.AbstractLockableEntity;
 
@@ -31,9 +31,8 @@ public class AssignmentReport extends AbstractLockableEntity {
 
     public static final int MAX_TEXT_LENGTH = 4000;
 
-    @OneToOne(optional = false)
-    @JoinColumn(name = "assignment_id", nullable = false, unique = true)
-    private Assignment assignment;
+    @Column(name = "assignment_id", nullable = false, unique = true)
+    private Long assignmentId;
     @Column(name = "situation_development", nullable = false, length = MAX_TEXT_LENGTH)
     @Size(max = MAX_TEXT_LENGTH, message = "{idispatch.report.situation-development.size}")
     private String situationDevelopment = "";
@@ -69,12 +68,12 @@ public class AssignmentReport extends AbstractLockableEntity {
     protected AssignmentReport() {
     }
 
-    public AssignmentReport(Assignment assignment) {
-        this.assignment = checkNotNull(assignment);
+    public AssignmentReport(AssignmentId assignment) {
+        this.assignmentId = checkNotNull(assignment).value();
     }
 
-    public Assignment getAssignment() {
-        return assignment;
+    public AssignmentId getAssignmentId() {
+        return new AssignmentId(assignmentId);
     }
 
     public String getSituationDevelopment() {
@@ -188,7 +187,7 @@ public class AssignmentReport extends AbstractLockableEntity {
     public String toString() {
         return toStringHelper(this)
                 .add(PROP_ID, getId())
-                .add("assignment", assignment == null ? null : assignment.getId())
+                .add("assignment", assignmentId)
                 .toString();
     }
 }

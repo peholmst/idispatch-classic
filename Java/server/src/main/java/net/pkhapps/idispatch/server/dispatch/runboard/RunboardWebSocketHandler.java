@@ -180,7 +180,7 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
         final Map<String, Object> map = new HashMap<>();
         map.put("id", notification.getId());
         map.put("timestamp", notification.getTimestamp().toEpochMilli());
-        map.put("assignment_id", notification.getAssignment().getId());
+        map.put("assignment_id", notification.getAssignmentId().value());
         var type = assignmentTypeQueries.findById(notification.getAssignmentTypeId());
         map.put("assignment_type_code", type.map(AssignmentTypeListItem::code).orElse("?"));
         map.put("assignment_type_descr", type.map(t -> t.description(locale)).orElse("?"));

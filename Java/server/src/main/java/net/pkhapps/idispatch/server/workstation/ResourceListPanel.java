@@ -8,7 +8,10 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentFormatters;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
+import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.resource.ResourceFormatters;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusChanged;
@@ -17,17 +20,25 @@ import net.pkhapps.idispatch.server.ui.Formatters;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ApplicationEventMulticaster;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
 public class ResourceListPanel extends VerticalLayout {
 
     private final ResourceStatusService resourceStatusService;
+    private final AssignmentService assignmentService;
+    // The assignments that the listed resources are on, loaded with the list
+    private final Map<AssignmentId, Assignment> assignments = new HashMap<>();
     private final ApplicationEventMulticaster eventMulticaster;
     private final Grid<ResourceStatus> grid;
     private OwnerUpdater ownerUpdater;
     private final ApplicationListener<ResourceStatusChanged> resourceStatusChangedListener = event -> ownerUpdater.update(this::refresh);
 
-    public ResourceListPanel(ResourceStatusService resourceStatusService,
+    public ResourceListPanel(ResourceStatusService resourceStatusService, AssignmentService assignmentService,
                              ApplicationEventMulticaster eventMulticaster) {
         this.resourceStatusService = resourceStatusService;
+        this.assignmentService = assignmentService;
         this.eventMulticaster = eventMulticaster;
         addClassName("resource-list");
 
@@ -48,7 +59,8 @@ public class ResourceListPanel extends VerticalLayout {
         grid.addColumn(rs -> ResourceFormatters.formatResource(rs.getResource())).setHeader(getTranslation("dispatch.resource"));
         grid.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
         grid.addColumn(rs -> Formatters.formatDateTime(rs.getTimestamp())).setHeader(getTranslation("dispatch.timestamp"));
-        grid.addColumn(rs -> AssignmentFormatters.formatAssignment(rs.getAssignment())).setHeader(getTranslation("dispatch.assignment"));
+        grid.addColumn(rs -> rs.getAssignmentId() == null ? null
+                : AssignmentFormatters.formatAssignment(assignments.get(rs.getAssignmentId()))).setHeader(getTranslation("dispatch.assignment"));
     }
 
     private Button createStatusButton(ResourceStatus resourceStatus) {
@@ -72,6 +84,15 @@ public class ResourceListPanel extends VerticalLayout {
     }
 
     private void refresh() {
-        grid.setItems(resourceStatusService.getStatusOfAllResources());
+        var statuses = resourceStatusService.getStatusOfAllResources();
+        assignments.clear();
+        assignmentService.findOpenAssignments()
+                .forEach(assignment -> assignments.put(new AssignmentId(assignment.getId()), assignment));
+        // Resources can still refer to an assignment that has been closed
+        statuses.stream().map(ResourceStatus::getAssignmentId).filter(Objects::nonNull).distinct()
+                .filter(id -> !assignments.containsKey(id))
+                .forEach(id -> assignmentService.findAssignment(id.value())
+                        .ifPresent(assignment -> assignments.put(id, assignment)));
+        grid.setItems(statuses);
     }
 }
