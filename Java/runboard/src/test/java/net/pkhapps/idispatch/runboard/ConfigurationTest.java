@@ -7,6 +7,8 @@ import java.time.Duration;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Sets system properties, which the configuration falls back to when there is no {@code runboard.properties}.
@@ -15,7 +17,7 @@ class ConfigurationTest {
 
     private static final List<String> TIMING_PROPERTIES = List.of("idispatch.alarm.plays",
             "idispatch.alarm.playsBeforeSpeech", "idispatch.speech.repeats", "idispatch.speech.pause",
-            "idispatch.notification.shownFor", "idispatch.alarm.volume");
+            "idispatch.notification.shownFor", "idispatch.alarm.volume", "idispatch.hideCursor");
 
     @AfterEach
     void clearProperties() {
@@ -91,5 +93,17 @@ class ConfigurationTest {
         System.setProperty("idispatch.alarm.volume", "3");
 
         assertEquals(-12, new Configuration().getAlarmVolume());
+    }
+
+    @Test
+    void cursor_isShownByDefault() {
+        assertFalse(new Configuration().isCursorHidden());
+    }
+
+    @Test
+    void cursorHidden_isRead() {
+        System.setProperty("idispatch.hideCursor", " true ");
+
+        assertTrue(new Configuration().isCursorHidden());
     }
 }

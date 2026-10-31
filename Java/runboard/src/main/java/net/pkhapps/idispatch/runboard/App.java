@@ -15,7 +15,7 @@ public class App {
         final Configuration configuration = new Configuration();
         model = new Model(configuration.getNotificationShownFor());
         connection = new ServerConnection(configuration, model);
-        mainView = new MainView(configuration.isLowResolution());
+        mainView = new MainView(configuration.isLowResolution(), configuration.isCursorHidden());
         mainView.setModel(model);
         mainView.setUndecorated(configuration.isUndecorated());
         mainView.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

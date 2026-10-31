@@ -21,6 +21,14 @@ class Configuration extends net.pkhapps.idispatch.runboard.client.Configuration 
     }
 
     /**
+     * Returns whether the mouse cursor is hidden over the runboard's windows, as on a kiosk without a mouse. Default:
+     * false.
+     */
+    public boolean isCursorHidden() {
+        return Boolean.parseBoolean(getProperty("idispatch.hideCursor", "false").strip());
+    }
+
+    /**
      * Returns how long each notification is shown on the screen, counted from when it was sent. The flashing light is
      * on for as long as a notification is shown. Default: 3 minutes.
      */
