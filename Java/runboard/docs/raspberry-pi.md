@@ -57,9 +57,9 @@ nano runboard.properties              # set idispatch.server.url and idispatch.r
 ./download-voices.command             # about 120 MB
 ```
 
-`runboard.properties.template` describes every setting. Set `idispatch.hideCursor=true`, or the mouse cursor stays
-in the middle of the screen even without a mouse. On a small screen, set `idispatch.lowres=true` if the text
-doesn't fit. To update, unzip a new version over the old one; that keeps `runboard.properties` and the voices.
+`runboard.properties.template` describes every setting. Set `idispatch.hideCursor=true` to hide the mouse cursor over
+the runboard; under cage, also [hide cage's cursor](#hide-the-mouse-cursor). On a small screen, set
+`idispatch.lowres=true` if the text doesn't fit. To update, unzip a new version over the old one; that keeps `runboard.properties` and the voices.
 
 ## 4. Set up the sound
 
@@ -133,14 +133,42 @@ if it stops. The log goes to `~/iDispatchRunboard/runboard.log`; the previous ru
 if [[ -z ${WAYLAND_DISPLAY:-} && $(tty) == /dev/tty1 ]]; then
     while true; do
         mv -f ~/iDispatchRunboard/runboard.log ~/iDispatchRunboard/runboard.log.1 2>/dev/null
-        cage -- ~/iDispatchRunboard/runboard.command > ~/iDispatchRunboard/runboard.log 2>&1
+        cage -s -- ~/iDispatchRunboard/runboard.command > ~/iDispatchRunboard/runboard.log 2>&1
         sleep 5
     done
 fi
 ```
 
 Reboot with `sudo reboot`. Logging in over SSH doesn't start a second runboard. To work on the Pi's own console,
-switch to another one with Ctrl+Alt+F2.
+switch to another one with Ctrl+Alt+F2. This needs cage's `-s` option; without it, cage doesn't let you switch consoles.
+
+#### Hide the mouse cursor
+
+Even without a mouse, cage shows a cursor in the middle of the screen. It shows one whenever libinput finds an input
+device that reports pointer movement or scrolling, and many devices that aren't mice do: on a Pi, the HDMI-CEC devices
+(`vc4-hdmi-0` and `vc4-hdmi-1`), and keyboards that declare a scroll wheel they don't have.
+`sudo libinput list-devices` (in `libinput-tools`) lists them with `pointer` among their capabilities. Rather than
+chase each such device, give cage a transparent cursor. As the user that runs the runboard:
+
+```bash
+mkdir -p ~/.icons/default/cursors
+python3 - <<'EOF'
+import os, struct
+size = 24  # cursor size, the default when XCURSOR_SIZE is not set
+image = struct.pack('<9I', 36, 0xfffd0002, size, 1, 1, 1, 0, 0, 0) + struct.pack('<I', 0)  # one transparent pixel
+data = b'Xcur' + struct.pack('<3I', 16, 0x10000, 1) + struct.pack('<3I', 0xfffd0002, size, 28) + image
+cursors = os.path.expanduser('~/.icons/default/cursors')
+open(os.path.join(cursors, 'default'), 'wb').write(data)
+os.symlink('default', os.path.join(cursors, 'left_ptr'))
+EOF
+```
+
+This writes a cursor of one transparent pixel into the user's `default` cursor theme, which cage looks for in
+`~/.icons` before the system's themes: `default` is the cursor cage draws, `left_ptr` the one older programs ask for.
+Also set `idispatch.hideCursor=true` in `runboard.properties`, for when the cursor is over the runboard's window, and
+reboot. A mouse still works if one is plugged in, without a visible cursor. If the cursor stays, check that cage isn't
+started with another theme: `XCURSOR_THEME` or `XCURSOR_PATH` in its environment
+(`tr '\0' '\n' < /proc/$(pgrep -x cage)/environ`) overrides `~/.icons/default`.
 
 ### Desktop
 
