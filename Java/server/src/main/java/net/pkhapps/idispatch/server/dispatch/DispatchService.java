@@ -5,7 +5,6 @@ import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceState;
-import net.pkhapps.idispatch.server.resource.ResourceStatus;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,7 +32,7 @@ public interface DispatchService {
      * resources.
      *
      * @throws AssignmentNotReadyForDispatchException if the assignment did not contain enough information
-     * @see ResourceStatus#isAssigned()
+     * @see net.pkhapps.idispatch.server.resource.ResourceStatus#isAssigned()
      */
     DispatchNotification dispatchAllResources(Assignment assignment) throws AssignmentNotReadyForDispatchException;
 
@@ -42,7 +41,7 @@ public interface DispatchService {
      * resources that are in the {@link ResourceState#RESERVED} state.
      *
      * @throws AssignmentNotReadyForDispatchException if the assignment did not contain enough information
-     * @see ResourceStatus#isAssigned()
+     * @see net.pkhapps.idispatch.server.resource.ResourceStatus#isAssigned()
      */
     DispatchNotification dispatchAllReservedResources(Assignment assignment) throws AssignmentNotReadyForDispatchException;
 
@@ -54,5 +53,5 @@ public interface DispatchService {
     /**
      * Finds all receipts for the specified dispatch notification.
      */
-    List<Receipt> findReceiptsForDispatchNotification(DispatchNotification dispatchNotification);
+    List<Receipt> findReceiptsForDispatchNotification(DispatchNotificationId dispatchNotification);
 }

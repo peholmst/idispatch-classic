@@ -8,6 +8,8 @@ import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
 import net.pkhapps.idispatch.server.dispatch.AbstractDispatcher;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationSent;
+import net.pkhapps.idispatch.server.dispatch.PhoneNumber;
+import net.pkhapps.idispatch.server.dispatch.SmsDestination;
 import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceQueries;
@@ -64,7 +66,7 @@ class SmsDispatcher extends AbstractDispatcher {
     @Async
     public void onApplicationEvent(DispatchNotificationSent dispatchNotificationSent) {
         final DispatchNotification notification = dispatchNotificationSent.getDispatchNotification();
-        dispatch(notification.getDestinationsOfType(SmsDestination.class), notification);
+        dispatch(dispatchNotificationSent.getDestinationsOfType(SmsDestination.class), notification);
     }
 
     private void dispatch(Collection<SmsDestination> destinations, DispatchNotification notification) {
@@ -74,14 +76,14 @@ class SmsDispatcher extends AbstractDispatcher {
         }
         // Each destination gets the message in its own language, so send one message per language
         destinations.stream()
-                .collect(Collectors.groupingBy(SmsDestination::getLocale))
+                .collect(Collectors.groupingBy(SmsDestination::locale))
                 .forEach((locale, destinationsInLocale) -> dispatch(destinationsInLocale, notification, locale));
     }
 
     private void dispatch(Collection<SmsDestination> destinations, DispatchNotification notification, Locale locale) {
         final Set<String> phoneNumbers = destinations
                 .stream()
-                .flatMap(destination -> destination.getPhoneNumbers().stream())
+                .flatMap(destination -> destination.phoneNumbers().stream().map(PhoneNumber::value))
                 .collect(Collectors.toSet());
 
         if (!phoneNumbers.isEmpty()) {
@@ -106,18 +108,18 @@ class SmsDispatcher extends AbstractDispatcher {
 
     String buildMessageText(DispatchNotification notification, Locale locale) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(municipalityQueries.findById(notification.getMunicipalityId())
+        sb.append(municipalityQueries.findById(notification.municipalityId())
                 .map(municipality -> municipality.name(locale)).orElse("?"));
         sb.append(",");
-        sb.append(assignmentTypeQueries.findById(notification.getAssignmentTypeId())
+        sb.append(assignmentTypeQueries.findById(notification.assignmentTypeId())
                 .map(AssignmentTypeListItem::code).orElse("?"));
-        sb.append(notification.getUrgency());
+        sb.append(notification.urgency());
         sb.append(",");
-        sb.append(notification.getAddress());
+        sb.append(notification.address());
         sb.append(",");
-        sb.append(String.join(",", resourceQueries.findByIds(notification.getAssignedResources()).stream().map(ResourceListItem::callSign).toList()));
+        sb.append(String.join(",", resourceQueries.findByIds(notification.assignedResources()).stream().map(ResourceListItem::callSign).toList()));
         sb.append(",");
-        sb.append(notification.getDescription());
+        sb.append(notification.description());
         return sb.toString();
     }
 }

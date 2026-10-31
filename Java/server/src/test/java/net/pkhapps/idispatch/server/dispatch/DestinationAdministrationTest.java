@@ -8,6 +8,7 @@ import net.pkhapps.idispatch.server.ui.management.Administrator;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -176,6 +177,187 @@ class DestinationAdministrationTest extends UseCaseTest {
 
         assertThat(admin.listed()).containsExactly(callSign);
         assertThat(admin.seesAsDeleted(callSign)).isTrue();
+    }
+
+    @Test
+    void newRunboardDestinationIsGivenAKeyToStartWith() {
+        var admin = administratorAtWork();
+
+        admin.startsAdding(RUNBOARD);
+
+        assertThat(admin.valueOf("Runboard Key")).isNotBlank();
+    }
+
+    @Test
+    void runboardDestinationWithoutAKeyIsNotSaved() {
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var admin = administratorAtWork();
+
+        admin.startsAdding(RUNBOARD);
+        admin.fillsIn("Runboard Key", "");
+        admin.picks(RESOURCES, callSign);
+        admin.saves();
+
+        assertThat(admin.errorOf("Runboard Key")).isEqualTo("Please enter a unique runboard key");
+        assertThat(admin.isEditing()).isTrue();
+        assertThat(given.destinationsFor(given.resourceCalled(callSign))).isEmpty();
+    }
+
+    @Test
+    void administratorIsWarnedWhenTheRunboardKeyIsAlreadyInUse() {
+        var key = unique("key-");
+        var first = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var second = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var admin = administratorAtWork();
+        admin.startsAdding(RUNBOARD);
+        admin.fillsIn("Runboard Key", key);
+        admin.picks(RESOURCES, first);
+        admin.saves();
+
+        admin.startsAdding(RUNBOARD);
+        admin.fillsIn("Runboard Key", key);
+        admin.picks(RESOURCES, second);
+        admin.saves();
+
+        assertThat(admin.wasToldThat("A data integrity violation has been detected.")).isTrue();
+        assertThat(admin.isEditing()).isTrue();
+        assertThat(given.destinationsFor(given.resourceCalled(second))).isEmpty();
+    }
+
+    @Test
+    void smsDestinationWithoutPhoneNumbersIsNotSaved() {
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var admin = administratorAtWork();
+
+        admin.startsAdding(SMS);
+        admin.picks(RESOURCES, callSign);
+        admin.saves();
+
+        assertThat(admin.errorOf("Phone numbers")).isEqualTo("Please enter at least one phone number");
+        assertThat(admin.isEditing()).isTrue();
+    }
+
+    @Test
+    void descriptionLongerThanTheListCanShowIsNotSaved() {
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var admin = administratorAtWork();
+
+        admin.startsAdding(RUNBOARD);
+        admin.fillsIn("Description", "x".repeat(256));
+        admin.picks(RESOURCES, callSign);
+        admin.saves();
+
+        assertThat(admin.errorOf("Description")).isEqualTo("Please enter at most 255 characters");
+        assertThat(admin.isEditing()).isTrue();
+    }
+
+    @Test
+    void administratorChangesTheNumbersAndResourcesOfAnSmsDestination() {
+        var first = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var second = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var number = "+358" + Math.abs(first.hashCode());
+        var admin = administratorAtWork();
+        admin.startsAdding(SMS);
+        admin.writes("Phone numbers", number + "1");
+        admin.picks(RESOURCES, first);
+        admin.saves();
+
+        admin.opens(first);
+        admin.writes("Phone numbers", number + "2\n" + number + "3");
+        admin.picks(RESOURCES, second);
+        admin.saves();
+
+        admin.searchesFor(second.toLowerCase());
+        assertThat(admin.listed()).as("Listed by both call signs")
+                .contains(String.join(", ", Stream.of(first, second).sorted().toList()));
+        assertThat(destinationOf(second).phoneNumbers()).containsExactlyInAnyOrder(number + "2", number + "3");
+    }
+
+    @Test
+    void administratorChangesTheLanguageOfADestination() {
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var admin = administratorAtWork();
+        addsRunboardDestination(admin, callSign);
+
+        admin.opens(callSign);
+        assertThat(admin.editorTitle()).isEqualTo("Edit Runboard Destination");
+        admin.chooses("Language", "Swedish");
+        admin.saves();
+
+        assertThat(admin.row(callSign)).containsEntry("Language", "Swedish");
+        assertThat(destinationOf(callSign).locale()).isEqualTo(Bilingual.SWEDISH);
+    }
+
+    @Test
+    void administratorCancelsAddingADestination() {
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var admin = administratorAtWork();
+
+        admin.startsAdding(RUNBOARD);
+        admin.picks(RESOURCES, callSign);
+        admin.cancels();
+
+        assertThat(admin.isEditing()).isFalse();
+        assertThat(admin.isAskedAnything()).as("Cancelling is the answer").isFalse();
+        assertThat(given.destinationsFor(given.resourceCalled(callSign))).isEmpty();
+    }
+
+    @Test
+    void administratorIsAskedBeforeUnsavedChangesAreThrownAway() {
+        var first = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var second = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var admin = administratorAtWork();
+        addsRunboardDestination(admin, first);
+        addsRunboardDestination(admin, second);
+        var description = unique("Edited ");
+        admin.opens(first);
+        admin.fillsIn("Description", description);
+
+        admin.opens(second);
+        assertThat(admin.isAsked("Discard changes?")).isTrue();
+        admin.keepsEditing();
+
+        assertThat(admin.valueOf("Description")).isEqualTo(description);
+
+        admin.opens(second);
+        admin.discardsTheChanges();
+
+        assertThat(admin.valueOf("Description")).isEmpty();
+        assertThat(destinationOf(first).description()).isNull();
+    }
+
+    @Test
+    void puttingBackWhatWasThereIsNoChange() {
+        var first = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var second = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var admin = administratorAtWork();
+        addsRunboardDestination(admin, first);
+        addsRunboardDestination(admin, second);
+        admin.opens(first);
+        admin.fillsIn("Description", "Edited");
+        admin.fillsIn("Description", "");
+
+        admin.opens(second);
+
+        assertThat(admin.isAskedAnything()).as("Nothing to discard").isFalse();
+    }
+
+    @Test
+    void administratorRestoresADeletedDestination() {
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
+        var admin = administratorAtWork();
+        addsRunboardDestination(admin, callSign);
+        admin.opens(callSign);
+        admin.deletes();
+
+        admin.togglesShowingDeleted();
+        admin.opens(callSign);
+        assertThat(admin.canChange("Runboard Key")).as("Deleted destinations are read-only").isFalse();
+        assertThat(admin.canDo("Save")).isFalse();
+        admin.restores();
+
+        assertThat(admin.seesAsDeleted(callSign)).isFalse();
+        assertThat(given.destinationsFor(given.resourceCalled(callSign))).hasSize(1);
     }
 
     private static void addsRunboardDestination(Administrator admin, String callSign) {

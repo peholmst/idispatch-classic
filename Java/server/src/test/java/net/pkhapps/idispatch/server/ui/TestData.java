@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import static net.pkhapps.idispatch.server.jooq.Sequences.ASSIGNMENTS_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.ASSIGNMENT_TYPES_SEQ;
+import static net.pkhapps.idispatch.server.jooq.Sequences.DESTINATIONS_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.MUNICIPALITIES_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCES_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_STATUS_SEQ;
@@ -22,10 +23,13 @@ import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENTS;
 import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENT_TYPES;
 import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATION_RESOURCES;
+import static net.pkhapps.idispatch.server.jooq.Tables.DISPATCH_NOTIFICATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.MUNICIPALITIES;
+import static net.pkhapps.idispatch.server.jooq.Tables.RECEIPTS;
 import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCES;
 import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCE_STATUS;
 import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCE_TYPES;
+import static net.pkhapps.idispatch.server.jooq.Tables.RUNBOARD_DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.SMS_DESTINATION_PHONE_NUMBERS;
 
 /**
@@ -62,6 +66,18 @@ public class TestData {
      * A destination as stored; the phone numbers are empty for a runboard.
      */
     public record GivenDestination(@Nullable String description, Locale locale, Set<String> phoneNumbers) {
+    }
+
+    /**
+     * A runboard destination, which a runboard connects to with its key.
+     */
+    public record GivenRunboard(long id, String runboardKey) {
+    }
+
+    /**
+     * A dispatch notification as stored, with the address it was sent with.
+     */
+    public record GivenNotification(long id, String address) {
     }
 
     private final DSLContext dsl;
@@ -258,6 +274,50 @@ public class TestData {
                 .fetch(SMS_DESTINATION_PHONE_NUMBERS.PHONE_NUMBERS)
                 .stream()
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * An active runboard destination that receives the notifications of the given resource in the given language.
+     */
+    public GivenRunboard runboard(GivenResource resource, Locale locale) {
+        var id = dsl.nextval(DESTINATIONS_SEQ);
+        var key = unique("KEY");
+        dsl.insertInto(DESTINATIONS)
+                .set(DESTINATIONS.ID, id)
+                .set(DESTINATIONS.VERSION, 0L)
+                .set(DESTINATIONS.ACTIVE, true)
+                .set(DESTINATIONS.LOCALE, locale.toString())
+                .execute();
+        dsl.insertInto(RUNBOARD_DESTINATIONS)
+                .set(RUNBOARD_DESTINATIONS.ID, id)
+                .set(RUNBOARD_DESTINATIONS.RUNBOARD_KEY, key)
+                .execute();
+        dsl.insertInto(DESTINATION_RESOURCES)
+                .set(DESTINATION_RESOURCES.DESTINATION_ID, id)
+                .set(DESTINATION_RESOURCES.RESOURCE_ID, resource.id())
+                .execute();
+        return new GivenRunboard(id, key);
+    }
+
+    /**
+     * Returns the dispatch notifications sent for the assignment, oldest first.
+     */
+    public List<GivenNotification> notificationsFor(long assignmentId) {
+        return dsl.select(DISPATCH_NOTIFICATIONS.ID, DISPATCH_NOTIFICATIONS.ASSIGNMENT_ADDRESS)
+                .from(DISPATCH_NOTIFICATIONS)
+                .where(DISPATCH_NOTIFICATIONS.ASSIGNMENT_ID.eq(assignmentId))
+                .orderBy(DISPATCH_NOTIFICATIONS.ID)
+                .fetch(record -> new GivenNotification(record.value1(), record.value2()));
+    }
+
+    /**
+     * Returns the IDs of the destinations that have confirmed receiving the notification.
+     */
+    public List<Long> receiptsFor(GivenNotification notification) {
+        return dsl.select(RECEIPTS.DESTINATION_ID)
+                .from(RECEIPTS)
+                .where(RECEIPTS.NOTIFICATION_ID.eq(notification.id()))
+                .fetch(RECEIPTS.DESTINATION_ID);
     }
 
     /**

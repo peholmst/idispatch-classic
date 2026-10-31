@@ -7,6 +7,7 @@ import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
+import net.pkhapps.idispatch.server.dispatch.DispatchNotificationId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
@@ -36,7 +37,7 @@ class SmsDispatcherTest {
     void messageText_hasTheMunicipalityInTheLanguageOfTheDestination() {
         var assignment = new Assignment(new AssignmentId(3), 1, Instant.now(), null, AssignmentUrgency.A,
                 BUILDING_FIRE.id(), PARAINEN.id(), "Kyrkoesplanaden 1", "Smoke");
-        var notification = new DispatchNotification(assignment, Set.of(), Set.of());
+        var notification = DispatchNotification.of(new DispatchNotificationId(4), Instant.now(), assignment, Set.of(), Set.of());
 
         var dispatcher = new SmsDispatcher(new OneMunicipality(), new OneAssignmentType(), new NoResources());
 

@@ -1,10 +1,9 @@
 package net.pkhapps.idispatch.server;
 
-import net.pkhapps.idispatch.server.dispatch.DestinationRepository;
-import net.pkhapps.idispatch.server.dispatch.runboard.RunboardDestination;
+import jakarta.persistence.EntityManager;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.jooq.Public;
-import net.pkhapps.idispatch.server.resource.ResourceId;
-import net.pkhapps.idispatch.server.resource.ResourceState;
+import net.pkhapps.idispatch.server.report.AssignmentReport;
 import net.pkhapps.idispatch.server.ui.TestData;
 import org.jooq.DSLContext;
 import org.jooq.Table;
@@ -16,11 +15,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static net.pkhapps.idispatch.server.jooq.Tables.RUNBOARD_DESTINATIONS;
+import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENT_REPORTS;
+import static net.pkhapps.idispatch.server.ui.TestData.unique;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -34,7 +33,7 @@ class JooqTest {
     @Autowired
     DSLContext dsl;
     @Autowired
-    DestinationRepository destinationRepository;
+    EntityManager entityManager;
     @Autowired
     TestData testData;
     @Autowired
@@ -60,21 +59,19 @@ class JooqTest {
     @Test
     void jooqSeesWhatJpaHasFlushedInTheSameTransaction() {
         var tx = new TransactionTemplate(txManager);
-        var resource = testData.resource("jOOQ " + System.nanoTime(), ResourceState.AVAILABLE);
-        var runboardKey = "jOOQ " + System.nanoTime();
+        var assignmentId = testData.openAssignment(testData.municipality(unique("jOOQ ")),
+                testData.assignmentType(unique("jOOQ"), "jOOQ"), "jOOQ Street 1");
 
         var seen = tx.execute(status -> {
-            var destination = new RunboardDestination();
-            destination.setRunboardKey(runboardKey);
-            destination.setResources(Set.of(new ResourceId(resource.id())));
-            destinationRepository.saveAndFlush(destination);
-            var count = dsl.fetchCount(RUNBOARD_DESTINATIONS, RUNBOARD_DESTINATIONS.RUNBOARD_KEY.eq(runboardKey));
+            entityManager.persist(new AssignmentReport(new AssignmentId(assignmentId)));
+            entityManager.flush();
+            var count = dsl.fetchCount(ASSIGNMENT_REPORTS, ASSIGNMENT_REPORTS.ASSIGNMENT_ID.eq(assignmentId));
             status.setRollbackOnly();
             return count;
         });
 
         assertThat(seen).isEqualTo(1);
-        assertThat(dsl.fetchCount(RUNBOARD_DESTINATIONS, RUNBOARD_DESTINATIONS.RUNBOARD_KEY.eq(runboardKey)))
+        assertThat(dsl.fetchCount(ASSIGNMENT_REPORTS, ASSIGNMENT_REPORTS.ASSIGNMENT_ID.eq(assignmentId)))
                 .as("Rolled back").isZero();
     }
 
