@@ -33,7 +33,8 @@ import com.vaadin.flow.signals.Signal;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
 import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
 import net.pkhapps.idispatch.server.shared.ValidationFailedException;
 import net.pkhapps.idispatch.server.ui.Formatters;
@@ -56,7 +57,7 @@ class AssignmentReportPanel extends VerticalLayout {
     private final Binder<ReportDTO> binder;
     private final Binder<AssignmentReport> sceneBinder;
     private final List<UnitReportForm> unitForms = new ArrayList<>();
-    private final Map<Resource, Details> unitDetails = new HashMap<>();
+    private final Map<ResourceId, Details> unitDetails = new HashMap<>();
     private final Grid<ReportResourceDTO> resourcesGrid;
     private final Scroller content;
     private final VerticalLayout units;
@@ -314,7 +315,7 @@ class AssignmentReportPanel extends VerticalLayout {
                 units.add(new Span(getTranslation("report.no-responding-units")));
             }
             respondingResources.forEach(resource -> {
-                var unitReport = bean.getReport().getUnitReport(resource);
+                var unitReport = bean.getReport().getUnitReport(resource.id());
                 var unitForm = new UnitReportForm(resource, unitReport, editable);
                 unitForm.binder.addValueChangeListener(event -> markChanged());
                 unitForms.add(unitForm);
@@ -322,15 +323,15 @@ class AssignmentReportPanel extends VerticalLayout {
                 var details = new Details(createUnitSummary(resource, unitReport, unitForm.status()), unitForm);
                 details.setWidthFull();
                 // A writer usually works on their own unit only, so every unit starts closed and stays out of the way
-                details.setOpened(openedUnits != null && openedUnits.contains(resource));
-                unitDetails.put(resource, details);
+                details.setOpened(openedUnits != null && openedUnits.contains(resource.id()));
+                unitDetails.put(resource.id(), details);
                 units.add(details);
             });
         }
     }
 
-    private static Component createUnitSummary(Resource resource, UnitReport unitReport, Signal<UnitReportStatus> status) {
-        var callSign = new Span(resource.getCallSign());
+    private static Component createUnitSummary(ResourceListItem resource, UnitReport unitReport, Signal<UnitReportStatus> status) {
+        var callSign = new Span(resource.callSign());
         callSign.getStyle().set("font-weight", "600");
         // In the summary, so it shows whether the unit is open or not
         var badge = new Badge();
@@ -352,7 +353,7 @@ class AssignmentReportPanel extends VerticalLayout {
         for (var unitForm : unitForms) {
             if (!unitForm.binder.validate().isOk()) {
                 // Don't hide the error in a closed unit
-                unitDetails.get(unitForm.getResource()).setOpened(true);
+                unitDetails.get(unitForm.getResource().id()).setOpened(true);
                 valid = false;
             }
         }
@@ -459,11 +460,11 @@ class AssignmentReportPanel extends VerticalLayout {
      */
     static class UnitReportForm extends VerticalLayout {
 
-        private final Resource resource;
+        private final ResourceListItem resource;
         private final Binder<UnitReport> binder = new Binder<>();
         private final Signal<UnitReportStatus> status;
 
-        UnitReportForm(Resource resource, UnitReport unitReport, boolean editable) {
+        UnitReportForm(ResourceListItem resource, UnitReport unitReport, boolean editable) {
             this.resource = resource;
             setPadding(false);
             setSpacing(false);
@@ -488,7 +489,7 @@ class AssignmentReportPanel extends VerticalLayout {
             add(situationOnArrival, actionsTaken);
         }
 
-        Resource getResource() {
+        ResourceListItem getResource() {
             return resource;
         }
 

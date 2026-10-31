@@ -17,7 +17,7 @@ public interface ResourceStatusService {
      *
      * @see Resource#isActive()
      */
-    Optional<ResourceStatus> findCurrentStatus(Resource resource);
+    Optional<ResourceStatus> findCurrentStatus(ResourceId resource);
 
     /**
      * Attempts to set the state of the specified resource. If the requested state transition is not valid or the
@@ -27,7 +27,7 @@ public interface ResourceStatusService {
      * @see ResourceStatus#getAllValidNextStates()
      * @see Resource#isActive()
      */
-    void setResourceState(Resource resource, ResourceState resourceState);
+    void setResourceState(ResourceId resource, ResourceState resourceState);
 
     /**
      * Attempts to assign the resource to the specified assignment, settings its state to
@@ -37,7 +37,7 @@ public interface ResourceStatusService {
      * @see ResourceStatus#isAvailable()
      * @see Resource#isActive()
      */
-    void setResourceAssignment(Resource resource, AssignmentId assignment);
+    void setResourceAssignment(ResourceId resource, AssignmentId assignment);
 
     /**
      * Attempts to clear the assignment from the specified resource, and stores the state and fires a
@@ -53,20 +53,20 @@ public interface ResourceStatusService {
      *
      * @see Resource#isActive()
      */
-    void clearResourceAssignment(Resource resource);
+    void clearResourceAssignment(ResourceId resource);
 
     /**
-     * Same as {@link #clearResourceAssignment(Resource)} , but for all resources associated with the specified
+     * Same as {@link #clearResourceAssignment(ResourceId)} , but for all resources associated with the specified
      * assignment.
      */
     void clearAssignmentFromAllResources(AssignmentId assignment);
 
     /**
-     * Finds all resources that are currently assigned to the specified assignment.
+     * Finds all resources that are currently assigned to the specified assignment, in call sign order.
      *
      * @see ResourceStatus#isAssigned()
      */
-    List<Resource> getResourcesAssignedToAssignment(AssignmentId assignment);
+    List<ResourceListItem> getResourcesAssignedToAssignment(AssignmentId assignment);
 
     /**
      * Finds the current status of all resources that are currently assigned to the specified assignment.
@@ -76,12 +76,12 @@ public interface ResourceStatusService {
     List<ResourceStatus> getStatusOfResourcesAssignedToAssignment(AssignmentId assignment);
 
     /**
-     * Finds all active and available resources.
+     * Finds all active and available resources, in call sign order.
      *
      * @see Resource#isActive()
      * @see ResourceStatus#isAvailable()
      */
-    List<Resource> getAvailableResources();
+    List<ResourceListItem> getAvailableResources();
 
     /**
      * Finds the current status of all active and available resources.
@@ -92,11 +92,11 @@ public interface ResourceStatusService {
     List<ResourceStatus> getStatusOfAvailableResources();
 
     /**
-     * Finds all active resources.
+     * Finds all active resources, in call sign order.
      *
      * @see Resource#isActive()
      */
-    List<Resource> getAllResources();
+    List<ResourceListItem> getAllResources();
 
     /**
      * Finds the current status of all active resources.

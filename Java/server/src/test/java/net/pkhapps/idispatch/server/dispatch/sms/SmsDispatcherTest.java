@@ -10,6 +10,9 @@ import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
 import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
+import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +37,7 @@ class SmsDispatcherTest {
                 BUILDING_FIRE.id(), PARAINEN.id(), "Kyrkoesplanaden 1", "Smoke");
         var notification = new DispatchNotification(assignment, Set.of(), Set.of());
 
-        var dispatcher = new SmsDispatcher(new OneMunicipality(), new OneAssignmentType());
+        var dispatcher = new SmsDispatcher(new OneMunicipality(), new OneAssignmentType(), new NoResources());
 
         assertThat(dispatcher.buildMessageText(notification, Bilingual.FINNISH)).startsWith("Parainen,103A,");
         assertThat(dispatcher.buildMessageText(notification, Bilingual.SWEDISH)).startsWith("Pargas,103A,");
@@ -73,6 +76,19 @@ class SmsDispatcherTest {
         @Override
         public List<AssignmentTypeListItem> findByIds(Collection<AssignmentTypeId> ids) {
             return ids.contains(BUILDING_FIRE.id()) ? List.of(BUILDING_FIRE) : List.of();
+        }
+    }
+
+    private static final class NoResources implements ResourceQueries {
+
+        @Override
+        public List<ResourceListItem> findActive() {
+            return List.of();
+        }
+
+        @Override
+        public List<ResourceListItem> findByIds(Collection<ResourceId> ids) {
+            return List.of();
         }
     }
 }

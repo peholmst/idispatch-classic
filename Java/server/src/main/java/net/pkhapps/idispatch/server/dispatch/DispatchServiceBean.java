@@ -2,7 +2,8 @@ package net.pkhapps.idispatch.server.dispatch;
 
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
@@ -37,13 +38,13 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
     }
 
     @Override
-    public DispatchNotification dispatchSelectedResources(Assignment assignment, Collection<Resource> resources) throws AssignmentNotReadyForDispatchException {
+    public DispatchNotification dispatchSelectedResources(Assignment assignment, Collection<ResourceId> resources) throws AssignmentNotReadyForDispatchException {
         var missing = assignment.missingForDispatch();
         if (!missing.isEmpty()) {
             throw new AssignmentNotReadyForDispatchException(missing);
         }
-        final Collection<Resource> assignedResources = newHashSet(findAssignedResources(assignment));
-        final Collection<Resource> resourcesToDispatch = resources.stream()
+        final Collection<ResourceId> assignedResources = newHashSet(findAssignedResources(assignment));
+        final Collection<ResourceId> resourcesToDispatch = resources.stream()
                 .filter(assignedResources::contains)
                 .collect(Collectors.toList());
         final Collection<Destination> destinations = findDestinations(resourcesToDispatch);
@@ -58,7 +59,7 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
 
     @Override
     public DispatchNotification dispatchAllResources(Assignment assignment) throws AssignmentNotReadyForDispatchException {
-        return dispatchSelectedResources(assignment, resourceStatusService.getResourcesAssignedToAssignment(assignment.id()));
+        return dispatchSelectedResources(assignment, findAssignedResources(assignment));
     }
 
     @Override
@@ -66,7 +67,7 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
         return dispatchSelectedResources(assignment, resourceStatusService.getStatusOfResourcesAssignedToAssignment(assignment.id())
                 .stream()
                 .filter(status -> status.getState() == ResourceState.RESERVED)
-                .map(ResourceStatus::getResource)
+                .map(ResourceStatus::getResourceId)
                 .collect(Collectors.toList())
         );
     }
@@ -83,13 +84,14 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
         return receiptRepository.findByNotification(dispatchNotification);
     }
 
-    private Collection<Destination> findDestinations(Collection<Resource> resources) {
+    private Collection<Destination> findDestinations(Collection<ResourceId> resources) {
         return resources.stream()
-                .flatMap(resource -> destinationRepository.findDestinationsForResource(resource).stream())
+                .flatMap(resource -> destinationRepository.findDestinationsForResource(resource.value()).stream())
                 .collect(Collectors.toSet());
     }
 
-    private Collection<Resource> findAssignedResources(Assignment assignment) {
-        return resourceStatusService.getResourcesAssignedToAssignment(assignment.id());
+    private List<ResourceId> findAssignedResources(Assignment assignment) {
+        return resourceStatusService.getResourcesAssignedToAssignment(assignment.id()).stream()
+                .map(ResourceListItem::id).toList();
     }
 }

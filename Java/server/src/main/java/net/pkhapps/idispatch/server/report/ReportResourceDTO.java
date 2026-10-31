@@ -1,6 +1,6 @@
 package net.pkhapps.idispatch.server.report;
 
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -14,14 +14,14 @@ public class ReportResourceDTO implements Serializable {
     public static final String PROP_AVAILABLE = "available";
     public static final String PROP_AT_STATION = "atStation";
 
-    private final Resource resource;
+    private final ResourceListItem resource;
     private final Instant dispatched;
     private final Instant enRoute;
     private final Instant onScene;
     private final Instant available;
     private final Instant atStation;
 
-    public ReportResourceDTO(Resource resource, Instant dispatched, Instant enRoute, Instant onScene, Instant available, Instant atStation) {
+    public ReportResourceDTO(ResourceListItem resource, Instant dispatched, Instant enRoute, Instant onScene, Instant available, Instant atStation) {
         this.resource = resource;
         this.dispatched = dispatched;
         this.enRoute = enRoute;
@@ -30,12 +30,12 @@ public class ReportResourceDTO implements Serializable {
         this.atStation = atStation;
     }
 
-    public Resource getResource() {
+    public ResourceListItem getResource() {
         return resource;
     }
 
     public String getCallSign() {
-        return resource.getCallSign();
+        return resource.callSign();
     }
 
     public Instant getDispatched() {
@@ -60,14 +60,14 @@ public class ReportResourceDTO implements Serializable {
 
     public static class Builder {
 
-        private Resource resource;
+        private ResourceListItem resource;
         private Instant dispatched;
         private Instant enRoute;
         private Instant onScene;
         private Instant available;
         private Instant atStation;
 
-        public Builder(Resource resource) {
+        public Builder(ResourceListItem resource) {
             this.resource = resource;
         }
 

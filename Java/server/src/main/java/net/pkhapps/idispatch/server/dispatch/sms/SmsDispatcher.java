@@ -9,7 +9,8 @@ import net.pkhapps.idispatch.server.dispatch.AbstractDispatcher;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationSent;
 import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
+import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
@@ -28,6 +29,7 @@ class SmsDispatcher extends AbstractDispatcher {
 
     private final MunicipalityQueries municipalityQueries;
     private final AssignmentTypeQueries assignmentTypeQueries;
+    private final ResourceQueries resourceQueries;
 
     private ASPSMSX2Soap aspsmsx2Soap;
     private String userKey;
@@ -36,9 +38,11 @@ class SmsDispatcher extends AbstractDispatcher {
 
     private boolean enabled = true;
 
-    SmsDispatcher(MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries) {
+    SmsDispatcher(MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries,
+                  ResourceQueries resourceQueries) {
         this.municipalityQueries = municipalityQueries;
         this.assignmentTypeQueries = assignmentTypeQueries;
+        this.resourceQueries = resourceQueries;
     }
 
     @PostConstruct
@@ -111,7 +115,7 @@ class SmsDispatcher extends AbstractDispatcher {
         sb.append(",");
         sb.append(notification.getAddress());
         sb.append(",");
-        sb.append(String.join(",", notification.getAssignedResources().stream().map(Resource::getCallSign).collect(Collectors.toSet())));
+        sb.append(String.join(",", resourceQueries.findByIds(notification.getAssignedResources()).stream().map(ResourceListItem::callSign).toList()));
         sb.append(",");
         sb.append(notification.getDescription());
         return sb.toString();

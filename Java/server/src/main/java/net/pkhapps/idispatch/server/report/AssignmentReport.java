@@ -6,7 +6,7 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.shared.AbstractLockableEntity;
 
 import java.util.Collections;
@@ -62,8 +62,8 @@ public class AssignmentReport extends AbstractLockableEntity {
     private UserStamp closed;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "assignment_report_units", joinColumns = @JoinColumn(name = "report_id"))
-    @MapKeyJoinColumn(name = "resource_id")
-    private Map<Resource, @Valid UnitReport> unitReports = new HashMap<>();
+    @MapKeyColumn(name = "resource_id")
+    private Map<Long, @Valid UnitReport> unitReports = new HashMap<>();
 
     protected AssignmentReport() {
     }
@@ -160,15 +160,17 @@ public class AssignmentReport extends AbstractLockableEntity {
     /**
      * Returns the reports of the units that have reported, or have been shown a form to report in.
      */
-    public Map<Resource, UnitReport> getUnitReports() {
-        return Collections.unmodifiableMap(unitReports);
+    public Map<ResourceId, UnitReport> getUnitReports() {
+        var result = new HashMap<ResourceId, UnitReport>();
+        unitReports.forEach((resource, unitReport) -> result.put(new ResourceId(resource), unitReport));
+        return Collections.unmodifiableMap(result);
     }
 
     /**
      * Returns the report of the given responding unit, creating an empty one if the unit has not reported yet.
      */
-    public UnitReport getUnitReport(Resource resource) {
-        return unitReports.computeIfAbsent(checkNotNull(resource), r -> new UnitReport());
+    public UnitReport getUnitReport(ResourceId resource) {
+        return unitReports.computeIfAbsent(checkNotNull(resource).value(), r -> new UnitReport());
     }
 
     @AssertTrue(message = "{idispatch.report.casualties.consistent}")

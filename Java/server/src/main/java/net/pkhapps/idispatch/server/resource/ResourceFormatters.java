@@ -12,10 +12,6 @@ public final class ResourceFormatters {
                 : resourceType.code() + " - " + resourceType.description(Formatters.currentLocale());
     }
 
-    public static String formatResource(Resource resource) {
-        return resource == null ? null : resource.getCallSign();
-    }
-
     public static String formatResourceState(ResourceState resourceState) {
         return resourceState == null ? null : I18NProvider.translate("resource-state." + resourceState.name());
     }

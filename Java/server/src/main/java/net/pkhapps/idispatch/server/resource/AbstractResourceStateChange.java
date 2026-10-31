@@ -12,19 +12,27 @@ import org.jspecify.annotations.Nullable;
 public abstract class AbstractResourceStateChange extends AbstractTimestampedEntity {
 
     public static final String PROP_STATE = "state";
-    public static final String PROP_RESOURCE = "resource";
+    public static final String PROP_RESOURCE_ID = "resourceId";
     public static final String PROP_ASSIGNMENT_ID = "assignmentId";
 
     @Enumerated(EnumType.STRING)
     @Column(name = "state", nullable = false)
     private ResourceState state = ResourceState.OUT_OF_SERVICE;
+    @Column(name = "resource_id", nullable = false)
+    private Long resourceId;
     @Column(name = "assignment_id")
     private Long assignmentId;
 
     protected AbstractResourceStateChange() {
     }
 
-    public abstract Resource getResource();
+    public ResourceId getResourceId() {
+        return new ResourceId(resourceId);
+    }
+
+    protected void setResourceId(ResourceId resourceId) {
+        this.resourceId = resourceId.value();
+    }
 
     public ResourceState getState() {
         return state;

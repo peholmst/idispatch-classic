@@ -38,6 +38,13 @@ public class Resource extends AbstractLockableEntity implements Comparable<Resou
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
+    /**
+     * Returns the ID of a resource that has been saved.
+     */
+    public ResourceId getResourceId() {
+        return new ResourceId(getId());
+    }
+
     public String getCallSign() {
         return callSign;
     }

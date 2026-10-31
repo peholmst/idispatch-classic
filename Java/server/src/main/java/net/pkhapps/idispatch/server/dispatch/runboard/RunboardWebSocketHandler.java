@@ -4,7 +4,8 @@ import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
 import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
+import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +25,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * WebSocket endpoint for runboards. A runboard connects with its runboard key as the {@code runboardKey} query
@@ -52,16 +52,19 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
     private final RunboardDispatcher runboardDispatcher;
     private final MunicipalityQueries municipalityQueries;
     private final AssignmentTypeQueries assignmentTypeQueries;
+    private final ResourceQueries resourceQueries;
     private final JsonMapper jsonMapper;
     private final Duration heartbeatTimeout;
     private final Map<String, RunboardConnection> connections = new ConcurrentHashMap<>();
 
     RunboardWebSocketHandler(RunboardDispatcher runboardDispatcher, MunicipalityQueries municipalityQueries,
-                             AssignmentTypeQueries assignmentTypeQueries, JsonMapper jsonMapper,
+                             AssignmentTypeQueries assignmentTypeQueries, ResourceQueries resourceQueries,
+                             JsonMapper jsonMapper,
                              @Value("${idispatch.runboard.heartbeat-interval:10s}") Duration heartbeatInterval) {
         this.runboardDispatcher = runboardDispatcher;
         this.municipalityQueries = municipalityQueries;
         this.assignmentTypeQueries = assignmentTypeQueries;
+        this.resourceQueries = resourceQueries;
         this.jsonMapper = jsonMapper;
         this.heartbeatTimeout = heartbeatInterval.multipliedBy(3);
     }
@@ -189,7 +192,7 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
                 .map(municipality -> municipality.name(locale)).orElse("?"));
         map.put("address", notification.getAddress());
         map.put("description", notification.getDescription());
-        map.put("resources", notification.getAssignedResources().stream().map(Resource::getCallSign).collect(Collectors.toSet()));
+        map.put("resources", resourceQueries.findByIds(notification.getAssignedResources()).stream().map(ResourceListItem::callSign).toList());
         map.put("language", locale.getLanguage());
         return map;
     }

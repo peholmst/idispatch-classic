@@ -1,6 +1,5 @@
 package net.pkhapps.idispatch.server.dispatch.runboard;
 
-import jakarta.persistence.EntityManager;
 import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import net.pkhapps.idispatch.server.assignment.Assignment;
@@ -12,11 +11,12 @@ import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationRepository;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationSent;
 import net.pkhapps.idispatch.server.dispatch.ReceiptRepository;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import net.pkhapps.idispatch.server.ui.TestData.GivenAssignmentType;
 import net.pkhapps.idispatch.server.ui.TestData.GivenMunicipality;
+import net.pkhapps.idispatch.server.ui.TestData.GivenResource;
 import net.pkhapps.idispatch.server.ui.TestData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -69,8 +69,6 @@ class RunboardWebSocketHandlerTest {
     DispatchNotificationRepository dispatchNotificationRepository;
     @Autowired
     ReceiptRepository receiptRepository;
-    @Autowired
-    EntityManager entityManager;
 
     private final List<TestClient> clients = new ArrayList<>();
 
@@ -81,7 +79,7 @@ class RunboardWebSocketHandlerTest {
 
     @Test
     void waitingNotifications_areSentOnConnect_andAcknowledgementCreatesReceipt() throws Exception {
-        var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
+        var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
         var destination = runboardDestination(resource);
         var municipality = testData.municipality(unique("Municipality"));
         var type = testData.assignmentType(unique("AT"), "Test assignment type");
@@ -97,7 +95,7 @@ class RunboardWebSocketHandlerTest {
         assertThat(sent.path("municipality").asString()).isEqualTo(municipality.nameFi());
         assertThat(sent.path("assignment_type_code").asString()).isEqualTo(type.code());
         assertThat(sent.path("urgency").asString()).isEqualTo(notification.getUrgency().name());
-        assertThat(sent.path("resources").get(0).asString()).isEqualTo(resource.getCallSign());
+        assertThat(sent.path("resources").get(0).asString()).isEqualTo(resource.callSign());
         assertThat(sent.path("language").asString()).isEqualTo("fi");
 
         client.send("{\"type\":\"ack\",\"id\":" + notification.getId() + "}");
@@ -107,7 +105,7 @@ class RunboardWebSocketHandlerTest {
 
     @Test
     void eachRunboard_getsTheNotificationInItsOwnLanguage() throws Exception {
-        var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
+        var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
         var finnish = runboardDestination(resource);
         var swedish = runboardDestination(resource, Bilingual.SWEDISH);
         var municipality = testData.municipality(unique("Parainen "), unique("Pargas "));
@@ -127,9 +125,9 @@ class RunboardWebSocketHandlerTest {
 
     @Test
     void newNotifications_arePushedOnlyToRunboardsTheyAreFor() throws Exception {
-        var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
+        var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
         var destination = runboardDestination(resource);
-        var otherDestination = runboardDestination(entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id()));
+        var otherDestination = runboardDestination(testData.resource(unique("R"), ResourceState.AVAILABLE));
         var client = connect(destination.getRunboardKey());
         var otherClient = connect(otherDestination.getRunboardKey());
 
@@ -141,7 +139,7 @@ class RunboardWebSocketHandlerTest {
 
     @Test
     void acknowledgedNotifications_areNotSentAgainOnReconnect() throws Exception {
-        var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
+        var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
         var destination = runboardDestination(resource);
         var notification = dispatch(resource, destination);
         var client = connect(destination.getRunboardKey());
@@ -173,27 +171,20 @@ class RunboardWebSocketHandlerTest {
         assertThat(client.closed.get(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(1008);
     }
 
-    /**
-     * Loads a fixture as the entity that the dispatch classes still work with, detached like the ones the services
-     * return.
-     */
-    private <T> T entity(Class<T> type, long id) {
-        return entityManager.find(type, id);
-    }
 
-    private RunboardDestination runboardDestination(Resource resource) {
+    private RunboardDestination runboardDestination(GivenResource resource) {
         return runboardDestination(resource, Bilingual.FINNISH);
     }
 
-    private RunboardDestination runboardDestination(Resource resource, Locale locale) {
+    private RunboardDestination runboardDestination(GivenResource resource, Locale locale) {
         var destination = new RunboardDestination();
         destination.setRunboardKey(unique("KEY"));
         destination.setLocale(locale);
-        destination.setResources(Set.of(resource));
+        destination.setResources(Set.of(new ResourceId(resource.id())));
         return destinationRepository.saveAndFlush(destination);
     }
 
-    private DispatchNotification dispatch(Resource resource, Destination destination) {
+    private DispatchNotification dispatch(GivenResource resource, Destination destination) {
         var assignment = assignment(testData.municipality(unique("Municipality")),
                 testData.assignmentType(unique("AT"), "Test assignment type"));
         return dispatch(assignment, resource, Set.of(destination));
@@ -204,9 +195,9 @@ class RunboardWebSocketHandlerTest {
         return assignmentQueries.findById(new AssignmentId(id)).orElseThrow();
     }
 
-    private DispatchNotification dispatch(Assignment assignment, Resource resource, Set<Destination> destinations) {
+    private DispatchNotification dispatch(Assignment assignment, GivenResource resource, Set<Destination> destinations) {
         var notification = dispatchNotificationRepository.saveAndFlush(
-                new DispatchNotification(assignment, Set.of(resource), destinations));
+                new DispatchNotification(assignment, Set.of(new ResourceId(resource.id())), destinations));
         eventPublisher.publishEvent(new DispatchNotificationSent(this, notification));
         return notification;
     }

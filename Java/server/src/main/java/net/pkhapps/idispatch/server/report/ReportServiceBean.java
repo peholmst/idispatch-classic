@@ -12,7 +12,9 @@ import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.resource.ArchivedResourceStatus;
 import net.pkhapps.idispatch.server.resource.ArchivedResourceStatusRepository;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
+import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractServiceBean;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
@@ -47,9 +49,11 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
     private final AssignmentTypeQueries assignmentTypeQueries;
 
+    private final ResourceQueries resourceQueries;
+
     private final Validator validator;
 
-    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ArchivedResourceStatusRepository archivedResourceStatusRepository, AssignmentQueries assignmentQueries, AssignmentReportRepository assignmentReportRepository, ClosedAssignmentQuery closedAssignmentQuery, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, Validator validator) {
+    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ArchivedResourceStatusRepository archivedResourceStatusRepository, AssignmentQueries assignmentQueries, AssignmentReportRepository assignmentReportRepository, ClosedAssignmentQuery closedAssignmentQuery, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, ResourceQueries resourceQueries, Validator validator) {
         super(applicationContext, txManager);
         this.archivedResourceStatusRepository = archivedResourceStatusRepository;
         this.assignmentQueries = assignmentQueries;
@@ -57,6 +61,7 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         this.closedAssignmentQuery = closedAssignmentQuery;
         this.municipalityQueries = municipalityQueries;
         this.assignmentTypeQueries = assignmentTypeQueries;
+        this.resourceQueries = resourceQueries;
         this.validator = validator;
     }
 
@@ -207,7 +212,8 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
         private final Assignment assignment;
 
-        private final Map<Resource, ReportResourceDTO.Builder> builderMap = new HashMap<>();
+        private final Map<ResourceId, ReportResourceDTO.Builder> builderMap = new HashMap<>();
+        private final Map<ResourceId, ResourceListItem> resources = new HashMap<>();
         private final List<ReportResourceDTO> dtoList = new ArrayList<>();
 
         private ReportResourceGenerator(Assignment assignment) {
@@ -216,7 +222,10 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         }
 
         private void process() {
-            archivedResourceStatusRepository.findByAssignmentId(assignment.id().value()).forEach(this::process);
+            var statuses = archivedResourceStatusRepository.findByAssignmentId(assignment.id().value());
+            resourceQueries.findByIds(statuses.stream().map(ArchivedResourceStatus::getResourceId).distinct().toList())
+                    .forEach(resource -> resources.put(resource.id(), resource));
+            statuses.forEach(this::process);
             dtoList.addAll(builderMap.values().stream().map(ReportResourceDTO.Builder::build).toList());
         }
 
@@ -244,20 +253,20 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         }
 
         private void process(ArchivedResourceStatus status, DateGetter getter, DateSetter setter) {
-            ReportResourceDTO.Builder builder = getBuilder(status.getResource());
+            ReportResourceDTO.Builder builder = getBuilder(status.getResourceId());
             if (getter.get(builder) == null) {
                 setter.set(builder, status.getTimestamp());
             } else {
                 dtoList.add(builder.build());
-                builderMap.remove(status.getResource());
+                builderMap.remove(status.getResourceId());
                 process(status, getter, setter);
             }
         }
 
-        private ReportResourceDTO.Builder getBuilder(Resource resource) {
+        private ReportResourceDTO.Builder getBuilder(ResourceId resource) {
             ReportResourceDTO.Builder builder = builderMap.get(resource);
             if (builder == null) {
-                builder = new ReportResourceDTO.Builder(resource);
+                builder = new ReportResourceDTO.Builder(resources.get(resource));
                 builderMap.put(resource, builder);
             }
             return builder;

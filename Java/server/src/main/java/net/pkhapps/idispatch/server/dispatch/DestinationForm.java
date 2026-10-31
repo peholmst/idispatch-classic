@@ -7,12 +7,15 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.i18n.I18NProvider;
 import net.pkhapps.idispatch.server.dispatch.runboard.RunboardDestination;
 import net.pkhapps.idispatch.server.dispatch.sms.SmsDestination;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import net.pkhapps.idispatch.server.ui.management.ManagementForm;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Base class for the destination forms: a description and the language of the notifications first, then the fields
@@ -39,9 +42,14 @@ abstract class DestinationForm<D extends Destination> extends ManagementForm<D> 
     }
 
     protected void addResourcesField(DestinationManagementService service) {
-        var resources = new MultiSelectComboBox<Resource>(getTranslation("management.resources"));
-        resources.setItems(service.findApplicableResources());
-        resources.setItemLabelGenerator(Resource::getCallSign);
+        // The call signs of the resources offered, and of any deleted ones that the destination still has
+        var callSigns = new HashMap<ResourceId, String>();
+        var applicable = service.findApplicableResources();
+        applicable.forEach(resource -> callSigns.put(resource.id(), resource.callSign()));
+        var resources = new MultiSelectComboBox<ResourceId>(getTranslation("management.resources"));
+        resources.setItems(applicable.stream().map(ResourceListItem::id).toList());
+        resources.setItemLabelGenerator(id -> callSigns.computeIfAbsent(id, unknown ->
+                service.findResources(Set.of(unknown)).stream().findFirst().map(ResourceListItem::callSign).orElse("")));
         getContent().add(resources);
 
         binder.forField(resources).bind(Destination.PROP_RESOURCES);

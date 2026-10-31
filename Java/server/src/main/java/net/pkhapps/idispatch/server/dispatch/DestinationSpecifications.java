@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.server.dispatch;
 
 import jakarta.persistence.criteria.JoinType;
+import net.pkhapps.idispatch.server.resource.Resource;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -17,8 +18,12 @@ final class DestinationSpecifications {
         return (root, query, cb) -> {
             query.distinct(true);
             var pattern = "%" + term.toLowerCase() + "%";
-            var resources = root.join(Destination.PROP_RESOURCES, JoinType.LEFT);
-            return cb.or(cb.like(cb.lower(resources.get("callSign")), pattern),
+            var resourceIds = root.join(Destination.PROP_RESOURCES, JoinType.LEFT);
+            var matchingResources = query.subquery(Long.class);
+            var resource = matchingResources.from(Resource.class);
+            matchingResources.select(resource.get(Resource.PROP_ID))
+                    .where(cb.like(cb.lower(resource.get(Resource.PROP_CALL_SIGN)), pattern));
+            return cb.or(resourceIds.in(matchingResources),
                     cb.like(cb.lower(root.get("description")), pattern));
         };
     }

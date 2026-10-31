@@ -143,6 +143,15 @@ public class TestData {
     }
 
     /**
+     * Deletes the resource softly, as an administrator does, after it has been put to use.
+     */
+    public void deleteResource(GivenResource resource) {
+        dsl.update(RESOURCES).set(RESOURCES.ACTIVE, false)
+                .set(RESOURCES.VERSION, RESOURCES.VERSION.plus(1))
+                .where(RESOURCES.ID.eq(resource.id())).execute();
+    }
+
+    /**
      * An open assignment of urgency A, filled in so that resources can be dispatched to it.
      *
      * @return the assignment's ID

@@ -13,6 +13,8 @@ import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.AssignmentListItem;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.resource.ResourceFormatters;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusChanged;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
@@ -29,6 +31,9 @@ public class ResourceListPanel extends VerticalLayout {
 
     private final ResourceStatusService resourceStatusService;
     private final AssignmentService assignmentService;
+    private final ResourceQueries resourceQueries;
+    // The call signs of the listed resources, loaded with the list
+    private final Map<ResourceId, String> callSigns = new HashMap<>();
     // The assignments that the listed resources are on, loaded with the list
     private final Map<AssignmentId, AssignmentListItem> assignments = new HashMap<>();
     private final ApplicationEventMulticaster eventMulticaster;
@@ -37,9 +42,10 @@ public class ResourceListPanel extends VerticalLayout {
     private final ApplicationListener<ResourceStatusChanged> resourceStatusChangedListener = event -> ownerUpdater.update(this::refresh);
 
     public ResourceListPanel(ResourceStatusService resourceStatusService, AssignmentService assignmentService,
-                             ApplicationEventMulticaster eventMulticaster) {
+                             ResourceQueries resourceQueries, ApplicationEventMulticaster eventMulticaster) {
         this.resourceStatusService = resourceStatusService;
         this.assignmentService = assignmentService;
+        this.resourceQueries = resourceQueries;
         this.eventMulticaster = eventMulticaster;
         addClassName("resource-list");
 
@@ -57,7 +63,7 @@ public class ResourceListPanel extends VerticalLayout {
         grid.setAriaLabel(getTranslation("dispatch.all-resources"));
         add(grid);
 
-        grid.addColumn(rs -> ResourceFormatters.formatResource(rs.getResource())).setHeader(getTranslation("dispatch.resource"));
+        grid.addColumn(rs -> callSigns.get(rs.getResourceId())).setHeader(getTranslation("dispatch.resource"));
         grid.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
         grid.addColumn(rs -> Formatters.formatDateTime(rs.getTimestamp())).setHeader(getTranslation("dispatch.timestamp"));
         grid.addColumn(rs -> rs.getAssignmentId() == null ? null
@@ -68,7 +74,8 @@ public class ResourceListPanel extends VerticalLayout {
         var btn = new Button(ResourceFormatters.formatResourceState(resourceStatus.getState()));
         btn.addThemeVariants(ButtonVariant.SMALL);
         btn.addClassName(ResourceFormatters.resourceStateClassName(resourceStatus.getState()));
-        btn.addClickListener(event -> new ChangeResourceStatusDialog(resourceStatusService, resourceStatus).open());
+        btn.addClickListener(event -> new ChangeResourceStatusDialog(resourceStatusService, resourceStatus,
+                callSigns.get(resourceStatus.getResourceId())).open());
         return btn;
     }
 
@@ -86,6 +93,8 @@ public class ResourceListPanel extends VerticalLayout {
 
     private void refresh() {
         var statuses = resourceStatusService.getStatusOfAllResources();
+        callSigns.clear();
+        callSigns.putAll(resourceQueries.findCallSigns(statuses.stream().map(ResourceStatus::getResourceId).toList()));
         assignments.clear();
         assignmentService.findOpenAssignments().forEach(assignment -> assignments.put(assignment.id(), assignment));
         // Resources can still refer to an assignment that has been closed
