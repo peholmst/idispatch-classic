@@ -3,7 +3,7 @@ package net.pkhapps.idispatch.server.municipality;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 
-public final class MunicipalitySpecifications {
+final class MunicipalitySpecifications {
 
     private MunicipalitySpecifications() {
     }
