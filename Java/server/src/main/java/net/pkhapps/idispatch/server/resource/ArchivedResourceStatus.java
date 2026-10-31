@@ -19,7 +19,7 @@ public class ArchivedResourceStatus extends AbstractResourceStateChange {
     public ArchivedResourceStatus(ResourceStatus status) {
         this.resource = status.getResource();
         setTimestamp(status.getTimestamp());
-        setAssignment(status.getAssignment());
+        setAssignmentId(status.getAssignmentId());
         setState(status.getState());
     }
 

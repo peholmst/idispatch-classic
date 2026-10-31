@@ -1,6 +1,6 @@
 package net.pkhapps.idispatch.server.resource;
 
-import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractServiceBean;
 import org.springframework.context.ApplicationContext;
@@ -52,12 +52,12 @@ class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceS
     }
 
     @Override
-    public void setResourceAssignment(Resource resource, Assignment assignment) {
+    public void setResourceAssignment(Resource resource, AssignmentId assignment) {
         logger.debug("Attempting to assign resource {} to assignment {}", resource, assignment);
         attemptStatusChangeOperation(resource, status -> {
             if (status.isAvailable()) {
                 status.setState(ResourceState.RESERVED);
-                status.setAssignment(assignment);
+                status.setAssignmentId(assignment);
                 return true;
             }
             logger.debug("Cannot assign resource {} to assignment {}", resource, assignment);
@@ -82,7 +82,7 @@ class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceS
                 case AVAILABLE:
                 case AT_STATION:
                 case OUT_OF_SERVICE:
-                    status.setAssignment(null);
+                    status.setAssignmentId(null);
                     return true;
                 default:
                     logger.debug("Resource {} was in state {}, cannot clear assignment", resource, status.getState());
@@ -92,13 +92,13 @@ class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceS
     }
 
     @Override
-    public void clearAssignmentFromAllResources(Assignment assignment) {
+    public void clearAssignmentFromAllResources(AssignmentId assignment) {
         logger.debug("Attempting to clear the assignment from all resources associated with {}", assignment);
-        resourceStatusRepository.findByAssignment(assignment).forEach(status -> clearResourceAssignment(status.getResource()));
+        resourceStatusRepository.findByAssignmentId(assignment.value()).forEach(status -> clearResourceAssignment(status.getResource()));
     }
 
     @Override
-    public List<Resource> getResourcesAssignedToAssignment(Assignment assignment) {
+    public List<Resource> getResourcesAssignedToAssignment(AssignmentId assignment) {
         logger.debug("Looking up resources assigned to {}", assignment);
         return getStatusOfResourcesAssignedToAssignment(assignment)
                 .stream()
@@ -107,9 +107,9 @@ class ResourceStatusServiceBean extends AbstractServiceBean implements ResourceS
     }
 
     @Override
-    public List<ResourceStatus> getStatusOfResourcesAssignedToAssignment(Assignment assignment) {
+    public List<ResourceStatus> getStatusOfResourcesAssignedToAssignment(AssignmentId assignment) {
         logger.debug("Looking up the status of the resources assigned to {}", assignment);
-        return resourceStatusRepository.findByAssignmentAndAssignedTrue(assignment);
+        return resourceStatusRepository.findByAssignmentIdAndAssignedTrue(assignment.value());
     }
 
     @Override

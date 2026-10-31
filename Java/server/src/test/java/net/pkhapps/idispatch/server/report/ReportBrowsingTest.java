@@ -1,7 +1,6 @@
 package net.pkhapps.idispatch.server.report;
 
 import com.vaadin.flow.data.provider.SortDirection;
-import net.pkhapps.idispatch.server.report.HandledAssignments.Handled;
 import net.pkhapps.idispatch.server.ui.UseCaseTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +75,49 @@ class ReportBrowsingTest extends UseCaseTest {
 
         reader.sortsBy("Report", SortDirection.DESCENDING);
         assertThat(reader.seesAbove(reviewed, open)).isTrue();
+    }
+
+    @Test
+    void readerSortsByNumber() {
+        var first = handled.closedAssignment(unique("CS"));
+        var second = handled.closedAssignment(unique("CS"));
+        var reader = readerAtWork();
+
+        reader.sortsBy("Number", SortDirection.ASCENDING);
+        assertThat(reader.seesAbove(first, second)).isTrue();
+
+        reader.sortsBy("Number", SortDirection.DESCENDING);
+        assertThat(reader.seesAbove(second, first)).isTrue();
+    }
+
+    @Test
+    void readerSortsByType() {
+        var one = handled.closedAssignment(unique("CS"));
+        var other = handled.closedAssignment(unique("CS"));
+        var lower = one.type().compareTo(other.type()) < 0 ? one : other;
+        var higher = lower == one ? other : one;
+        var reader = readerAtWork();
+
+        reader.sortsBy("Type", SortDirection.ASCENDING);
+        assertThat(reader.seesAbove(lower, higher)).isTrue();
+
+        reader.sortsBy("Type", SortDirection.DESCENDING);
+        assertThat(reader.seesAbove(higher, lower)).isTrue();
+    }
+
+    @Test
+    void readerSortsByMunicipality() {
+        var one = handled.closedAssignment(unique("CS"));
+        var other = handled.closedAssignment(unique("CS"));
+        var lower = one.municipality().compareTo(other.municipality()) < 0 ? one : other;
+        var higher = lower == one ? other : one;
+        var reader = readerAtWork();
+
+        reader.sortsBy("Municipality", SortDirection.ASCENDING);
+        assertThat(reader.seesAbove(lower, higher)).isTrue();
+
+        reader.sortsBy("Municipality", SortDirection.DESCENDING);
+        assertThat(reader.seesAbove(higher, lower)).isTrue();
     }
 
     @Test

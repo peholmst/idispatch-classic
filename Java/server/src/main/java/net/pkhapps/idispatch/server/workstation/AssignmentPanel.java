@@ -225,7 +225,7 @@ public class AssignmentPanel extends VerticalLayout {
     private void updateResources() {
         availableResource.setItems(resourceStatusService.getAvailableResources());
         if (binder.getBean() != null) {
-            assignedResources.setItems(resourceStatusService.getStatusOfResourcesAssignedToAssignment(binder.getBean()));
+            assignedResources.setItems(resourceStatusService.getStatusOfResourcesAssignedToAssignment(binder.getBean().getAssignmentId()));
         } else {
             assignedResources.setItems(Collections.emptyList());
         }
@@ -235,7 +235,7 @@ public class AssignmentPanel extends VerticalLayout {
         var resource = availableResource.getValue();
         var assignment = binder.getBean();
         if (resource != null && assignment != null) {
-            resourceStatusService.setResourceAssignment(resource, assignment);
+            resourceStatusService.setResourceAssignment(resource, assignment.getAssignmentId());
         }
     }
 

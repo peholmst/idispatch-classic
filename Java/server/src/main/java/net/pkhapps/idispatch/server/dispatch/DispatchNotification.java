@@ -2,6 +2,7 @@ package net.pkhapps.idispatch.server.dispatch;
 
 import jakarta.persistence.*;
 import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityId;
@@ -35,9 +36,8 @@ public class DispatchNotification extends AbstractTimestampedEntity {
             inverseJoinColumns = @JoinColumn(name = "destination_id"))
     private Set<Destination> destinations;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "assignment_id", nullable = false)
-    private Assignment assignment;
+    @Column(name = "assignment_id", nullable = false)
+    private Long assignmentId;
 
     @Column(name = "assignment_municipality_id", nullable = false)
     private Long municipalityId;
@@ -61,7 +61,7 @@ public class DispatchNotification extends AbstractTimestampedEntity {
     public DispatchNotification(Assignment assignment, Collection<Resource> assignedResources, Collection<Destination> destinations) {
         this.assignedResources = newHashSet(checkNotNull(assignedResources));
         this.destinations = newHashSet(checkNotNull(destinations));
-        this.assignment = checkNotNull(assignment);
+        this.assignmentId = checkNotNull(assignment).getAssignmentId().value();
         municipalityId = checkNotNull(assignment.getMunicipalityId(), "The assignment has no municipality").value();
         address = assignment.getAddress();
         assignmentTypeId = checkNotNull(assignment.getTypeId(), "The assignment has no type").value();
@@ -81,8 +81,8 @@ public class DispatchNotification extends AbstractTimestampedEntity {
         return destinations.stream().filter(type::isInstance).map(type::cast).collect(Collectors.toSet());
     }
 
-    public Assignment getAssignment() {
-        return assignment;
+    public AssignmentId getAssignmentId() {
+        return new AssignmentId(assignmentId);
     }
 
     public MunicipalityId getMunicipalityId() {

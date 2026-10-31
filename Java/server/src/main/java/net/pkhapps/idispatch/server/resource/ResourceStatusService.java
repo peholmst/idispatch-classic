@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.server.resource;
 
 
-import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +37,7 @@ public interface ResourceStatusService {
      * @see ResourceStatus#isAvailable()
      * @see Resource#isActive()
      */
-    void setResourceAssignment(Resource resource, Assignment assignment);
+    void setResourceAssignment(Resource resource, AssignmentId assignment);
 
     /**
      * Attempts to clear the assignment from the specified resource, and stores the state and fires a
@@ -59,21 +59,21 @@ public interface ResourceStatusService {
      * Same as {@link #clearResourceAssignment(Resource)} , but for all resources associated with the specified
      * assignment.
      */
-    void clearAssignmentFromAllResources(Assignment assignment);
+    void clearAssignmentFromAllResources(AssignmentId assignment);
 
     /**
      * Finds all resources that are currently assigned to the specified assignment.
      *
      * @see ResourceStatus#isAssigned()
      */
-    List<Resource> getResourcesAssignedToAssignment(Assignment assignment);
+    List<Resource> getResourcesAssignedToAssignment(AssignmentId assignment);
 
     /**
      * Finds the current status of all resources that are currently assigned to the specified assignment.
      *
      * @see ResourceStatus#isAssigned()
      */
-    List<ResourceStatus> getStatusOfResourcesAssignedToAssignment(Assignment assignment);
+    List<ResourceStatus> getStatusOfResourcesAssignedToAssignment(AssignmentId assignment);
 
     /**
      * Finds all active and available resources.

@@ -19,9 +19,7 @@ import net.pkhapps.idispatch.server.shared.ValidationFailedException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -29,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -43,17 +40,20 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
     private final AssignmentReportRepository assignmentReportRepository;
 
+    private final ClosedAssignmentQuery closedAssignmentQuery;
+
     private final MunicipalityQueries municipalityQueries;
 
     private final AssignmentTypeQueries assignmentTypeQueries;
 
     private final Validator validator;
 
-    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ArchivedResourceStatusRepository archivedResourceStatusRepository, AssignmentRepository assignmentRepository, AssignmentReportRepository assignmentReportRepository, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, Validator validator) {
+    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ArchivedResourceStatusRepository archivedResourceStatusRepository, AssignmentRepository assignmentRepository, AssignmentReportRepository assignmentReportRepository, ClosedAssignmentQuery closedAssignmentQuery, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, Validator validator) {
         super(applicationContext, txManager);
         this.archivedResourceStatusRepository = archivedResourceStatusRepository;
         this.assignmentRepository = assignmentRepository;
         this.assignmentReportRepository = assignmentReportRepository;
+        this.closedAssignmentQuery = closedAssignmentQuery;
         this.municipalityQueries = municipalityQueries;
         this.assignmentTypeQueries = assignmentTypeQueries;
         this.validator = validator;
@@ -66,51 +66,21 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
             return Optional.empty();
         } else {
             List<ReportResourceDTO> reportResources = new ReportResourceGenerator(assignment).getReportResources();
-            AssignmentReport report = assignmentReportRepository.findByAssignment(assignment)
-                    .orElseGet(() -> new AssignmentReport(assignment));
+            AssignmentReport report = assignmentReportRepository.findByAssignmentId(assignment.getId())
+                    .orElseGet(() -> new AssignmentReport(assignment.getAssignmentId()));
             return Optional.of(new ReportDTO(assignment, reportResources, report));
         }
     }
 
     @Override
-    public List<ClosedAssignmentDTO> findClosedAssignments(ClosedAssignmentFilter filter, Pageable pageable) {
+    public List<ClosedAssignmentListItem> findClosedAssignments(ClosedAssignmentFilter filter, Pageable pageable) {
         logger.debug("Looking up closed assignments matching {}, {}", filter, pageable);
-        var spec = toSpecification(filter).and(ClosedAssignmentSpecifications.orderedBy(pageable.getSort()));
-        // The specification sorts, since the page request can't sort by report status
-        var unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-        var assignments = assignmentRepository.findBy(spec, query -> query.slice(unsorted)).getContent();
-        var withClosedReports = assignments.isEmpty() ? Set.<Long>of()
-                : assignmentReportRepository.findAssignmentIdsOfClosedReports(assignments.stream().map(Assignment::getId).toList());
-        return assignments.stream()
-                .map(assignment -> new ClosedAssignmentDTO(assignment, withClosedReports.contains(assignment.getId())))
-                .toList();
+        return closedAssignmentQuery.find(filter, pageable);
     }
 
     @Override
     public int countClosedAssignments(ClosedAssignmentFilter filter) {
-        return Math.toIntExact(assignmentRepository.count(toSpecification(filter)));
-    }
-
-    private static Specification<Assignment> toSpecification(ClosedAssignmentFilter filter) {
-        var zone = ZoneId.systemDefault();
-        var specs = new ArrayList<Specification<Assignment>>();
-        specs.add(ClosedAssignmentSpecifications.closedOnly());
-        if (filter.closedFrom() != null) {
-            specs.add(ClosedAssignmentSpecifications.closedAtOrAfter(filter.closedFrom().atStartOfDay(zone).toInstant()));
-        }
-        if (filter.closedTo() != null) {
-            specs.add(ClosedAssignmentSpecifications.closedBefore(filter.closedTo().plusDays(1).atStartOfDay(zone).toInstant()));
-        }
-        if (filter.municipality() != null) {
-            specs.add(ClosedAssignmentSpecifications.municipality(filter.municipality()));
-        }
-        if (filter.type() != null) {
-            specs.add(ClosedAssignmentSpecifications.type(filter.type()));
-        }
-        if (filter.reportClosed() != null) {
-            specs.add(ClosedAssignmentSpecifications.reportClosed(filter.reportClosed()));
-        }
-        return Specification.allOf(specs);
+        return closedAssignmentQuery.count(filter);
     }
 
     @Override
@@ -146,7 +116,7 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
             // Either another user saved this report after we read it, or two users wrote the first report of the
             // same assignment at the same time and the other one won.
             logger.debug("Report {} was saved by another user, cannot save", report);
-            final AssignmentReport otherReport = assignmentReportRepository.findByAssignment(report.getAssignment()).orElse(null);
+            final AssignmentReport otherReport = assignmentReportRepository.findByAssignmentId(report.getAssignmentId().value()).orElse(null);
             return new UpdateResult.Conflict<>(report, otherReport);
         }
     }
@@ -173,7 +143,7 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
     private UpdateResult<AssignmentReport> changeReviewedReport(AssignmentReport seen, Consumer<AssignmentReport> change) {
         try {
             return getTxTemplate().execute(status -> {
-                var current = assignmentReportRepository.findByAssignment(seen.getAssignment());
+                var current = assignmentReportRepository.findByAssignmentId(seen.getAssignmentId().value());
                 var unchanged = seen.isNew() ? current.isEmpty()
                         : current.filter(stored -> stored.getVersion().equals(seen.getVersion())).isPresent();
                 if (!unchanged) {
@@ -181,13 +151,13 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
                     return new UpdateResult.Conflict<>(seen, current.orElse(null));
                 }
                 // A reviewer may close a report that nobody has written anything in
-                var report = current.orElseGet(() -> new AssignmentReport(seen.getAssignment()));
+                var report = current.orElseGet(() -> new AssignmentReport(seen.getAssignmentId()));
                 change.accept(report);
                 return new UpdateResult.Success<>(assignmentReportRepository.saveAndFlush(report));
             });
         } catch (OptimisticLockingFailureException | DataIntegrityViolationException ex) {
             logger.debug("Report {} was changed by another user at the same time", seen);
-            return new UpdateResult.Conflict<>(seen, assignmentReportRepository.findByAssignment(seen.getAssignment()).orElse(null));
+            return new UpdateResult.Conflict<>(seen, assignmentReportRepository.findByAssignmentId(seen.getAssignmentId().value()).orElse(null));
         }
     }
 
@@ -197,7 +167,7 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
      * as changed if it has any content.
      */
     private void stampChangedParts(AssignmentReport report, AssignmentReport previous, UserStamp edit) {
-        var before = previous == null ? new AssignmentReport(report.getAssignment()) : previous;
+        var before = previous == null ? new AssignmentReport(report.getAssignmentId()) : previous;
         if (!report.hasSameSceneDetailsAs(before)) {
             report.setLastEdit(edit);
         }
@@ -241,7 +211,7 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
         }
 
         private void process() {
-            archivedResourceStatusRepository.findByAssignment(assignment).forEach(this::process);
+            archivedResourceStatusRepository.findByAssignmentId(assignment.getId()).forEach(this::process);
             dtoList.addAll(builderMap.values().stream().map(ReportResourceDTO.Builder::build).toList());
         }
 

@@ -2,6 +2,7 @@ package net.pkhapps.idispatch.server.dispatch;
 
 import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.DispatchValidationGroup;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceState;
@@ -59,12 +60,12 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
 
     @Override
     public DispatchNotification dispatchAllResources(Assignment assignment) throws ValidationFailedException {
-        return dispatchSelectedResources(assignment, resourceStatusService.getResourcesAssignedToAssignment(assignment));
+        return dispatchSelectedResources(assignment, resourceStatusService.getResourcesAssignedToAssignment(assignment.getAssignmentId()));
     }
 
     @Override
     public DispatchNotification dispatchAllReservedResources(Assignment assignment) throws ValidationFailedException {
-        return dispatchSelectedResources(assignment, resourceStatusService.getStatusOfResourcesAssignedToAssignment(assignment)
+        return dispatchSelectedResources(assignment, resourceStatusService.getStatusOfResourcesAssignedToAssignment(assignment.getAssignmentId())
                 .stream()
                 .filter(status -> status.getState() == ResourceState.RESERVED)
                 .map(ResourceStatus::getResource)
@@ -73,9 +74,9 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
     }
 
     @Override
-    public List<DispatchNotification> findDispatchNotificationsForAssignment(Assignment assignment) {
+    public List<DispatchNotification> findDispatchNotificationsForAssignment(AssignmentId assignment) {
         logger.trace("Looking up dispatch notifications for assignment {}", assignment);
-        return dispatchNotificationRepository.findByAssignment(assignment);
+        return dispatchNotificationRepository.findByAssignmentId(assignment.value());
     }
 
     @Override
@@ -91,6 +92,6 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
     }
 
     private Collection<Resource> findAssignedResources(Assignment assignment) {
-        return resourceStatusService.getResourcesAssignedToAssignment(assignment);
+        return resourceStatusService.getResourcesAssignedToAssignment(assignment.getAssignmentId());
     }
 }

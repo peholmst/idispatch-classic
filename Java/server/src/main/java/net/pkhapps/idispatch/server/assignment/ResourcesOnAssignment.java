@@ -9,10 +9,10 @@ public interface ResourcesOnAssignment {
     /**
      * Returns whether any resource is still assigned to the assignment, which keeps it from being closed.
      */
-    boolean anyAssignedTo(Assignment assignment);
+    boolean anyAssignedTo(AssignmentId assignment);
 
     /**
      * Releases every resource that still refers to the assignment, once it has been closed.
      */
-    void releaseAllFrom(Assignment assignment);
+    void releaseAllFrom(AssignmentId assignment);
 }

@@ -1,6 +1,5 @@
 package net.pkhapps.idispatch.server.report;
 
-import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
@@ -19,11 +18,11 @@ public interface ReportService {
     Optional<ReportDTO> findReportByAssignmentId(long assignmentId);
 
     /**
-     * Finds one page of the closed assignments that match the filter, sorted by the page request. Besides the
-     * properties of {@link Assignment}, the page request can sort by {@link ClosedAssignmentDTO#SORT_REPORT_CLOSED}.
-     * A report is open until a reviewer closes it, including when nobody has written anything in it yet.
+     * Finds one page of the closed assignments that match the filter, sorted by the page request by the {@code SORT_}
+     * properties of {@link ClosedAssignmentListItem}. A report is open until a reviewer closes it, including when
+     * nobody has written anything in it yet.
      */
-    List<ClosedAssignmentDTO> findClosedAssignments(ClosedAssignmentFilter filter, Pageable pageable);
+    List<ClosedAssignmentListItem> findClosedAssignments(ClosedAssignmentFilter filter, Pageable pageable);
 
     /**
      * Counts the closed assignments that match the filter.

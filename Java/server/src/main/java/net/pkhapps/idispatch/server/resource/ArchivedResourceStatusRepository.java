@@ -1,6 +1,5 @@
 package net.pkhapps.idispatch.server.resource;
 
-import net.pkhapps.idispatch.server.assignment.Assignment;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,7 +10,7 @@ import java.util.List;
  */
 public interface ArchivedResourceStatusRepository extends JpaRepository<ArchivedResourceStatus, Long> {
 
-    List<ArchivedResourceStatus> findByAssignment(Assignment assignment);
+    List<ArchivedResourceStatus> findByAssignmentId(Long assignmentId);
 
     List<ArchivedResourceStatus> findByResource(Resource resource, Pageable pageable);
 }

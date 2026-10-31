@@ -1,8 +1,9 @@
 package net.pkhapps.idispatch.server.resource;
 
 import jakarta.persistence.*;
-import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.shared.AbstractTimestampedEntity;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Base entity that contains a state of a {@link Resource}.
@@ -12,14 +13,13 @@ public abstract class AbstractResourceStateChange extends AbstractTimestampedEnt
 
     public static final String PROP_STATE = "state";
     public static final String PROP_RESOURCE = "resource";
-    public static final String PROP_ASSIGNMENT = "assignment";
+    public static final String PROP_ASSIGNMENT_ID = "assignmentId";
 
     @Enumerated(EnumType.STRING)
     @Column(name = "state", nullable = false)
     private ResourceState state = ResourceState.OUT_OF_SERVICE;
-    @ManyToOne
-    @JoinColumn(name = "assignment_id")
-    private Assignment assignment;
+    @Column(name = "assignment_id")
+    private Long assignmentId;
 
     protected AbstractResourceStateChange() {
     }
@@ -34,11 +34,14 @@ public abstract class AbstractResourceStateChange extends AbstractTimestampedEnt
         this.state = state;
     }
 
-    public Assignment getAssignment() {
-        return assignment;
+    /**
+     * Returns the assignment the resource is or was last on, or {@code null} if none.
+     */
+    public @Nullable AssignmentId getAssignmentId() {
+        return assignmentId == null ? null : new AssignmentId(assignmentId);
     }
 
-    protected void setAssignment(Assignment assignment) {
-        this.assignment = assignment;
+    protected void setAssignmentId(@Nullable AssignmentId assignmentId) {
+        this.assignmentId = assignmentId == null ? null : assignmentId.value();
     }
 }

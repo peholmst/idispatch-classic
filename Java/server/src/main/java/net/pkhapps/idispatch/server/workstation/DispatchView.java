@@ -34,7 +34,7 @@ public class DispatchView extends VerticalLayout implements HasDynamicTitle {
         this.assignmentService = assignmentService;
         assignmentPanel = new AssignmentPanel(assignmentService, resourceStatusService, dispatchService, eventMulticaster);
         assignmentListPanel = new AssignmentListPanel(assignmentService, eventMulticaster, assignmentPanel::setAssignmentId);
-        resourceListPanel = new ResourceListPanel(resourceStatusService, eventMulticaster);
+        resourceListPanel = new ResourceListPanel(resourceStatusService, assignmentService, eventMulticaster);
         setSizeFull();
         setMargin(false);
         setSpacing(false);

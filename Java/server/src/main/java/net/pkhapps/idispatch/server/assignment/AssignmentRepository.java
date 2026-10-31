@@ -2,7 +2,6 @@ package net.pkhapps.idispatch.server.assignment;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -10,7 +9,7 @@ import java.util.List;
 /**
  * Repository of {@link Assignment}s.
  */
-public interface AssignmentRepository extends JpaRepository<Assignment, Long>, JpaSpecificationExecutor<Assignment> {
+public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     List<Assignment> findByClosedIsNull();
 

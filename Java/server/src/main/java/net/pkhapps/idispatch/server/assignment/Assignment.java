@@ -29,13 +29,7 @@ public class Assignment extends AbstractLockableEntity {
     public static final String PROP_CLOSED = "closed";
     public static final String PROP_URGENCY = "urgency";
     public static final String PROP_TYPE_ID = "typeId";
-    public static final String PROP_TYPE_CODE = "typeCode";
-    public static final String PROP_TYPE_DESCRIPTION_FI = "typeDescriptionFi";
-    public static final String PROP_TYPE_DESCRIPTION_SV = "typeDescriptionSv";
     public static final String PROP_DESCRIPTION = "description";
-    public static final String PROP_MUNICIPALITY_ID = "municipalityId";
-    public static final String PROP_MUNICIPALITY_NAME_FI = "municipalityNameFi";
-    public static final String PROP_MUNICIPALITY_NAME_SV = "municipalityNameSv";
     public static final String PROP_ADDRESS = "address";
 
     @Column(name = "opened", nullable = false)
@@ -71,6 +65,13 @@ public class Assignment extends AbstractLockableEntity {
 
     public Assignment() {
         opened = Instant.now();
+    }
+
+    /**
+     * Returns the ID by which other features refer to this assignment. Only for an assignment that has been saved.
+     */
+    public AssignmentId getAssignmentId() {
+        return new AssignmentId(checkNotNull(getId(), "The assignment has not been saved"));
     }
 
     public Instant getOpened() {
