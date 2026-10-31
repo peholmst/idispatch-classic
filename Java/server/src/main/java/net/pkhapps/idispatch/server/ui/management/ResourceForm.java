@@ -5,6 +5,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import net.pkhapps.idispatch.server.boundary.ResourceManagementService;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.ResourceType;
+import net.pkhapps.idispatch.server.ui.Formatters;
 
 class ResourceForm extends ManagementForm<Resource> {
 
@@ -16,7 +17,7 @@ class ResourceForm extends ManagementForm<Resource> {
         callSign = new TextField(getTranslation("management.call-sign"));
 
         var type = new ComboBox<ResourceType>(getTranslation("management.type"));
-        type.setItemLabelGenerator(ResourceType::getFormattedDescription);
+        type.setItemLabelGenerator(Formatters::formatResourceType);
         type.setItems(service.findApplicableTypes());
 
         getContent().add(callSign, type);

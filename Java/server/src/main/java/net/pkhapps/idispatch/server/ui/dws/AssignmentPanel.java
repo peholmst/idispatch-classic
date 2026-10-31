@@ -89,7 +89,7 @@ public class AssignmentPanel extends VerticalLayout {
         assignmentLayout.setPadding(true);
 
         assignmentType = new ComboBox<>(getTranslation("assignment.type"));
-        assignmentType.setItemLabelGenerator(AssignmentType::getFormattedDescription);
+        assignmentType.setItemLabelGenerator(Formatters::formatAssignmentType);
         assignmentType.setWidthFull();
         binder.bind(assignmentType, Assignment::getType, Assignment::setType);
 
@@ -103,7 +103,7 @@ public class AssignmentPanel extends VerticalLayout {
         assignmentLayout.add(typeAndUrgency);
 
         municipality = new ComboBox<>(getTranslation("assignment.municipality"));
-        municipality.setItemLabelGenerator(Municipality::getName);
+        municipality.setItemLabelGenerator(Formatters::formatMunicipality);
         municipality.setWidthFull();
         assignmentLayout.add(municipality);
         binder.bind(municipality, Assignment::getMunicipality, Assignment::setMunicipality);
@@ -290,7 +290,8 @@ public class AssignmentPanel extends VerticalLayout {
             selectedAssignmentId = assignment.getId();
             // Reload the options every time, so that changes made in the management console show up
             assignmentType.setItems(assignmentService.findApplicableAssignmentTypes());
-            municipality.setItems(assignmentService.findApplicableMunicipalities());
+            municipality.setItems(Formatters.sortedByLabel(assignmentService.findApplicableMunicipalities(),
+                    Formatters::formatMunicipality));
             binder.setBean(assignment);
             updateResources();
             noAssignmentSelected.setVisible(false);

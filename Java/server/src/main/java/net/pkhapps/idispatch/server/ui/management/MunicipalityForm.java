@@ -5,19 +5,21 @@ import net.pkhapps.idispatch.server.entity.Municipality;
 
 class MunicipalityForm extends ManagementForm<Municipality> {
 
-    private final TextField name;
+    private final TextField nameFi;
 
     MunicipalityForm() {
         super(Municipality.class);
 
-        name = new TextField(getTranslation("management.municipality-name"));
-        getContent().add(name);
+        nameFi = new TextField(getTranslation("management.municipality-name-fi"));
+        var nameSv = new TextField(getTranslation("management.municipality-name-sv"));
+        getContent().add(nameFi, nameSv);
 
-        binder.forField(name).bind(Municipality.PROP_NAME);
+        bindBilingual(nameFi, Municipality.PROP_NAME_FI, nameSv, Municipality.PROP_NAME_SV,
+                "management.municipality-name-required");
     }
 
     @Override
     public void focus() {
-        name.focus();
+        nameFi.focus();
     }
 }

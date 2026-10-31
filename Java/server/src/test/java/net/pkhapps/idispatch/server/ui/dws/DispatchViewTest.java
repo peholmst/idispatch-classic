@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.ui.dws;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -15,10 +16,12 @@ import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.ResourceState;
 import net.pkhapps.idispatch.server.entity.ResourceStatus;
 import net.pkhapps.idispatch.server.ui.AbstractUITest;
+import net.pkhapps.idispatch.server.ui.UserLocale;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.IntStream;
 
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
@@ -61,17 +64,17 @@ class DispatchViewTest extends AbstractUITest {
         var assignment = openNewAssignment();
         var type = assignmentType;
 
-        test(typeField()).selectItem(type.getFormattedDescription());
+        test(typeField()).selectItem(type.getFormattedDescription(Locale.ENGLISH));
         test(urgencyField()).selectItem("A");
-        test(municipalityField()).selectItem(municipality.getName());
+        test(municipalityField()).selectItem(municipality.getNameFi());
         test(addressField()).setValue("Main Street 1");
 
         var row = rowOf(assignmentList(), Assignment::getId, assignment.getId());
-        assertThat(test(assignmentList()).getCellText(row, 2)).isEqualTo(type.getFormattedDescription());
+        assertThat(test(assignmentList()).getCellText(row, 2)).isEqualTo(type.getFormattedDescription(Locale.ENGLISH));
         var urgencyBadge = (Badge) test(assignmentList()).getCellComponent(row, 3);
         assertThat(urgencyBadge.getText()).isEqualTo("A");
         assertThat(urgencyBadge.getClassNames()).contains("urgency-a");
-        assertThat(test(assignmentList()).getCellText(row, 4)).isEqualTo(municipality.getName());
+        assertThat(test(assignmentList()).getCellText(row, 4)).isEqualTo(municipality.getNameFi());
         assertThat(test(assignmentList()).getCellText(row, 5)).isEqualTo("Main Street 1");
     }
 
@@ -84,8 +87,27 @@ class DispatchViewTest extends AbstractUITest {
 
         openNewAssignment();
 
-        assertThat(test(typeField()).getSuggestions()).contains(type.getFormattedDescription());
-        assertThat(test(municipalityField()).getSuggestions()).contains(town.getName());
+        assertThat(test(typeField()).getSuggestions()).contains(type.getFormattedDescription(Locale.ENGLISH));
+        assertThat(test(municipalityField()).getSuggestions()).contains(town.getNameFi());
+    }
+
+    @Test
+    void bilingualOptions_areShownInTheUserLanguage_andInFinnishForOtherLanguages() {
+        var code = unique("T");
+        testData.assignmentType(code, "Rakennuspalo", "Byggnadsbrand");
+        var town = testData.municipality(unique("Parainen "), unique("Pargas "));
+        var swedishOnly = testData.municipality("", unique("Korpo "));
+
+        navigate(DispatchView.class);
+        openNewAssignment();
+
+        // The helpers find the fields by their English labels, and the options are labelled when they are read
+        assertThat(test(typeField()).getSuggestions()).contains(code + " - Rakennuspalo");
+        assertThat(test(municipalityField()).getSuggestions()).contains(town.getNameFi(), swedishOnly.getNameSv());
+
+        UI.getCurrent().setLocale(UserLocale.SWEDISH);
+        assertThat(test(typeField()).getSuggestions()).contains(code + " - Byggnadsbrand");
+        assertThat(test(municipalityField()).getSuggestions()).contains(town.getNameSv(), swedishOnly.getNameSv());
     }
 
     @Test
@@ -292,8 +314,8 @@ class DispatchViewTest extends AbstractUITest {
 
     private Assignment openCompleteAssignment() {
         var assignment = openNewAssignment();
-        test(typeField()).selectItem(assignmentType.getFormattedDescription());
-        test(municipalityField()).selectItem(municipality.getName());
+        test(typeField()).selectItem(assignmentType.getFormattedDescription(Locale.ENGLISH));
+        test(municipalityField()).selectItem(municipality.getNameFi());
         test(addressField()).setValue("Fire Street 1");
         return assignment;
     }

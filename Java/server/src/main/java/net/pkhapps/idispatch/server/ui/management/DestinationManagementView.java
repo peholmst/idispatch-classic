@@ -29,6 +29,8 @@ public class DestinationManagementView extends AbstractManagementView<Destinatio
     protected void configureGrid(Grid<Destination> grid) {
         grid.addColumn(this::formatType).setHeader(getTranslation("management.type"));
         grid.addColumn(Destination::getDescription).setHeader(getTranslation("management.description"));
+        grid.addColumn(destination -> DestinationForm.formatLanguage(destination.getLocale()))
+                .setHeader(getTranslation("management.destination.language"));
         grid.addColumn(destination -> destination.getResources().stream().map(Resource::getCallSign).sorted().collect(Collectors.joining(", "))).setHeader(getTranslation("management.resources"));
     }
 

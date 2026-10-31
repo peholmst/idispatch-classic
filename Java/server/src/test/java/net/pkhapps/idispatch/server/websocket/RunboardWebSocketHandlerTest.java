@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Talks to the runboard WebSocket endpoint of a running server, the way the runboard application does.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"idispatch.runboard.heartbeat-interval=200ms", "idispatch.runboard.language=sv"})
+        properties = "idispatch.runboard.heartbeat-interval=200ms")
 @Import({TestData.class, TestcontainersConfiguration.class, TestSecurityConfiguration.class})
 class RunboardWebSocketHandlerTest {
 
@@ -80,15 +81,37 @@ class RunboardWebSocketHandlerTest {
         var sent = message.path("notifications").get(0);
         assertThat(sent.path("id").asLong()).isEqualTo(notification.getId());
         assertThat(sent.path("address").asString()).isEqualTo(notification.getAddress());
-        assertThat(sent.path("municipality").asString()).isEqualTo(notification.getMunicipality().getName());
+        assertThat(sent.path("municipality").asString()).isEqualTo(notification.getMunicipality().getNameFi());
         assertThat(sent.path("assignment_type_code").asString()).isEqualTo(notification.getAssignmentType().getCode());
         assertThat(sent.path("urgency").asString()).isEqualTo(notification.getUrgency().name());
         assertThat(sent.path("resources").get(0).asString()).isEqualTo(resource.getCallSign());
-        assertThat(sent.path("language").asString()).isEqualTo("sv");
+        assertThat(sent.path("language").asString()).isEqualTo("fi");
 
         client.send("{\"type\":\"ack\",\"id\":" + notification.getId() + "}");
 
         awaitReceipt(notification, destination);
+    }
+
+    @Test
+    void eachRunboard_getsTheNotificationInItsOwnLanguage() throws Exception {
+        var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
+        var finnish = runboardDestination(resource);
+        var swedish = runboardDestination(resource, Bilingual.SWEDISH);
+        var assignment = new Assignment();
+        assignment.setMunicipality(testData.municipality(unique("Parainen "), unique("Pargas ")));
+        assignment.setType(testData.assignmentType(unique("AT"), "Rakennuspalo", "Byggnadsbrand"));
+        assignment.setUrgency(AssignmentUrgency.A);
+        var notification = dispatch(assignment, resource, Set.of(finnish, swedish));
+
+        var inFinnish = connect(finnish.getRunboardKey()).nextMessage().path("notifications").get(0);
+        var inSwedish = connect(swedish.getRunboardKey()).nextMessage().path("notifications").get(0);
+
+        assertThat(inFinnish.path("language").asString()).isEqualTo("fi");
+        assertThat(inFinnish.path("municipality").asString()).isEqualTo(notification.getMunicipality().getNameFi());
+        assertThat(inFinnish.path("assignment_type_descr").asString()).isEqualTo("Rakennuspalo");
+        assertThat(inSwedish.path("language").asString()).isEqualTo("sv");
+        assertThat(inSwedish.path("municipality").asString()).isEqualTo(notification.getMunicipality().getNameSv());
+        assertThat(inSwedish.path("assignment_type_descr").asString()).isEqualTo("Byggnadsbrand");
     }
 
     @Test
@@ -140,8 +163,13 @@ class RunboardWebSocketHandlerTest {
     }
 
     private RunboardDestination runboardDestination(Resource resource) {
+        return runboardDestination(resource, Bilingual.FINNISH);
+    }
+
+    private RunboardDestination runboardDestination(Resource resource, Locale locale) {
         var destination = new RunboardDestination();
         destination.setRunboardKey(unique("KEY"));
+        destination.setLocale(locale);
         destination.setResources(Set.of(resource));
         return destinationRepository.saveAndFlush(destination);
     }
@@ -151,10 +179,14 @@ class RunboardWebSocketHandlerTest {
         assignment.setMunicipality(testData.municipality(unique("Municipality")));
         assignment.setType(testData.assignmentType(unique("AT"), "Test assignment type"));
         assignment.setUrgency(AssignmentUrgency.A);
+        return dispatch(assignment, resource, Set.of(destination));
+    }
+
+    private DispatchNotification dispatch(Assignment assignment, Resource resource, Set<Destination> destinations) {
         assignment.setAddress(unique("Address"));
         assignment = assignmentRepository.saveAndFlush(assignment);
         var notification = dispatchNotificationRepository.saveAndFlush(
-                new DispatchNotification(assignment, Set.of(resource), Set.of(destination)));
+                new DispatchNotification(assignment, Set.of(resource), destinations));
         eventPublisher.publishEvent(new DispatchNotificationSent(this, notification));
         return notification;
     }

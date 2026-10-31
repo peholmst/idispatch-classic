@@ -6,6 +6,7 @@ import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.boundary.MunicipalityManagementService;
+import net.pkhapps.idispatch.server.entity.Bilingual;
 import net.pkhapps.idispatch.server.entity.Municipality;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.RootLayout;
@@ -21,8 +22,11 @@ public class MunicipalityManagementView extends AbstractManagementView<Municipal
 
     @Override
     protected void configureGrid(Grid<Municipality> grid) {
-        var name = grid.addColumn(Municipality::getName).setHeader(getTranslation("management.municipality"));
-        grid.sort(GridSortOrder.asc(name).build());
+        var nameFi = grid.addColumn(Municipality::getNameFi).setHeader(getTranslation("management.municipality-name-fi"))
+                .setSortable(true);
+        var nameSv = grid.addColumn(Municipality::getNameSv).setHeader(getTranslation("management.municipality-name-sv"))
+                .setSortable(true);
+        grid.sort(GridSortOrder.asc(Bilingual.isSwedish(getLocale()) ? nameSv : nameFi).build());
     }
 
     @Override

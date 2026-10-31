@@ -2,10 +2,13 @@ package net.pkhapps.idispatch.server.ui.management;
 
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.RequiredFieldConfigurator;
 import jakarta.validation.constraints.NotBlank;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
+import net.pkhapps.idispatch.server.entity.Bilingual;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
@@ -33,6 +36,32 @@ abstract class ManagementForm<E extends AbstractEntity> extends Composite<FormLa
         formLayout.setAutoResponsive(true);
         formLayout.setExpandColumns(true);
         formLayout.setExpandFields(true);
+    }
+
+    /**
+     * Binds the Finnish and Swedish fields of a bilingual text of which at least one is required. The entity checks
+     * that with a constraint on neither property, so the form checks it itself and shows the error on both fields
+     * until one of them has a value.
+     */
+    protected void bindBilingual(TextField finnish, String finnishProperty, TextField swedish, String swedishProperty,
+                                 String requiredMessageKey) {
+        var message = getTranslation(requiredMessageKey);
+        var finnishBinding = binder.forField(finnish)
+                .withValidator(value -> Bilingual.isGiven(value, swedish.getValue()), message)
+                .bind(finnishProperty);
+        var swedishBinding = binder.forField(swedish)
+                .withValidator(value -> Bilingual.isGiven(finnish.getValue(), value), message)
+                .bind(swedishProperty);
+        revalidateOnUserChange(finnish, swedishBinding);
+        revalidateOnUserChange(swedish, finnishBinding);
+    }
+
+    private static void revalidateOnUserChange(TextField field, Binder.Binding<?, ?> otherBinding) {
+        field.addValueChangeListener(event -> {
+            if (event.isFromClient()) {
+                otherBinding.validate();
+            }
+        });
     }
 
     public void setFormDataObject(E formDataObject) {

@@ -47,7 +47,7 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
         includeDeleted();
 
         assertThat(names()).contains(deleted);
-        var row = rowOf(this.<Municipality>grid(), Municipality::getName, deleted);
+        var row = rowOf(this.<Municipality>grid(), Municipality::getNameFi, deleted);
         Grid<Municipality> grid = grid();
         assertThat(grid.getPartNameGenerator().apply(test(grid).getRow(row))).isEqualTo("deleted");
     }
@@ -67,6 +67,45 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
     }
 
     @Test
+    void search_matchesSwedishNamesToo() {
+        var prefix = unique("Sok");
+        var swedish = prefix + " Söder";
+        testData.municipality(unique("Etelä "), swedish);
+        navigate(MunicipalityManagementView.class);
+
+        search(prefix.toLowerCase());
+
+        assertThat(items(this.<Municipality>grid())).extracting(Municipality::getNameSv).containsExactly(swedish);
+    }
+
+    @Test
+    void add_withOnlySwedishName_isSaved() {
+        var name = unique("Endast svenska ");
+        navigate(MunicipalityManagementView.class);
+
+        add();
+        test(editorTextField("Name in Swedish")).setValue(name);
+        save();
+
+        assertThat(editorTitle()).isEqualTo("Edit Municipality");
+        var saved = this.<Municipality>grid().asSingleSelect().getValue();
+        assertThat(saved.getNameFi()).isEmpty();
+        assertThat(saved.getNameSv()).isEqualTo(name);
+    }
+
+    @Test
+    void add_enteringOneLanguageAfterFailedSave_clearsTheErrorOnBothFields() {
+        navigate(MunicipalityManagementView.class);
+        add();
+        save();
+
+        test(editorTextField("Name in Swedish")).setValue(unique("Namn "));
+
+        assertThat(editorTextField("Name in Finnish").isInvalid()).isFalse();
+        assertThat(editorTextField("Name in Swedish").isInvalid()).isFalse();
+    }
+
+    @Test
     void add_createsMunicipalityAndKeepsEditingIt() {
         var name = unique("Added ");
         navigate(MunicipalityManagementView.class);
@@ -74,12 +113,12 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
         add();
         assertThat(editorTitle()).isEqualTo("Add Municipality");
         assertThat(findEditorButton("Delete")).isEmpty();
-        test(editorTextField("Municipality name")).setValue(name);
+        test(editorTextField("Name in Finnish")).setValue(name);
         save();
 
         assertThat(names()).contains(name);
         assertThat(editorTitle()).isEqualTo("Edit Municipality");
-        assertThat(this.<Municipality>grid().asSingleSelect().getValue().getName()).isEqualTo(name);
+        assertThat(this.<Municipality>grid().asSingleSelect().getValue().getNameFi()).isEqualTo(name);
     }
 
     @Test
@@ -89,10 +128,12 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
         add();
         save();
 
-        var nameField = editorTextField("Municipality name");
-        assertThat(nameField.isRequiredIndicatorVisible()).isTrue();
-        assertThat(nameField.isInvalid()).isTrue();
-        assertThat(nameField.getErrorMessage()).isEqualTo("Please enter a name");
+        // Either language will do, so the error is on both fields and neither is marked as required
+        for (var nameField : List.of(editorTextField("Name in Finnish"), editorTextField("Name in Swedish"))) {
+            assertThat(nameField.isRequiredIndicatorVisible()).isFalse();
+            assertThat(nameField.isInvalid()).isTrue();
+            assertThat(nameField.getErrorMessage()).isEqualTo("Please enter a name in Finnish or Swedish");
+        }
         assertThat(editorTitle()).isEqualTo("Add Municipality");
     }
 
@@ -103,7 +144,7 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
         navigate(MunicipalityManagementView.class);
 
         add();
-        test(editorTextField("Municipality name")).setValue(name);
+        test(editorTextField("Name in Finnish")).setValue(name);
         save();
 
         assertThat(isEditorOpen()).isTrue();
@@ -117,7 +158,7 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
         navigate(MunicipalityManagementView.class);
 
         add();
-        test(editorTextField("Municipality name")).setValue(name);
+        test(editorTextField("Name in Finnish")).setValue(name);
         test(editorButton("Cancel")).click();
 
         assertThat(isEditorOpen()).isFalse();
@@ -132,9 +173,9 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
         testData.municipality(original);
         navigate(MunicipalityManagementView.class);
 
-        select(Municipality::getName, original);
+        select(Municipality::getNameFi, original);
         assertThat(editorTitle()).isEqualTo("Edit Municipality");
-        var nameField = editorTextField("Municipality name");
+        var nameField = editorTextField("Name in Finnish");
         assertThat(nameField.getValue()).isEqualTo(original);
         test(nameField).setValue(renamed);
         save();
@@ -150,8 +191,8 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
         testData.municipality(duplicate);
         navigate(MunicipalityManagementView.class);
 
-        select(Municipality::getName, original);
-        test(editorTextField("Municipality name")).setValue(duplicate);
+        select(Municipality::getNameFi, original);
+        test(editorTextField("Name in Finnish")).setValue(duplicate);
         save();
 
         assertThat(names()).contains(original);
@@ -166,19 +207,19 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
         testData.municipality(second);
         navigate(MunicipalityManagementView.class);
 
-        select(Municipality::getName, first);
-        test(editorTextField("Municipality name")).setValue(edited);
-        select(Municipality::getName, second);
+        select(Municipality::getNameFi, first);
+        test(editorTextField("Name in Finnish")).setValue(edited);
+        select(Municipality::getNameFi, second);
 
         var confirm = findConfirmDialog().orElseThrow();
         assertThat(test(confirm).getHeader()).isEqualTo("Discard changes?");
         test(confirm).cancel();
-        assertThat(editorTextField("Municipality name").getValue()).isEqualTo(edited);
-        assertThat(this.<Municipality>grid().asSingleSelect().getValue().getName()).isEqualTo(first);
+        assertThat(editorTextField("Name in Finnish").getValue()).isEqualTo(edited);
+        assertThat(this.<Municipality>grid().asSingleSelect().getValue().getNameFi()).isEqualTo(first);
 
-        select(Municipality::getName, second);
+        select(Municipality::getNameFi, second);
         test(findConfirmDialog().orElseThrow()).confirm();
-        assertThat(editorTextField("Municipality name").getValue()).isEqualTo(second);
+        assertThat(editorTextField("Name in Finnish").getValue()).isEqualTo(second);
         assertThat(names()).contains(first).doesNotContain(edited);
     }
 
@@ -188,14 +229,14 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
         testData.municipality(name);
         navigate(MunicipalityManagementView.class);
 
-        select(Municipality::getName, name);
+        select(Municipality::getNameFi, name);
         test(editorButton("Delete")).click();
         assertThat(names()).doesNotContain(name);
         assertThat(isEditorOpen()).isFalse();
 
         includeDeleted();
-        select(Municipality::getName, name);
-        assertThat(editorTextField("Municipality name").isReadOnly()).isTrue();
+        select(Municipality::getNameFi, name);
+        assertThat(editorTextField("Name in Finnish").isReadOnly()).isTrue();
         assertThat(findEditorButton("Save")).isEmpty();
         assertThat(findEditorButton("Delete")).isEmpty();
         test(editorButton("Restore")).click();
@@ -205,6 +246,6 @@ class MunicipalityManagementViewTest extends AbstractManagementViewTest {
     }
 
     private List<String> names() {
-        return items(this.<Municipality>grid()).stream().map(Municipality::getName).toList();
+        return items(this.<Municipality>grid()).stream().map(Municipality::getNameFi).toList();
     }
 }

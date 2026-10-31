@@ -1,9 +1,11 @@
 package net.pkhapps.idispatch.server.ui.management;
 
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.menubar.MenuBarTester;
 import com.vaadin.flow.component.textfield.TextArea;
+import net.pkhapps.idispatch.server.entity.Bilingual;
 import net.pkhapps.idispatch.server.entity.Destination;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.ResourceState;
@@ -12,6 +14,7 @@ import net.pkhapps.idispatch.server.entity.SmsDestination;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.Locale;
 import java.util.function.Predicate;
 
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
@@ -42,7 +45,9 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
         navigate(DestinationManagementView.class);
 
         addDestination("Runboard Destination");
+        assertThat(languageField().getValue()).as("New destinations are in Finnish").isEqualTo(Bilingual.FINNISH);
         test(editorTextField("Description")).setValue(description);
+        test(languageField()).selectItem("Swedish");
         test(editorTextField("Runboard Key"))
                 .setValue(key);
         test(resourcesField()).selectItem(callSign);
@@ -52,7 +57,9 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
                 destinationId(d -> d instanceof RunboardDestination r && key.equals(r.getRunboardKey())));
         assertThat(test(this.<Destination>grid()).getCellText(row, 0)).isEqualTo("Runboard Destination");
         assertThat(test(this.<Destination>grid()).getCellText(row, 1)).isEqualTo(description);
-        assertThat(test(this.<Destination>grid()).getCellText(row, 2)).isEqualTo(callSign);
+        assertThat(test(this.<Destination>grid()).getCellText(row, 2)).isEqualTo("Swedish");
+        assertThat(test(this.<Destination>grid()).getCellText(row, 3)).isEqualTo(callSign);
+        assertThat(test(this.<Destination>grid()).getRow(row).getLocale()).isEqualTo(Bilingual.SWEDISH);
     }
 
     @Test
@@ -178,6 +185,11 @@ class DestinationManagementViewTest extends AbstractManagementViewTest {
 
     private void addDestination(String type) {
         test(MenuBarTester.class, addMenu()).clickItem("Add...", type);
+    }
+
+    @SuppressWarnings("unchecked")
+    private ComboBox<Locale> languageField() {
+        return find(ComboBox.class, editor()).withLabel("Language").single();
     }
 
     @SuppressWarnings("unchecked")

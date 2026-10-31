@@ -48,6 +48,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
@@ -87,8 +88,8 @@ class ReportsViewTest extends AbstractUITest {
         assertThat(reportStatusCell(closed).getText()).as("Report").isEqualTo("Open");
         assertThat(test(assignments()).getCellText(row, 2)).as("Closed").isEqualTo(Formatters.formatDateTime(closed.getClosed()));
         assertThat(test(assignments()).getCellText(row, 3)).as("Urgency").isEqualTo("B");
-        assertThat(test(assignments()).getCellText(row, 4)).as("Type").isEqualTo(closed.getType().getFormattedDescription());
-        assertThat(test(assignments()).getCellText(row, 5)).as("Municipality").isEqualTo(closed.getMunicipality().getName());
+        assertThat(test(assignments()).getCellText(row, 4)).as("Type").isEqualTo(closed.getType().getFormattedDescription(Locale.ENGLISH));
+        assertThat(test(assignments()).getCellText(row, 5)).as("Municipality").isEqualTo(closed.getMunicipality().getNameFi());
         assertThat(test(assignments()).getCellText(row, 6)).as("Address").isEqualTo("Report Road 7");
     }
 
@@ -291,8 +292,8 @@ class ReportsViewTest extends AbstractUITest {
         assertThat(reportField("Opened").getValue()).isEqualTo(Formatters.formatDateTime(closed.getOpened()));
         assertThat(reportField("Closed").getValue()).isEqualTo(Formatters.formatDateTime(closed.getClosed()));
         assertThat(reportField("Urgency").getValue()).isEqualTo("B");
-        assertThat(reportField("Type").getValue()).isEqualTo(closed.getType().getFormattedDescription());
-        assertThat(reportField("Municipality").getValue()).isEqualTo(closed.getMunicipality().getName());
+        assertThat(reportField("Type").getValue()).isEqualTo(closed.getType().getFormattedDescription(Locale.ENGLISH));
+        assertThat(reportField("Municipality").getValue()).isEqualTo(closed.getMunicipality().getNameFi());
         assertThat(reportField("Address").getValue()).isEqualTo("Report Road 7");
         assertThat(find(TextArea.class, reportItem("Description")).single().getValue()).isEqualTo("Smoke seen");
         assertThat(reportField("Number").isReadOnly()).isTrue();

@@ -1,17 +1,23 @@
 package net.pkhapps.idispatch.server.ui.management;
 
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.i18n.I18NProvider;
 import net.pkhapps.idispatch.server.boundary.DestinationManagementService;
+import net.pkhapps.idispatch.server.entity.Bilingual;
 import net.pkhapps.idispatch.server.entity.Destination;
 import net.pkhapps.idispatch.server.entity.Resource;
 import net.pkhapps.idispatch.server.entity.RunboardDestination;
 import net.pkhapps.idispatch.server.entity.SmsDestination;
 
+import java.util.List;
+import java.util.Locale;
+
 /**
- * Base class for the destination forms: a description first, then the fields of the destination type, then the
- * resources whose notifications the destination receives.
+ * Base class for the destination forms: a description and the language of the notifications first, then the fields
+ * of the destination type, then the resources whose notifications the destination receives.
  */
 abstract class DestinationForm<D extends Destination> extends ManagementForm<D> {
 
@@ -22,11 +28,15 @@ abstract class DestinationForm<D extends Destination> extends ManagementForm<D> 
 
         description = new TextField(getTranslation("management.description"));
         description.setHelperText(getTranslation("management.destination.description.helper"));
-        getContent().add(description);
+        var locale = new ComboBox<Locale>(getTranslation("management.destination.language"));
+        locale.setItems(List.of(Bilingual.FINNISH, Bilingual.SWEDISH));
+        locale.setItemLabelGenerator(DestinationForm::formatLanguage);
+        getContent().add(description, locale);
 
         binder.forField(description)
                 .withNullRepresentation("")
                 .bind(Destination.PROP_DESCRIPTION);
+        binder.forField(locale).bind(Destination.PROP_LOCALE);
     }
 
     protected void addResourcesField(DestinationManagementService service) {
@@ -36,6 +46,10 @@ abstract class DestinationForm<D extends Destination> extends ManagementForm<D> 
         getContent().add(resources);
 
         binder.forField(resources).bind(Destination.PROP_RESOURCES);
+    }
+
+    static String formatLanguage(Locale locale) {
+        return locale == null ? "" : I18NProvider.translate("management.destination.language." + locale.getLanguage());
     }
 
     @Override
