@@ -45,7 +45,7 @@ class MethodSecurityTest {
         assertThatThrownBy(() -> municipalityManagementService.findAll(ALL)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.findReportByAssignmentId(1L)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.findClosedAssignments(NO_FILTER, FIRST_PAGE)).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> reportService.saveReport(null, null)).isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
@@ -70,7 +70,7 @@ class MethodSecurityTest {
         assertThatCode(() -> reportService.findClosedAssignments(NO_FILTER, FIRST_PAGE)).doesNotThrowAnyException();
         assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
         assertThatThrownBy(() -> assignmentService.findOpenAssignments()).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> reportService.saveReport(null, null)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.closeReport(null)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> reportService.reopenReport(null)).isInstanceOf(AccessDeniedException.class);
     }
@@ -80,7 +80,7 @@ class MethodSecurityTest {
     void reportReviewer_canReadReportsButNotWriteThem() {
         assertThatCode(() -> reportService.findClosedAssignments(NO_FILTER, FIRST_PAGE)).doesNotThrowAnyException();
         assertThatCode(() -> reportService.findReportByAssignmentId(1L)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> reportService.saveReport(null)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> reportService.saveReport(null, null)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> assignmentService.findOpenAssignments()).isInstanceOf(AccessDeniedException.class);
     }
 

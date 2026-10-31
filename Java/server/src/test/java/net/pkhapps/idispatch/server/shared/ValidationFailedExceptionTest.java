@@ -1,8 +1,7 @@
 package net.pkhapps.idispatch.server.shared;
 
 import jakarta.validation.Validation;
-import net.pkhapps.idispatch.server.assignment.AssignmentId;
-import net.pkhapps.idispatch.server.report.AssignmentReport;
+import jakarta.validation.constraints.Min;
 import org.junit.jupiter.api.Test;
 
 import java.util.Locale;
@@ -14,7 +13,7 @@ class ValidationFailedExceptionTest {
     @Test
     void violationMessages_areInTheRequestedLanguage() {
         var violations = Validation.buildDefaultValidatorFactory().getValidator()
-                .validateProperty(reportWithNegativePeopleInvolved(), "peopleInvolved");
+                .validateProperty(new Counted(-1), "peopleInvolved");
         var exception = new ValidationFailedException(violations);
 
         assertThat(exception.getViolationMessages(Locale.ENGLISH)).containsExactly("The number of people involved cannot be negative");
@@ -28,7 +27,7 @@ class ValidationFailedExceptionTest {
         Locale.setDefault(Locale.of("fi"));
         try {
             var violations = Validation.buildDefaultValidatorFactory().getValidator()
-                    .validateProperty(reportWithNegativePeopleInvolved(), "peopleInvolved");
+                    .validateProperty(new Counted(-1), "peopleInvolved");
 
             assertThat(new ValidationFailedException(violations).getViolationMessages(Locale.ENGLISH))
                     .containsExactly("The number of people involved cannot be negative");
@@ -37,9 +36,9 @@ class ValidationFailedExceptionTest {
         }
     }
 
-    private static AssignmentReport reportWithNegativePeopleInvolved() {
-        var report = new AssignmentReport(new AssignmentId(1));
-        report.setPeopleInvolved(-1);
-        return report;
+    /**
+     * A bean with a constraint whose message is in {@code ValidationMessages}, now that no entity has one.
+     */
+    record Counted(@Min(value = 0, message = "{idispatch.report.people-involved.min}") int peopleInvolved) {
     }
 }

@@ -12,18 +12,23 @@ import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
-import net.pkhapps.idispatch.server.shared.ValidationFailedException;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import net.pkhapps.idispatch.server.ui.RunAs;
 import net.pkhapps.idispatch.server.ui.TestData;
+import org.jooq.DSLContext;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.test.context.TestComponent;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENT_REPORTS;
+import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENT_REPORT_UNITS;
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
 
 /**
@@ -56,15 +61,37 @@ public class HandledAssignments {
         }
     }
 
+    /**
+     * A report as it is stored, read straight from the database. A report that nobody has saved has no content.
+     *
+     * @param lastEditedBy the subject of whoever last changed the situation or the counts, or {@code null}
+     * @param closedBy     the subject of the reviewer who closed it, or {@code null} while it is open
+     */
+    public record StoredReport(boolean saved, String situationDevelopment, @Nullable String lastEditedBy,
+                               @Nullable String closedBy, List<StoredUnitReport> units) {
+
+        public boolean closed() {
+            return closedBy != null;
+        }
+    }
+
+    /**
+     * @param lastEditedBy the subject of whoever last changed the unit's answers, or {@code null}
+     */
+    public record StoredUnitReport(String situationOnArrival, String actionsTaken, @Nullable String lastEditedBy) {
+    }
+
     private final TestData given;
+    private final DSLContext dsl;
     private final AssignmentService assignmentService;
     private final ResourceStatusService resourceStatusService;
     private final DispatchService dispatchService;
     private final ReportService reportService;
 
-    HandledAssignments(TestData given, AssignmentService assignmentService, ResourceStatusService resourceStatusService,
+    HandledAssignments(TestData given, DSLContext dsl, AssignmentService assignmentService, ResourceStatusService resourceStatusService,
                        DispatchService dispatchService, ReportService reportService) {
         this.given = given;
+        this.dsl = dsl;
         this.assignmentService = assignmentService;
         this.resourceStatusService = resourceStatusService;
         this.dispatchService = dispatchService;
@@ -125,7 +152,26 @@ public class HandledAssignments {
     /**
      * The report as it is stored.
      */
-    public AssignmentReport reportOf(Handled handled) {
+    public StoredReport reportOf(Handled handled) {
+        var report = dsl.selectFrom(ASSIGNMENT_REPORTS)
+                .where(ASSIGNMENT_REPORTS.ASSIGNMENT_ID.eq(handled.assignment().id().value()))
+                .fetchOne();
+        if (report == null) {
+            return new StoredReport(false, "", null, null, List.of());
+        }
+        var units = dsl.selectFrom(ASSIGNMENT_REPORT_UNITS)
+                .where(ASSIGNMENT_REPORT_UNITS.REPORT_ID.eq(report.getId()))
+                .orderBy(ASSIGNMENT_REPORT_UNITS.RESOURCE_ID)
+                .fetch(unit -> new StoredUnitReport(unit.getSituationOnArrival(), unit.getActionsTaken(),
+                        unit.getLastEditedBySubject()));
+        return new StoredReport(true, report.getSituationDevelopment(), report.getLastEditedBySubject(),
+                report.getClosedBySubject(), units);
+    }
+
+    /**
+     * The report as the service gives it to a user who opens it.
+     */
+    private AssignmentReport loadedReportOf(Handled handled) {
         return asDispatcher(() -> reportService.findReportByAssignmentId(handled.assignment().id().value()).orElseThrow()
                 .getReport());
     }
@@ -134,7 +180,7 @@ public class HandledAssignments {
      * Closes the report, as a reviewer in another session does.
      */
     public void reviewerHasClosedTheReportOf(Handled handled) {
-        var report = reportOf(handled);
+        var report = loadedReportOf(handled);
         as(Roles.ROLE_REPORT_REVIEWER, () -> reportService.closeReport(report));
     }
 
@@ -142,15 +188,13 @@ public class HandledAssignments {
      * Saves how the situation developed in the report, as a writer in another session does.
      */
     public void writerHasWrittenInTheReportOf(Handled handled, String situationDevelopment) {
-        var report = reportOf(handled);
-        report.setSituationDevelopment(situationDevelopment);
+        var report = loadedReportOf(handled);
+        var scene = report.scene();
+        var draft = new ReportDraft(new SceneDetails(new ReportText(situationDevelopment), scene.peopleInvolved(),
+                scene.lightlyInjured(), scene.seriouslyInjured(), scene.deceased()), Map.of());
         as(Roles.ROLE_REPORT_WRITER, () -> {
-            try {
-                if (!(reportService.saveReport(report) instanceof UpdateResult.Success)) {
-                    throw new AssertionError("The report could not be saved");
-                }
-            } catch (ValidationFailedException ex) {
-                throw new AssertionError(ex);
+            if (!(reportService.saveReport(report, draft) instanceof UpdateResult.Success)) {
+                throw new AssertionError("The report could not be saved");
             }
             return null;
         });

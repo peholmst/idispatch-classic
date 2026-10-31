@@ -77,8 +77,74 @@ class ReportWritingTest extends UseCaseTest {
 
         assertThat(erik.wasToldThat("Someone else saved this report")).isFalse();
         var stored = handled.reportOf(closed);
-        assertThat(stored.getUnitReports().values()).singleElement()
-                .satisfies(unit -> assertThat(unit.getActionsTaken()).isEqualTo("Interior attack, then ventilation"));
+        assertThat(stored.units()).singleElement()
+                .satisfies(unit -> assertThat(unit.actionsTaken()).isEqualTo("Interior attack, then ventilation"));
+    }
+
+    @Test
+    void negativeCountCannotBeSaved() {
+        var closed = handled.closedAssignment(unique("CS"));
+        var erik = erik();
+        erik.opensTheReportOf(closed);
+
+        erik.counts(PEOPLE_INVOLVED, -1);
+        erik.savesTheReport();
+
+        assertThat(erik.wasToldThat("Report saved")).isFalse();
+        assertThat(handled.reportOf(closed).saved()).as("Nothing was saved").isFalse();
+    }
+
+    @Test
+    void writerLeavesCountsEmptyOrClearsThem() {
+        var closed = handled.closedAssignment(unique("CS"));
+        var erik = erik();
+        erik.opensTheReportOf(closed);
+        erik.counts(PEOPLE_INVOLVED, 3);
+        erik.counts(DECEASED, 0);
+        erik.savesTheReport();
+
+        erik.counts(DECEASED, null);
+        erik.savesTheReport();
+        erik.refreshes();
+        erik.opensTheReportOf(closed);
+
+        assertThat(erik.count(PEOPLE_INVOLVED)).isEqualTo(3);
+        assertThat(erik.count(LIGHTLY_INJURED)).as("Never filled in").isNull();
+        assertThat(erik.count(DECEASED)).as("Cleared").isNull();
+    }
+
+    @Test
+    void countErrorsShowUnderTheCounts() {
+        var closed = handled.closedAssignment(unique("CS"));
+        var erik = erik();
+        erik.opensTheReportOf(closed);
+
+        erik.counts(LIGHTLY_INJURED, -1);
+        assertThat(erik.errorOfCount(LIGHTLY_INJURED)).isEqualTo("Cannot be negative");
+
+        erik.counts(LIGHTLY_INJURED, 3);
+        erik.counts(PEOPLE_INVOLVED, 2);
+        assertThat(erik.errorOfCount(LIGHTLY_INJURED)).isEmpty();
+        assertThat(erik.errorOfCount(PEOPLE_INVOLVED))
+                .isEqualTo("The injured and deceased cannot add up to more than the number of people involved");
+
+        erik.counts(PEOPLE_INVOLVED, 3);
+        assertThat(erik.errorOfCount(PEOPLE_INVOLVED)).isEmpty();
+    }
+
+    @Test
+    void puttingBackWhatWasThereIsNoChange() {
+        var first = handled.closedAssignment(unique("CS"));
+        var second = handled.closedAssignment(unique("CS"));
+        var erik = erik();
+        erik.opensTheReportOf(first);
+        erik.writesHowTheSituationDeveloped("Not meant");
+        erik.writesHowTheSituationDeveloped("");
+
+        erik.opensTheReportOf(second);
+
+        assertThat(erik.isAskedAnything()).as("Nothing to throw away").isFalse();
+        assertThat(erik.hasSelected(second)).isTrue();
     }
 
     @Test
@@ -94,7 +160,7 @@ class ReportWritingTest extends UseCaseTest {
 
         assertThat(erik.wasToldThat(
                 "The injured and deceased cannot add up to more than the number of people involved")).isTrue();
-        assertThat(handled.reportOf(closed).isNew()).as("Nothing was saved").isTrue();
+        assertThat(handled.reportOf(closed).saved()).as("Nothing was saved").isFalse();
     }
 
     @Test
@@ -112,7 +178,7 @@ class ReportWritingTest extends UseCaseTest {
 
         assertThat(erik.wasToldThat("Someone else saved this report")).isTrue();
         assertThat(erik.situationDevelopment()).as("Ella's version is shown").isEqualTo("Written by Ella");
-        assertThat(handled.reportOf(closed).getSituationDevelopment()).isEqualTo("Written by Ella");
+        assertThat(handled.reportOf(closed).situationDevelopment()).isEqualTo("Written by Ella");
     }
 
     @Test
@@ -225,9 +291,9 @@ class ReportWritingTest extends UseCaseTest {
                 .startsWith("Last edited by Erik Explorer on ");
         assertThat(ella.whoLastEditedTheUnit(callSign)).startsWith("Last edited by Ella Explorer on ");
         var stored = handled.reportOf(closed);
-        assertThat(stored.getLastEdit().getSubject()).isEqualTo("subject-erik");
-        assertThat(stored.getUnitReports().values()).singleElement()
-                .satisfies(unit -> assertThat(unit.getLastEdit().getSubject()).isEqualTo("subject-ella"));
+        assertThat(stored.lastEditedBy()).isEqualTo("subject-erik");
+        assertThat(stored.units()).singleElement()
+                .satisfies(unit -> assertThat(unit.lastEditedBy()).isEqualTo("subject-ella"));
     }
 
     @Test

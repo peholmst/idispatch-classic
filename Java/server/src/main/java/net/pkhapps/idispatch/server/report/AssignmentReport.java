@@ -1,195 +1,83 @@
 package net.pkhapps.idispatch.server.report;
 
-import jakarta.persistence.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
+import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.resource.ResourceId;
-import net.pkhapps.idispatch.server.shared.AbstractLockableEntity;
+import org.jspecify.annotations.Nullable;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.nullToEmpty;
+import static java.util.Objects.requireNonNull;
 
 /**
- * Entity describing what happened on scene of a closed {@link Assignment}, as told by the people who were there. The
- * casualty counts are {@code null} until someone fills them in. The report as a whole and each {@link UnitReport}
- * remember who last changed them; the report's last edit covers the situation and the counts only.
+ * What happened on scene of a closed {@link Assignment}, as told by the people who were there. The report as a whole
+ * and each {@link UnitReport} remember who last changed them; the report's last edit covers the scene only.
  * <p>
  * Once a reviewer has checked the report, they close it, and nobody can change it until it is re-opened.
+ *
+ * @param version  incremented on every change, so that a change based on an older version can be refused; {@code null}
+ *                 until the report is first saved
+ * @param lastEdit who last changed the scene, or {@code null} if nobody has
+ * @param closed   who closed the report, or {@code null} while it is open
+ * @param units    the units that have reported, or have been shown a form to report in
  */
-@Entity
-@Table(name = "assignment_reports")
-public class AssignmentReport extends AbstractLockableEntity {
+public record AssignmentReport(AssignmentId assignmentId, @Nullable Long version, SceneDetails scene,
+                               @Nullable UserStamp lastEdit, @Nullable UserStamp closed,
+                               Map<ResourceId, UnitReport> units) {
 
-    public static final int MAX_TEXT_LENGTH = 4000;
-
-    @Column(name = "assignment_id", nullable = false, unique = true)
-    private Long assignmentId;
-    @Column(name = "situation_development", nullable = false, length = MAX_TEXT_LENGTH)
-    @Size(max = MAX_TEXT_LENGTH, message = "{idispatch.report.situation-development.size}")
-    private String situationDevelopment = "";
-    @Column(name = "people_involved")
-    @Min(value = 0, message = "{idispatch.report.people-involved.min}")
-    private Integer peopleInvolved;
-    @Column(name = "lightly_injured")
-    @Min(value = 0, message = "{idispatch.report.lightly-injured.min}")
-    private Integer lightlyInjured;
-    @Column(name = "seriously_injured")
-    @Min(value = 0, message = "{idispatch.report.seriously-injured.min}")
-    private Integer seriouslyInjured;
-    @Column(name = "deceased")
-    @Min(value = 0, message = "{idispatch.report.deceased.min}")
-    private Integer deceased;
-    @Embedded
-    @AttributeOverride(name = "subject", column = @Column(name = "last_edited_by_subject"))
-    @AttributeOverride(name = "firstName", column = @Column(name = "last_edited_by_first_name"))
-    @AttributeOverride(name = "lastName", column = @Column(name = "last_edited_by_last_name"))
-    @AttributeOverride(name = "timestamp", column = @Column(name = "last_edited_at"))
-    private UserStamp lastEdit;
-    @Embedded
-    @AttributeOverride(name = "subject", column = @Column(name = "closed_by_subject"))
-    @AttributeOverride(name = "firstName", column = @Column(name = "closed_by_first_name"))
-    @AttributeOverride(name = "lastName", column = @Column(name = "closed_by_last_name"))
-    @AttributeOverride(name = "timestamp", column = @Column(name = "closed_at"))
-    private UserStamp closed;
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "assignment_report_units", joinColumns = @JoinColumn(name = "report_id"))
-    @MapKeyColumn(name = "resource_id")
-    private Map<Long, @Valid UnitReport> unitReports = new HashMap<>();
-
-    protected AssignmentReport() {
-    }
-
-    public AssignmentReport(AssignmentId assignment) {
-        this.assignmentId = checkNotNull(assignment).value();
-    }
-
-    public AssignmentId getAssignmentId() {
-        return new AssignmentId(assignmentId);
-    }
-
-    public String getSituationDevelopment() {
-        return situationDevelopment;
-    }
-
-    public void setSituationDevelopment(String situationDevelopment) {
-        this.situationDevelopment = nullToEmpty(situationDevelopment);
-    }
-
-    public Integer getPeopleInvolved() {
-        return peopleInvolved;
-    }
-
-    public void setPeopleInvolved(Integer peopleInvolved) {
-        this.peopleInvolved = peopleInvolved;
-    }
-
-    public Integer getLightlyInjured() {
-        return lightlyInjured;
-    }
-
-    public void setLightlyInjured(Integer lightlyInjured) {
-        this.lightlyInjured = lightlyInjured;
-    }
-
-    public Integer getSeriouslyInjured() {
-        return seriouslyInjured;
-    }
-
-    public void setSeriouslyInjured(Integer seriouslyInjured) {
-        this.seriouslyInjured = seriouslyInjured;
-    }
-
-    public Integer getDeceased() {
-        return deceased;
-    }
-
-    public void setDeceased(Integer deceased) {
-        this.deceased = deceased;
+    public AssignmentReport {
+        requireNonNull(assignmentId);
+        requireNonNull(scene);
+        units = Map.copyOf(units);
     }
 
     /**
-     * Returns who last changed the situation or the counts, or {@code null} if nobody has.
+     * Returns the report of an assignment that nobody has written anything in yet.
      */
-    public UserStamp getLastEdit() {
-        return lastEdit;
+    public static AssignmentReport empty(AssignmentId assignment) {
+        return new AssignmentReport(assignment, null, SceneDetails.EMPTY, null, null, Map.of());
     }
 
-    public void setLastEdit(UserStamp lastEdit) {
-        this.lastEdit = lastEdit;
-    }
-
-    /**
-     * Returns who closed the report, or {@code null} if it is open.
-     */
-    public UserStamp getClosed() {
-        return closed;
+    public boolean isNew() {
+        return version == null;
     }
 
     public boolean isClosed() {
         return closed != null;
     }
 
-    public void close(UserStamp closed) {
-        this.closed = checkNotNull(closed);
-    }
-
-    public void reopen() {
-        this.closed = null;
+    /**
+     * Returns the report of the given responding unit, which is empty if the unit has not reported yet.
+     */
+    public UnitReport unit(ResourceId resource) {
+        return units.getOrDefault(resource, UnitReport.EMPTY);
     }
 
     /**
-     * Returns whether this report has the same situation and counts as the other one, ignoring the unit reports.
+     * Returns this report with what the writer filled in. The edit is recorded on the scene and on each unit whose
+     * content differs from this report's, so that saving doesn't claim the parts the writer didn't touch. A part that
+     * has not been saved before counts as changed if it has any content.
      */
-    public boolean hasSameSceneDetailsAs(AssignmentReport other) {
-        return situationDevelopment.equals(other.situationDevelopment)
-                && Objects.equals(peopleInvolved, other.peopleInvolved)
-                && Objects.equals(lightlyInjured, other.lightlyInjured)
-                && Objects.equals(seriouslyInjured, other.seriouslyInjured)
-                && Objects.equals(deceased, other.deceased);
+    public AssignmentReport withDraft(ReportDraft draft, UserStamp edit) {
+        var units = new HashMap<>(this.units);
+        draft.units().forEach((resource, answers) -> {
+            var before = unit(resource);
+            units.put(resource, before.answers().equals(answers) ? before : new UnitReport(answers, edit));
+        });
+        var sceneChanged = !scene.equals(draft.scene());
+        return new AssignmentReport(assignmentId, version, draft.scene(), sceneChanged ? edit : lastEdit, closed,
+                units);
     }
 
     /**
-     * Returns the reports of the units that have reported, or have been shown a form to report in.
+     * Returns this report closed by the reviewer.
      */
-    public Map<ResourceId, UnitReport> getUnitReports() {
-        var result = new HashMap<ResourceId, UnitReport>();
-        unitReports.forEach((resource, unitReport) -> result.put(new ResourceId(resource), unitReport));
-        return Collections.unmodifiableMap(result);
+    public AssignmentReport closedBy(UserStamp reviewer) {
+        return new AssignmentReport(assignmentId, version, scene, lastEdit, requireNonNull(reviewer), units);
     }
 
-    /**
-     * Returns the report of the given responding unit, creating an empty one if the unit has not reported yet.
-     */
-    public UnitReport getUnitReport(ResourceId resource) {
-        return unitReports.computeIfAbsent(checkNotNull(resource).value(), r -> new UnitReport());
-    }
-
-    @AssertTrue(message = "{idispatch.report.casualties.consistent}")
-    public boolean isCasualtiesWithinPeopleInvolved() {
-        if (peopleInvolved == null) {
-            return true;
-        }
-        return zeroIfNull(lightlyInjured) + zeroIfNull(seriouslyInjured) + zeroIfNull(deceased) <= peopleInvolved;
-    }
-
-    private static int zeroIfNull(Integer value) {
-        return value == null ? 0 : value;
-    }
-
-    @Override
-    public String toString() {
-        return toStringHelper(this)
-                .add(PROP_ID, getId())
-                .add("assignment", assignmentId)
-                .toString();
+    public AssignmentReport reopened() {
+        return new AssignmentReport(assignmentId, version, scene, lastEdit, null, units);
     }
 }

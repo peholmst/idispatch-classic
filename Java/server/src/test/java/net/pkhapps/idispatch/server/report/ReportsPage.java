@@ -242,6 +242,14 @@ public class ReportsPage extends AppShell {
         return window.findIntegerField().withLabel(label).component().getValue();
     }
 
+    /**
+     * The error shown under the count field, or nothing if it is valid.
+     */
+    public String countError(String label) {
+        var field = window.findIntegerField().withLabel(label).component();
+        return field.isInvalid() ? field.getErrorMessage() : "";
+    }
+
     public boolean canChangeCount(String label) {
         return !window.findIntegerField().withLabel(label).component().isReadOnly();
     }
