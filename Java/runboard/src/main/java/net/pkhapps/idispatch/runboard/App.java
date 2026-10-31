@@ -23,7 +23,8 @@ public class App {
         outputs.initialize();
         // The flashing light is on while notifications are shown.
         model.addObserver((o, arg) -> outputs.setLight(!model.getVisibleNotifications().isEmpty()));
-        final Alarm alarm = new Alarm(new Speech(configuration), outputs, configuration.getAlertTimings());
+        final Alarm alarm = new Alarm(new Speech(configuration), outputs, configuration.getAlertTimings(),
+                configuration.getAlarmVolume());
         model.addObserver(alarm);
         // Release the speech engine's native resources before the JVM exits, or their destructors can crash it, and
         // leave the amplifier and the flashing light off.

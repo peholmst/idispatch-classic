@@ -17,7 +17,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Sounds the alarm for new notifications and then reads them out loud. Without speech, the alarm plays for longer
  * instead. {@link AlertTimings} sets how many times each part plays. Sound is played on a thread of its own, one alert
- * or beep at a time, with the amplifier switched on.
+ * or beep at a time, with the amplifier switched on. The alarm and the beep are attenuated by the alarm volume, so that
+ * they are not much louder than the speech.
  */
 class Alarm implements Observer {
 
@@ -31,13 +32,16 @@ class Alarm implements Observer {
     private Clip beepClip;
     private Set<Notification> seenNotifications = new HashSet<>();
 
-    Alarm(Speech speech, Outputs outputs, AlertTimings timings) {
+    /**
+     * @param alarmVolume the gain of the alarm and the beep in decibels, at most 0
+     */
+    Alarm(Speech speech, Outputs outputs, AlertTimings timings, double alarmVolume) {
         this.speech = speech;
         this.outputs = outputs;
         this.timings = timings;
         try {
-            alarmClip = openClip("/sounds/alarm.wav");
-            beepClip = openClip("/sounds/beep.wav");
+            alarmClip = openClip("/sounds/alarm.wav", alarmVolume);
+            beepClip = openClip("/sounds/beep.wav", alarmVolume);
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
             logger.error("Error initializing sound system, no sounds will be played", ex);
         }
@@ -61,11 +65,18 @@ class Alarm implements Observer {
         }
     }
 
-    private static Clip openClip(String resource)
+    private static Clip openClip(String resource, double volume)
             throws UnsupportedAudioFileException, IOException, LineUnavailableException {
-        final Clip clip = AudioSystem.getClip();
-        clip.open(AudioSystem.getAudioInputStream(Alarm.class.getResource(resource)));
-        return clip;
+        try (AudioInputStream file = AudioSystem.getAudioInputStream(Alarm.class.getResource(resource))) {
+            final AudioFormat format = new AudioFormat(file.getFormat().getSampleRate(), 16,
+                    file.getFormat().getChannels(), true, false);
+            try (AudioInputStream pcm = AudioSystem.getAudioInputStream(format, file)) {
+                final byte[] samples = Volume.amplify(pcm.readAllBytes(), format, volume);
+                final Clip clip = AudioSystem.getClip();
+                clip.open(format, samples, 0, samples.length);
+                return clip;
+            }
+        }
     }
 
     void soundBeep() {

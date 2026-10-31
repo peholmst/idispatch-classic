@@ -78,8 +78,9 @@ defaults.pcm.card Headphones
 defaults.ctl.card Headphones
 ```
 
-Then `speaker-test -c 2 -t wav -l 1` should play through it. Set the volume with `alsamixer`. The user must be in the
-`audio` group, as the user created by Imager is.
+Then `speaker-test -c 2 -t wav -l 1` should play through it. Set the volume with `alsamixer` (and the
+amplifier) so that the speech is heard well, then adjust `idispatch.alarm.volume` if the alarm is too loud or quiet
+next to it (see [speech.md](speech.md#volume)). The user must be in the `audio` group, as the user created by Imager is.
 
 ## 5. Connect the amplifier and the flashing light
 

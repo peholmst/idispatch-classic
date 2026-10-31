@@ -15,7 +15,7 @@ class ConfigurationTest {
 
     private static final List<String> TIMING_PROPERTIES = List.of("idispatch.alarm.plays",
             "idispatch.alarm.playsBeforeSpeech", "idispatch.speech.repeats", "idispatch.speech.pause",
-            "idispatch.notification.shownFor");
+            "idispatch.notification.shownFor", "idispatch.alarm.volume");
 
     @AfterEach
     void clearProperties() {
@@ -72,5 +72,24 @@ class ConfigurationTest {
         System.setProperty("idispatch.notification.shownFor", "0");
 
         assertEquals(Duration.ofMinutes(3), new Configuration().getNotificationShownFor());
+    }
+
+    @Test
+    void alarmVolume_defaultsToMinusTwelveDecibels() {
+        assertEquals(-12, new Configuration().getAlarmVolume());
+    }
+
+    @Test
+    void alarmVolume_isRead() {
+        System.setProperty("idispatch.alarm.volume", " -6.5 ");
+
+        assertEquals(-6.5, new Configuration().getAlarmVolume());
+    }
+
+    @Test
+    void alarmVolume_cannotAmplify() {
+        System.setProperty("idispatch.alarm.volume", "3");
+
+        assertEquals(-12, new Configuration().getAlarmVolume());
     }
 }

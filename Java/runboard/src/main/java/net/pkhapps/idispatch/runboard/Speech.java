@@ -113,14 +113,15 @@ class Speech {
     }
 
     /**
-     * Returns the text spoken in the given language, or an empty optional if it cannot be spoken.
+     * Returns the text spoken in the given language, or an empty optional if it cannot be spoken. The speech is
+     * {@linkplain Volume#normalize(SpeechAudio) normalized}, so every voice is as loud.
      */
     Optional<SpeechAudio> synthesize(String language, String text) {
         if (engine == null) {
             return Optional.empty();
         }
         try {
-            return engine.synthesize(language, text);
+            return engine.synthesize(language, text).map(Volume::normalize);
         } catch (Exception | LinkageError ex) {
             logger.error("Speech engine '{}' could not synthesize text in language '{}': {}", engineName, language,
                     text, ex);
