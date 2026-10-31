@@ -73,6 +73,24 @@ class ClosedAssignmentQuery {
                         row.value7(), row.value8(), row.value9(), row.value10()));
     }
 
+    /**
+     * Returns the IDs of the municipalities that at least one closed assignment is in, in no particular order.
+     */
+    List<Long> findMunicipalityIds() {
+        return dsl.selectDistinct(ASSIGNMENTS.MUNICIPALITY_ID).from(ASSIGNMENTS)
+                .where(ASSIGNMENTS.CLOSED.isNotNull()).and(ASSIGNMENTS.MUNICIPALITY_ID.isNotNull())
+                .fetch(ASSIGNMENTS.MUNICIPALITY_ID);
+    }
+
+    /**
+     * Returns the IDs of the types that at least one closed assignment has, in no particular order.
+     */
+    List<Long> findTypeIds() {
+        return dsl.selectDistinct(ASSIGNMENTS.TYPE_ID).from(ASSIGNMENTS)
+                .where(ASSIGNMENTS.CLOSED.isNotNull()).and(ASSIGNMENTS.TYPE_ID.isNotNull())
+                .fetch(ASSIGNMENTS.TYPE_ID);
+    }
+
     int count(ClosedAssignmentFilter filter) {
         return dsl.fetchCount(ASSIGNMENTS, conditions(filter));
     }

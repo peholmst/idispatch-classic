@@ -1,16 +1,13 @@
 package net.pkhapps.idispatch.server.dispatch;
 
-import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
-import net.pkhapps.idispatch.server.assignment.DispatchValidationGroup;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractServiceBean;
-import net.pkhapps.idispatch.server.shared.ValidationFailedException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
@@ -30,20 +27,21 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
     private final DestinationRepository destinationRepository;
     private final ReceiptRepository receiptRepository;
     private final ResourceStatusService resourceStatusService;
-    private final Validator validator;
 
-    DispatchServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, DispatchNotificationRepository dispatchNotificationRepository, DestinationRepository destinationRepository, ReceiptRepository receiptRepository, ResourceStatusService resourceStatusService, Validator validator) {
+    DispatchServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, DispatchNotificationRepository dispatchNotificationRepository, DestinationRepository destinationRepository, ReceiptRepository receiptRepository, ResourceStatusService resourceStatusService) {
         super(applicationContext, txManager);
         this.dispatchNotificationRepository = dispatchNotificationRepository;
         this.destinationRepository = destinationRepository;
         this.receiptRepository = receiptRepository;
         this.resourceStatusService = resourceStatusService;
-        this.validator = validator;
     }
 
     @Override
-    public DispatchNotification dispatchSelectedResources(Assignment assignment, Collection<Resource> resources) throws ValidationFailedException {
-        ValidationFailedException.throwIfNotEmpty(validator.validate(assignment, DispatchValidationGroup.class));
+    public DispatchNotification dispatchSelectedResources(Assignment assignment, Collection<Resource> resources) throws AssignmentNotReadyForDispatchException {
+        var missing = assignment.missingForDispatch();
+        if (!missing.isEmpty()) {
+            throw new AssignmentNotReadyForDispatchException(missing);
+        }
         final Collection<Resource> assignedResources = newHashSet(findAssignedResources(assignment));
         final Collection<Resource> resourcesToDispatch = resources.stream()
                 .filter(assignedResources::contains)
@@ -59,13 +57,13 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
     }
 
     @Override
-    public DispatchNotification dispatchAllResources(Assignment assignment) throws ValidationFailedException {
-        return dispatchSelectedResources(assignment, resourceStatusService.getResourcesAssignedToAssignment(assignment.getAssignmentId()));
+    public DispatchNotification dispatchAllResources(Assignment assignment) throws AssignmentNotReadyForDispatchException {
+        return dispatchSelectedResources(assignment, resourceStatusService.getResourcesAssignedToAssignment(assignment.id()));
     }
 
     @Override
-    public DispatchNotification dispatchAllReservedResources(Assignment assignment) throws ValidationFailedException {
-        return dispatchSelectedResources(assignment, resourceStatusService.getStatusOfResourcesAssignedToAssignment(assignment.getAssignmentId())
+    public DispatchNotification dispatchAllReservedResources(Assignment assignment) throws AssignmentNotReadyForDispatchException {
+        return dispatchSelectedResources(assignment, resourceStatusService.getStatusOfResourcesAssignedToAssignment(assignment.id())
                 .stream()
                 .filter(status -> status.getState() == ResourceState.RESERVED)
                 .map(ResourceStatus::getResource)
@@ -92,6 +90,6 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
     }
 
     private Collection<Resource> findAssignedResources(Assignment assignment) {
-        return resourceStatusService.getResourcesAssignedToAssignment(assignment.getAssignmentId());
+        return resourceStatusService.getResourcesAssignedToAssignment(assignment.id());
     }
 }

@@ -6,7 +6,6 @@ import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
-import net.pkhapps.idispatch.server.shared.ValidationFailedException;
 
 import java.util.Collection;
 import java.util.List;
@@ -25,27 +24,27 @@ public interface DispatchService {
      * Callers can listen for {@link DispatchNotificationReceived} events to check whether the dispatch notification
      * reached its destinations.
      *
-     * @throws ValidationFailedException if the assignment did not contain enough information
+     * @throws AssignmentNotReadyForDispatchException if the assignment did not contain enough information
      */
-    DispatchNotification dispatchSelectedResources(Assignment assignment, Collection<Resource> resources) throws ValidationFailedException;
+    DispatchNotification dispatchSelectedResources(Assignment assignment, Collection<Resource> resources) throws AssignmentNotReadyForDispatchException;
 
     /**
      * Same as calling {@link #dispatchSelectedResources(Assignment, Collection)}, but passing in all assigned
      * resources.
      *
-     * @throws ValidationFailedException if the assignment did not contain enough information
+     * @throws AssignmentNotReadyForDispatchException if the assignment did not contain enough information
      * @see ResourceStatus#isAssigned()
      */
-    DispatchNotification dispatchAllResources(Assignment assignment) throws ValidationFailedException;
+    DispatchNotification dispatchAllResources(Assignment assignment) throws AssignmentNotReadyForDispatchException;
 
     /**
      * Same as calling {@link #dispatchSelectedResources(Assignment, Collection)}}, but passing in all assigned
      * resources that are in the {@link ResourceState#RESERVED} state.
      *
-     * @throws ValidationFailedException if the assignment did not contain enough information
+     * @throws AssignmentNotReadyForDispatchException if the assignment did not contain enough information
      * @see ResourceStatus#isAssigned()
      */
-    DispatchNotification dispatchAllReservedResources(Assignment assignment) throws ValidationFailedException;
+    DispatchNotification dispatchAllReservedResources(Assignment assignment) throws AssignmentNotReadyForDispatchException;
 
     /**
      * Finds all dispatch notifications for the specified assignment.

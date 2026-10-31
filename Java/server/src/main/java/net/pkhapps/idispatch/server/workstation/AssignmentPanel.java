@@ -21,31 +21,39 @@ import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.signals.Signal;
+import com.vaadin.flow.signals.local.ValueSignal;
 import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
+import net.pkhapps.idispatch.server.dispatch.AssignmentNotReadyForDispatchException;
 import net.pkhapps.idispatch.server.dispatch.DispatchService;
 import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceFormatters;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusChanged;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
-import net.pkhapps.idispatch.server.shared.ValidationFailedException;
+import net.pkhapps.idispatch.server.shared.UpdateResult;
 import net.pkhapps.idispatch.server.ui.Formatters;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ApplicationEventMulticaster;
-import org.springframework.lang.Nullable;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.UnaryOperator;
 
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class AssignmentPanel extends VerticalLayout {
@@ -54,18 +62,24 @@ public class AssignmentPanel extends VerticalLayout {
     private final ResourceStatusService resourceStatusService;
     private final DispatchService dispatchService;
     private final ApplicationEventMulticaster eventMulticaster;
-    private final Binder<Assignment> binder;
+    // The assignment in the form, as last saved, or null when none is selected. The fields show it, and every change a
+    // dispatcher makes is saved right away and replaces it.
+    private final ValueSignal<@Nullable Assignment> assignment = new ValueSignal<>(null);
+    // The choices, with the type and municipality that the assignment has even if they have been deleted since
+    private final ValueSignal<Map<AssignmentTypeId, AssignmentTypeListItem>> types = new ValueSignal<>(Map.of());
+    private final ValueSignal<Map<MunicipalityId, MunicipalityListItem>> municipalities = new ValueSignal<>(Map.of());
+    // The ID of the assignment in the form, for refreshing its resources when another session changes them, which
+    // must not read this session's signals
+    private @Nullable AssignmentId shownAssignmentId;
     private final Component noAssignmentSelected;
     private final Component assignmentForm;
     private final ComboBox<AssignmentTypeListItem> assignmentType;
     private final ComboBox<MunicipalityListItem> municipality;
     private final ComboBox<Resource> availableResource;
 
-    private final AtomicBoolean initializingForm = new AtomicBoolean(false);
     private final Grid<ResourceStatus> assignedResources;
     private OwnerUpdater ownerUpdater;
     private final ApplicationListener<ResourceStatusChanged> resourceStatusChangedListener = event -> ownerUpdater.update(this::updateResources);
-    private Long selectedAssignmentId;
 
     public AssignmentPanel(AssignmentService assignmentService, ResourceStatusService resourceStatusService,
                            DispatchService dispatchService, ApplicationEventMulticaster eventMulticaster) {
@@ -75,7 +89,6 @@ public class AssignmentPanel extends VerticalLayout {
         this.eventMulticaster = eventMulticaster;
 
         addClassName("assignment-panel");
-        binder = new Binder<>();
 
         setSizeFull();
         setMargin(false);
@@ -100,16 +113,17 @@ public class AssignmentPanel extends VerticalLayout {
         assignmentType = new ComboBox<>(getTranslation("assignment.type"));
         assignmentType.setItemLabelGenerator(AssignmentTypeFormatters::formatAssignmentType);
         assignmentType.setWidthFull();
-        // Offers the types in use, but shows a deleted type that the assignment already has
-        binder.forField(assignmentType)
-                .withConverter(item -> item == null ? null : item.id(), id -> id == null ? null
-                        : assignmentService.findAssignmentType(id).orElse(null))
-                .bind(Assignment::getTypeId, Assignment::setTypeId);
+        assignmentType.bindValue(Signal.computed(() -> {
+            var current = assignment.get();
+            return current == null || current.typeId() == null ? null : types.get().get(current.typeId());
+        }), item -> save(current -> current.withTypeId(item == null ? null : item.id())));
 
         var urgency = new ComboBox<AssignmentUrgency>(getTranslation("assignment.urgency"));
         urgency.setItems(assignmentService.findApplicableUrgencies());
         urgency.setItemLabelGenerator(AssignmentUrgency::name);
-        binder.bind(urgency, Assignment::getUrgency, Assignment::setUrgency);
+        // An assignment always has an urgency, so clearing the field makes it not urgent
+        urgency.bindValue(assignment.map(current -> current == null ? null : current.urgency()),
+                value -> save(current -> current.withUrgency(value == null ? AssignmentUrgency.N : value)));
 
         var typeAndUrgency = new HorizontalLayout(assignmentType, urgency);
         typeAndUrgency.setWidthFull();
@@ -119,40 +133,23 @@ public class AssignmentPanel extends VerticalLayout {
         municipality.setItemLabelGenerator(MunicipalityFormatters::formatMunicipality);
         municipality.setWidthFull();
         assignmentLayout.add(municipality);
-        binder.forField(municipality)
-                .withConverter(item -> item == null ? null : item.id(), id -> id == null ? null
-                        : assignmentService.findMunicipality(id).orElse(null))
-                .bind(Assignment::getMunicipalityId, Assignment::setMunicipalityId);
+        municipality.bindValue(Signal.computed(() -> {
+            var current = assignment.get();
+            return current == null || current.municipalityId() == null ? null
+                    : municipalities.get().get(current.municipalityId());
+        }), item -> save(current -> current.withMunicipalityId(item == null ? null : item.id())));
 
         var address = new TextField(getTranslation("assignment.address"));
         address.setWidthFull();
         assignmentLayout.add(address);
-        binder.bind(address, Assignment::getAddress, Assignment::setAddress);
+        address.bindValue(assignment.map(current -> current == null ? "" : current.address()),
+                value -> save(current -> current.withAddress(value)));
 
         var description = new TextArea(getTranslation("assignment.description"));
         description.setWidthFull();
         assignmentLayout.add(description);
-        binder.bind(description, Assignment::getDescription, Assignment::setDescription);
-
-        binder.addStatusChangeListener(event -> {
-            if (initializingForm.get()) {
-                return;
-            }
-            if (binder.getBean() != null) {
-                var assignment = binder.getBean();
-                var result = assignmentService.updateAssignment(assignment);
-                if (result.isSuccessful()) {
-                    initializingForm.set(true);
-                    try {
-                        binder.setBean(result.getData().orElseThrow());
-                    } finally {
-                        initializingForm.set(false);
-                    }
-                } else {
-                    setAssignmentId(assignment.getId());
-                }
-            }
-        });
+        description.bindValue(assignment.map(current -> current == null ? "" : current.description()),
+                value -> save(current -> current.withDescription(value)));
 
         assignmentLayout.add(new H4(getTranslation("dispatch.resources")));
         availableResource = new ComboBox<>();
@@ -224,8 +221,8 @@ public class AssignmentPanel extends VerticalLayout {
 
     private void updateResources() {
         availableResource.setItems(resourceStatusService.getAvailableResources());
-        if (binder.getBean() != null) {
-            assignedResources.setItems(resourceStatusService.getStatusOfResourcesAssignedToAssignment(binder.getBean().getAssignmentId()));
+        if (shownAssignmentId != null) {
+            assignedResources.setItems(resourceStatusService.getStatusOfResourcesAssignedToAssignment(shownAssignmentId));
         } else {
             assignedResources.setItems(Collections.emptyList());
         }
@@ -233,9 +230,9 @@ public class AssignmentPanel extends VerticalLayout {
 
     private void addToAssignment() {
         var resource = availableResource.getValue();
-        var assignment = binder.getBean();
-        if (resource != null && assignment != null) {
-            resourceStatusService.setResourceAssignment(resource, assignment.getAssignmentId());
+        var current = assignment.peek();
+        if (resource != null && current != null) {
+            resourceStatusService.setResourceAssignment(resource, current.id());
         }
     }
 
@@ -245,42 +242,43 @@ public class AssignmentPanel extends VerticalLayout {
     }
 
     private void dispatchAll() {
-        var assignment = binder.getBean();
+        var assignment = this.assignment.peek();
         if (assignment != null) {
             try {
                 dispatchService.dispatchAllResources(assignment);
-            } catch (ValidationFailedException ex) {
-                showValidationFailedException(ex);
+            } catch (AssignmentNotReadyForDispatchException ex) {
+                showWhatIsMissing(ex);
             }
         }
     }
 
     private void dispatchSelected() {
         var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::getResource).collect(Collectors.toSet());
-        var assignment = binder.getBean();
+        var assignment = this.assignment.peek();
         if (resources.size() > 0 && assignment != null) {
             try {
                 dispatchService.dispatchSelectedResources(assignment, resources);
-            } catch (ValidationFailedException ex) {
-                showValidationFailedException(ex);
+            } catch (AssignmentNotReadyForDispatchException ex) {
+                showWhatIsMissing(ex);
             }
         }
     }
 
     private void dispatchReserved() {
-        var assignment = binder.getBean();
+        var assignment = this.assignment.peek();
         if (assignment != null) {
             try {
                 dispatchService.dispatchAllReservedResources(assignment);
-            } catch (ValidationFailedException ex) {
-                showValidationFailedException(ex);
+            } catch (AssignmentNotReadyForDispatchException ex) {
+                showWhatIsMissing(ex);
             }
         }
     }
 
-    private void showValidationFailedException(ValidationFailedException ex) {
+    private void showWhatIsMissing(AssignmentNotReadyForDispatchException ex) {
         var errors = new UnorderedList();
-        ex.getViolationMessages(getLocale()).forEach(error -> errors.add(new ListItem(error)));
+        ex.getMissing().stream().sorted()
+                .forEach(missing -> errors.add(new ListItem(getTranslation("dispatch.missing." + missing.name()))));
         var notification = new Notification(errors);
         notification.setPosition(Notification.Position.MIDDLE);
         notification.addThemeVariants(NotificationVariant.ERROR);
@@ -289,14 +287,15 @@ public class AssignmentPanel extends VerticalLayout {
     }
 
     private void closeAssignment() {
-        var assignment = binder.getBean();
+        var assignment = this.assignment.peek();
         if (assignment != null) {
-            assignmentService.closeAssignment(assignment);
+            assignmentService.closeAssignment(assignment.id());
         }
     }
 
-    public void setAssignmentId(@Nullable Long id) {
-        if (Objects.equals(id, selectedAssignmentId)) {
+    public void setAssignmentId(@Nullable AssignmentId id) {
+        var current = assignment.peek();
+        if (Objects.equals(id, current == null ? null : current.id())) {
             return;
         }
         Optional.ofNullable(id)
@@ -304,33 +303,61 @@ public class AssignmentPanel extends VerticalLayout {
                 .ifPresentOrElse(this::showForm, this::hideForm);
     }
 
-    private void showForm(Assignment assignment) {
-        initializingForm.set(true);
-        try {
-            selectedAssignmentId = assignment.getId();
-            // Reload the options every time, so that changes made in the management console show up
-            assignmentType.setItems(assignmentService.findApplicableAssignmentTypes());
-            municipality.setItems(Formatters.sortedByLabel(assignmentService.findApplicableMunicipalities(),
-                    MunicipalityFormatters::formatMunicipality));
-            binder.setBean(assignment);
-            updateResources();
-            noAssignmentSelected.setVisible(false);
-            assignmentForm.setVisible(true);
-        } finally {
-            initializingForm.set(false);
+    /**
+     * Saves the change to the assignment in the form. If another dispatcher has changed it in the meantime, shows their
+     * version instead.
+     */
+    private void save(UnaryOperator<Assignment> change) {
+        var current = assignment.peek();
+        if (current == null) {
+            return;
+        }
+        var changed = change.apply(current);
+        if (changed.equals(current)) {
+            return;
+        }
+        var result = assignmentService.updateAssignment(changed);
+        if (result instanceof UpdateResult.Conflict<Assignment> conflict) {
+            Optional.ofNullable(conflict.getConflictingData()).ifPresentOrElse(this::showForm, this::hideForm);
+        } else if (result instanceof UpdateResult.Success<Assignment> success) {
+            assignment.set(success.getData().orElseThrow());
         }
     }
 
-    private void hideForm() {
-        initializingForm.set(true);
-        try {
-            selectedAssignmentId = null;
-            binder.setBean(null);
-            noAssignmentSelected.setVisible(true);
-            assignmentForm.setVisible(false);
-        } finally {
-            initializingForm.set(false);
+    private void showForm(Assignment assignment) {
+        // Empty the form first: setting the choices clears the combo boxes, which must not be saved as a change
+        this.assignment.set(null);
+        // Reload the choices every time, so that changes made in the management console show up
+        var typeChoices = assignmentService.findApplicableAssignmentTypes();
+        var municipalityChoices = Formatters.sortedByLabel(assignmentService.findApplicableMunicipalities(),
+                MunicipalityFormatters::formatMunicipality);
+        var typesById = new HashMap<AssignmentTypeId, AssignmentTypeListItem>();
+        typeChoices.forEach(type -> typesById.put(type.id(), type));
+        if (assignment.typeId() != null && !typesById.containsKey(assignment.typeId())) {
+            assignmentService.findAssignmentType(assignment.typeId()).ifPresent(type -> typesById.put(type.id(), type));
         }
+        var municipalitiesById = new HashMap<MunicipalityId, MunicipalityListItem>();
+        municipalityChoices.forEach(municipality -> municipalitiesById.put(municipality.id(), municipality));
+        if (assignment.municipalityId() != null && !municipalitiesById.containsKey(assignment.municipalityId())) {
+            assignmentService.findMunicipality(assignment.municipalityId())
+                    .ifPresent(municipality -> municipalitiesById.put(municipality.id(), municipality));
+        }
+        assignmentType.setItems(typeChoices);
+        municipality.setItems(municipalityChoices);
+        types.set(Map.copyOf(typesById));
+        municipalities.set(Map.copyOf(municipalitiesById));
+        this.assignment.set(assignment);
+        shownAssignmentId = assignment.id();
+        updateResources();
+        noAssignmentSelected.setVisible(false);
+        assignmentForm.setVisible(true);
+    }
+
+    private void hideForm() {
+        assignment.set(null);
+        shownAssignmentId = null;
+        noAssignmentSelected.setVisible(true);
+        assignmentForm.setVisible(false);
     }
 
     @Override

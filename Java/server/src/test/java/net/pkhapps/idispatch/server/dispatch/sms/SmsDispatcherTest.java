@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.server.dispatch.sms;
 
 import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
@@ -12,6 +13,7 @@ import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -28,28 +30,14 @@ class SmsDispatcherTest {
 
     @Test
     void messageText_hasTheMunicipalityInTheLanguageOfTheDestination() {
-        var assignment = new SavedAssignment(3L);
-        assignment.setMunicipalityId(PARAINEN.id());
-        assignment.setTypeId(BUILDING_FIRE.id());
-        assignment.setUrgency(AssignmentUrgency.A);
-        assignment.setAddress("Kyrkoesplanaden 1");
-        assignment.setDescription("Smoke");
+        var assignment = new Assignment(new AssignmentId(3), 1, Instant.now(), null, AssignmentUrgency.A,
+                BUILDING_FIRE.id(), PARAINEN.id(), "Kyrkoesplanaden 1", "Smoke");
         var notification = new DispatchNotification(assignment, Set.of(), Set.of());
 
         var dispatcher = new SmsDispatcher(new OneMunicipality(), new OneAssignmentType());
 
         assertThat(dispatcher.buildMessageText(notification, Bilingual.FINNISH)).startsWith("Parainen,103A,");
         assertThat(dispatcher.buildMessageText(notification, Bilingual.SWEDISH)).startsWith("Pargas,103A,");
-    }
-
-    /**
-     * An assignment as the dispatch service gets it, which has been saved and so has an ID.
-     */
-    private static final class SavedAssignment extends Assignment {
-
-        SavedAssignment(long id) {
-            setId(id);
-        }
     }
 
     private static final class OneMunicipality implements MunicipalityQueries {

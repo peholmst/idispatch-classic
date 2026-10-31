@@ -1,6 +1,5 @@
 package net.pkhapps.idispatch.server.assignment;
 
-
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
@@ -16,7 +15,7 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,7 +28,9 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
     private final MunicipalityQueries municipalityQueries;
     private final AssignmentTypeQueries assignmentTypeQueries;
 
-    AssignmentServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentRepository assignmentRepository, ResourcesOnAssignment resourcesOnAssignment, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries) {
+    AssignmentServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager,
+                          AssignmentRepository assignmentRepository, ResourcesOnAssignment resourcesOnAssignment,
+                          MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries) {
         super(applicationContext, txManager);
         this.assignmentRepository = assignmentRepository;
         this.resourcesOnAssignment = resourcesOnAssignment;
@@ -38,74 +39,65 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
     }
 
     @Override
-    public Optional<Assignment> findAssignment(Long id) {
-        logger.debug("Looking up assignment with ID {}", id);
-        if (id == null) {
-            return Optional.empty();
-        }
+    public Optional<Assignment> findAssignment(AssignmentId id) {
         return assignmentRepository.findById(id);
     }
 
     @Override
-    public Long openAssignment() {
+    public AssignmentId openAssignment() {
         logger.debug("Opening new assignment");
-        final Assignment createdAssignment = getTxTemplate().execute(status -> assignmentRepository.saveAndFlush(new Assignment()));
-        getApplicationContext().publishEvent(new AssignmentOpened(this, createdAssignment));
-        logger.debug("Opened assignment with ID {}", createdAssignment.getId());
-        return createdAssignment.getId();
+        var opened = getTxTemplate().execute(status -> assignmentRepository.insertNew());
+        getApplicationContext().publishEvent(new AssignmentOpened(this, opened));
+        logger.debug("Opened assignment with ID {}", opened.id().value());
+        return opened.id();
     }
 
     @Override
     public UpdateResult<Assignment> updateAssignment(Assignment assignment) {
         logger.debug("Updating assignment {}", assignment);
-        if (assignment.isAssignmentClosed()) {
-            logger.debug("Assignment {} is closed, ignoring", assignment);
+        if (assignment.isClosed()) {
+            logger.debug("Assignment {} is closed, ignoring", assignment.id().value());
             return new UpdateResult.NoChange<>(assignment);
         }
         try {
-            final Assignment savedAssignment = getTxTemplate().execute(status -> assignmentRepository.saveAndFlush(assignment));
-            // Load the assignment again, so that the names of its type and municipality are those it now has
-            final Assignment updatedAssignment = assignmentRepository.findById(savedAssignment.getId()).orElseThrow();
-            getApplicationContext().publishEvent(new AssignmentUpdated(this, updatedAssignment));
-            return new UpdateResult.Success<>(updatedAssignment);
+            var updated = getTxTemplate().execute(status -> assignmentRepository.update(assignment));
+            getApplicationContext().publishEvent(new AssignmentUpdated(this, updated));
+            return new UpdateResult.Success<>(updated);
         } catch (OptimisticLockingFailureException ex) {
-            logger.debug("Assignment {} was updated by another user, cannot update", assignment);
-            final Assignment updatedAssignment = assignmentRepository.findById(assignment.getId()).orElse(null);
-            return new UpdateResult.Conflict<>(assignment, updatedAssignment);
+            logger.debug("Assignment {} was changed by another user, cannot update", assignment.id().value());
+            return new UpdateResult.Conflict<>(assignment,
+                    assignmentRepository.findById(assignment.id()).orElse(null));
         }
     }
 
     @Override
-    public boolean closeAssignment(Assignment assignment) {
-        return closeAssignment(assignment.getId());
-    }
-
-    private boolean closeAssignment(Long assignmentId) {
-        Assignment assignment = assignmentRepository.findById(assignmentId).orElse(null);
-        if (assignment == null) {
-            logger.debug("Could not close assignment - no such assignment ID: {}", assignmentId);
+    public boolean closeAssignment(AssignmentId id) {
+        var assignment = assignmentRepository.findById(id).orElse(null);
+        if (assignment == null || assignment.isClosed()) {
+            logger.debug("No open assignment with ID {} to close", id.value());
             return false;
         }
-        logger.debug("Closing assignment {}", assignment);
-        if (assignment.isAssignmentClosed()) {
-            logger.debug("Assignment {} is already closed, ignoring", assignment);
+        if (resourcesOnAssignment.anyAssignedTo(id)) {
+            logger.debug("Resources are still assigned to assignment {}, ignoring", id.value());
             return false;
         }
-        if (resourcesOnAssignment.anyAssignedTo(assignment.getAssignmentId())) {
-            logger.debug("Resources are still assigned to assignment {}, ignoring", assignment);
+        var closed = getTxTemplate().execute(status -> assignmentRepository.close(id)).orElse(null);
+        if (closed == null) {
             return false;
         }
-        assignment.setClosed(Instant.now());
-        final Assignment closedAssignment = getTxTemplate().execute(status -> assignmentRepository.saveAndFlush(assignment));
-        resourcesOnAssignment.releaseAllFrom(closedAssignment.getAssignmentId());
-        getApplicationContext().publishEvent(new AssignmentClosed(this, closedAssignment));
+        resourcesOnAssignment.releaseAllFrom(id);
+        getApplicationContext().publishEvent(new AssignmentClosed(this, closed));
         return true;
     }
 
     @Override
-    public List<Assignment> findOpenAssignments() {
-        logger.debug("Looking up open assignments");
-        return assignmentRepository.findByClosedIsNull();
+    public List<AssignmentListItem> findOpenAssignments() {
+        return assignmentRepository.findOpenListItems();
+    }
+
+    @Override
+    public List<AssignmentListItem> findAssignments(Collection<AssignmentId> ids) {
+        return ids.isEmpty() ? List.of() : assignmentRepository.findListItems(ids);
     }
 
     @Override

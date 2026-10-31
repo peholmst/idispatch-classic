@@ -140,6 +140,14 @@ public class DispatcherPage extends AppShell {
         window.findTextField().withLabel(t("Address")).setValue(address);
     }
 
+    public void enterDescription(String description) {
+        window.findTextArea().withLabel(t("Description")).setValue(description);
+    }
+
+    public String description() {
+        return window.findTextArea().withLabel(t("Description")).component().getValue();
+    }
+
     public String address() {
         return window.findTextField().withLabel(t("Address")).component().getValue();
     }

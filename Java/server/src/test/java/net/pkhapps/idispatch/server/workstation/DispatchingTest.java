@@ -70,6 +70,26 @@ class DispatchingTest extends UseCaseTest {
     }
 
     @Test
+    void everythingTheDispatcherFillsInIsThereWhenTheyComeBack() {
+        var dispatcher = dispatcherAtWork();
+        var number = dispatcher.opensANewAssignment();
+        dispatcher.choosesType(fire);
+        dispatcher.choosesUrgency("A");
+        dispatcher.choosesMunicipality(town);
+        dispatcher.entersAddress("Main Street 1");
+        dispatcher.writesDescription("Smoke from the attic");
+
+        dispatcher.opensANewAssignment();
+        dispatcher.selectsAssignment(number);
+
+        assertThat(dispatcher.type()).isEqualTo(fire);
+        assertThat(dispatcher.urgency()).isEqualTo("A");
+        assertThat(dispatcher.municipality()).isEqualTo(town);
+        assertThat(dispatcher.address()).isEqualTo("Main Street 1");
+        assertThat(dispatcher.description()).isEqualTo("Smoke from the attic");
+    }
+
+    @Test
     void typesAndMunicipalitiesAddedAfterOpeningTheViewAreOfferedForTheNextAssignment() {
         var dispatcher = dispatcherAtWork();
         dispatcher.opensANewAssignment();

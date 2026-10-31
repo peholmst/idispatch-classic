@@ -4,16 +4,14 @@ import jakarta.persistence.EntityManager;
 import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import net.pkhapps.idispatch.server.assignment.Assignment;
-import net.pkhapps.idispatch.server.assignment.AssignmentRepository;
-import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
+import net.pkhapps.idispatch.server.assignment.AssignmentQueries;
 import net.pkhapps.idispatch.server.dispatch.Destination;
 import net.pkhapps.idispatch.server.dispatch.DestinationRepository;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationRepository;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationSent;
 import net.pkhapps.idispatch.server.dispatch.ReceiptRepository;
-import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.shared.Bilingual;
@@ -64,7 +62,7 @@ class RunboardWebSocketHandlerTest {
     @Autowired
     ApplicationEventPublisher eventPublisher;
     @Autowired
-    AssignmentRepository assignmentRepository;
+    AssignmentQueries assignmentQueries;
     @Autowired
     DestinationRepository destinationRepository;
     @Autowired
@@ -201,17 +199,12 @@ class RunboardWebSocketHandlerTest {
         return dispatch(assignment, resource, Set.of(destination));
     }
 
-    private static Assignment assignment(GivenMunicipality municipality, GivenAssignmentType type) {
-        var assignment = new Assignment();
-        assignment.setMunicipalityId(new MunicipalityId(municipality.id()));
-        assignment.setTypeId(new AssignmentTypeId(type.id()));
-        assignment.setUrgency(AssignmentUrgency.A);
-        return assignment;
+    private Assignment assignment(GivenMunicipality municipality, GivenAssignmentType type) {
+        var id = testData.openAssignment(municipality, type, unique("Address"));
+        return assignmentQueries.findById(new AssignmentId(id)).orElseThrow();
     }
 
     private DispatchNotification dispatch(Assignment assignment, Resource resource, Set<Destination> destinations) {
-        assignment.setAddress(unique("Address"));
-        assignment = assignmentRepository.saveAndFlush(assignment);
         var notification = dispatchNotificationRepository.saveAndFlush(
                 new DispatchNotification(assignment, Set.of(resource), destinations));
         eventPublisher.publishEvent(new DispatchNotificationSent(this, notification));

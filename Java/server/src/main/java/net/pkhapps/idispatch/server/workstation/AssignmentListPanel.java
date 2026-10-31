@@ -6,9 +6,10 @@ import com.vaadin.flow.component.badge.Badge;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentEvent;
 import net.pkhapps.idispatch.server.assignment.AssignmentFormatters;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
+import net.pkhapps.idispatch.server.assignment.AssignmentListItem;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import org.springframework.context.ApplicationListener;
@@ -21,13 +22,13 @@ public class AssignmentListPanel extends VerticalLayout {
 
     private final AssignmentService assignmentService;
     private final ApplicationEventMulticaster eventMulticaster;
-    private final Grid<Assignment> grid;
+    private final Grid<AssignmentListItem> grid;
     private OwnerUpdater ownerUpdater;
     private final ApplicationListener<AssignmentEvent> assignmentEventListener = event -> ownerUpdater.update(this::refresh);
 
     public AssignmentListPanel(AssignmentService assignmentService,
                                ApplicationEventMulticaster eventMulticaster,
-                               Consumer<Long> onAssignmentSelected) {
+                               Consumer<AssignmentId> onAssignmentSelected) {
         this.assignmentService = assignmentService;
         this.eventMulticaster = eventMulticaster;
         addClassName("assignment-list");
@@ -44,16 +45,16 @@ public class AssignmentListPanel extends VerticalLayout {
         grid.setSizeFull();
         grid.setAriaLabel(getTranslation("dispatch.open-assignments"));
 
-        grid.addColumn(Assignment::getId).setHeader(getTranslation("assignment.id"));
-        grid.addColumn(assignment -> Formatters.formatDateTime(assignment.getOpened())).setHeader(getTranslation("assignment.date"));
+        grid.addColumn(assignment -> assignment.id().value()).setHeader(getTranslation("assignment.id"));
+        grid.addColumn(assignment -> Formatters.formatDateTime(assignment.opened())).setHeader(getTranslation("assignment.date"));
         grid.addColumn(AssignmentFormatters::formatAssignmentType).setHeader(getTranslation("assignment.type"));
         grid.addComponentColumn(this::createUrgencyBadge).setHeader(getTranslation("assignment.urgency"));
         grid.addColumn(AssignmentFormatters::formatMunicipality).setHeader(getTranslation("assignment.municipality"));
-        grid.addColumn(Assignment::getAddress).setHeader(getTranslation("assignment.address"));
+        grid.addColumn(AssignmentListItem::address).setHeader(getTranslation("assignment.address"));
 
         if (onAssignmentSelected != null) {
             grid.addSelectionListener(event -> onAssignmentSelected.accept(
-                            event.getFirstSelectedItem().map(Assignment::getId).orElse(null)
+                            event.getFirstSelectedItem().map(AssignmentListItem::id).orElse(null)
                     )
             );
         }
@@ -61,12 +62,10 @@ public class AssignmentListPanel extends VerticalLayout {
         add(grid);
     }
 
-    private Badge createUrgencyBadge(Assignment assignment) {
+    private Badge createUrgencyBadge(AssignmentListItem assignment) {
         var badge = new Badge();
-        if (assignment.getUrgency() != null) {
-            badge.setText(assignment.getUrgency().name());
-            badge.addClassName(AssignmentFormatters.assignmentUrgencyClassName(assignment.getUrgency()));
-        }
+        badge.setText(assignment.urgency().name());
+        badge.addClassName(AssignmentFormatters.assignmentUrgencyClassName(assignment.urgency()));
         return badge;
     }
 
@@ -83,16 +82,16 @@ public class AssignmentListPanel extends VerticalLayout {
     }
 
     private void refresh() {
-        var selectedId = grid.getSelectionModel().getFirstSelectedItem().map(Assignment::getId).orElse(null);
+        var selectedId = grid.getSelectionModel().getFirstSelectedItem().map(AssignmentListItem::id).orElse(null);
         grid.setItems(assignmentService.findOpenAssignments());
         selectAssignmentById(selectedId);
     }
 
-    public void selectAssignmentById(@Nullable Long id) {
+    public void selectAssignmentById(@Nullable AssignmentId id) {
         if (id == null) {
             grid.deselectAll();
         } else {
-            grid.getListDataView().getItems().filter(assignment -> id.equals(assignment.getId())).findFirst().ifPresent(grid::select);
+            grid.getListDataView().getItems().filter(assignment -> id.equals(assignment.id())).findFirst().ifPresent(grid::select);
         }
     }
 }
