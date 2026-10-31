@@ -13,7 +13,7 @@ public class App {
 
     private App() {
         final Configuration configuration = new Configuration();
-        model = new Model();
+        model = new Model(configuration.getNotificationShownFor());
         connection = new ServerConnection(configuration, model);
         mainView = new MainView(configuration.isLowResolution());
         mainView.setModel(model);

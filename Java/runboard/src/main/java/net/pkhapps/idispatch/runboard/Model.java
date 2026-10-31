@@ -6,8 +6,8 @@ import net.pkhapps.idispatch.runboard.client.ServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 class Model extends Observable implements ServerConnection.Callback {
@@ -16,15 +16,20 @@ class Model extends Observable implements ServerConnection.Callback {
     private final List<Notification> notifications = new ArrayList<>();
     private final Set<Number> seenNotifications = new HashSet<>();
     private final Timer expirationTimer = new Timer();
+    private final Duration shownFor;
     private DispatcherClientException.ErrorCode errorCode;
 
-    Model() {
+    /**
+     * @param shownFor how long each notification is shown, counted from when it was sent
+     */
+    Model(Duration shownFor) {
+        this.shownFor = shownFor;
         expirationTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 removeExpiredNotifications();
             }
-        }, 1000, 30000);
+        }, 1000, 1000);
     }
 
     private synchronized void removeExpiredNotifications() {
@@ -42,7 +47,7 @@ class Model extends Observable implements ServerConnection.Callback {
     }
 
     private boolean isExpired(Instant now, Notification notification) {
-        return notification.getTimestamp().toInstant().plus(3, ChronoUnit.MINUTES).isBefore(now);
+        return notification.getTimestamp().toInstant().plus(shownFor).isBefore(now);
     }
 
     public synchronized DispatcherClientException.ErrorCode getErrorCode() {

@@ -21,6 +21,14 @@ class Configuration extends net.pkhapps.idispatch.runboard.client.Configuration 
     }
 
     /**
+     * Returns how long each notification is shown on the screen, counted from when it was sent. The flashing light is
+     * on for as long as a notification is shown. Default: 3 minutes.
+     */
+    public Duration getNotificationShownFor() {
+        return Duration.ofSeconds(getInt("idispatch.notification.shownFor", 180, 1));
+    }
+
+    /**
      * Returns the name of the speech engine that reads notifications out loud, or {@link Speech#NONE} for no speech.
      */
     public String getSpeechEngine() {

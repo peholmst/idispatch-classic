@@ -169,4 +169,4 @@ Send a test notification to the runboard's destination and watch `runboard.log` 
   `vcgencmd get_throttled` should print `throttled=0x0`.
 - With the outputs connected: `Switching the amplifier through line 17 of /dev/gpiochip0` at startup, then
   `Switched the amplifier on` before the alarm and `off` after the speech, and the light on until the notification
-  leaves the screen (three minutes after it was sent).
+  leaves the screen (`idispatch.notification.shownFor` seconds after it was sent, three minutes by default).

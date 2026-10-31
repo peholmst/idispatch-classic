@@ -14,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ConfigurationTest {
 
     private static final List<String> TIMING_PROPERTIES = List.of("idispatch.alarm.plays",
-            "idispatch.alarm.playsBeforeSpeech", "idispatch.speech.repeats", "idispatch.speech.pause");
+            "idispatch.alarm.playsBeforeSpeech", "idispatch.speech.repeats", "idispatch.speech.pause",
+            "idispatch.notification.shownFor");
 
     @AfterEach
     void clearProperties() {
@@ -52,5 +53,24 @@ class ConfigurationTest {
         System.setProperty("idispatch.alarm.playsBeforeSpeech", "5");
 
         assertEquals(2, new Configuration().getAlertTimings().alarmPlaysBeforeSpeech());
+    }
+
+    @Test
+    void notificationShownFor_defaultsToThreeMinutes() {
+        assertEquals(Duration.ofMinutes(3), new Configuration().getNotificationShownFor());
+    }
+
+    @Test
+    void notificationShownFor_isRead() {
+        System.setProperty("idispatch.notification.shownFor", " 300 ");
+
+        assertEquals(Duration.ofMinutes(5), new Configuration().getNotificationShownFor());
+    }
+
+    @Test
+    void invalidNotificationShownFor_fallsBackToDefault() {
+        System.setProperty("idispatch.notification.shownFor", "0");
+
+        assertEquals(Duration.ofMinutes(3), new Configuration().getNotificationShownFor());
     }
 }
