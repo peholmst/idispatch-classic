@@ -75,6 +75,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
 
         var searchField = new TextField();
         searchField.setPlaceholder(getTranslation("management.search"));
+        searchField.setAriaLabel(getTranslation("management.search-label"));
         searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
         searchField.setValueChangeMode(ValueChangeMode.LAZY);
         searchField.bindValue(searchTerm, searchTerm::set);
@@ -91,6 +92,7 @@ public abstract class AbstractManagementView<E extends AbstractEntity, S extends
         includeDeletedItem.setCheckable(true);
 
         var refresh = new Button(VaadinIcon.REFRESH.create(), event -> refresh());
+        refresh.setAriaLabel(getTranslation("common.refresh"));
 
         setSizeFull();
         setPadding(false);

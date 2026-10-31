@@ -41,6 +41,7 @@ public class AssignmentListPanel extends VerticalLayout {
                 GridVariant.NO_BORDER
         );
         grid.setSizeFull();
+        grid.setAriaLabel(getTranslation("dispatch.open-assignments"));
 
         grid.addColumn(Assignment::getId).setHeader(getTranslation("assignment.id"));
         grid.addColumn(assignment -> Formatters.formatDateTime(assignment.getOpened())).setHeader(getTranslation("assignment.date"));

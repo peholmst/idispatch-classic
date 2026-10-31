@@ -142,8 +142,11 @@ public class AssignmentPanel extends VerticalLayout {
         availableResource = new ComboBox<>();
         availableResource.setWidthFull();
         availableResource.setItemLabelGenerator(Resource::getCallSign);
+        availableResource.setAriaLabel(getTranslation("dispatch.available-resource"));
         var addToAssignment = new Button(VaadinIcon.PLUS_CIRCLE.create(), event -> addToAssignment());
         var removeFromAssignment = new Button(VaadinIcon.MINUS_CIRCLE.create(), event -> removeFromAssignment());
+        addToAssignment.setAriaLabel(getTranslation("dispatch.add-resource"));
+        removeFromAssignment.setAriaLabel(getTranslation("dispatch.remove-resources"));
         removeFromAssignment.setEnabled(false);
         var assignmentActions = new HorizontalLayout(availableResource, addToAssignment, removeFromAssignment);
         assignmentActions.setFlexGrow(1.0, availableResource);
@@ -157,6 +160,7 @@ public class AssignmentPanel extends VerticalLayout {
         assignedResources.addColumn(rs -> Formatters.formatResource(rs.getResource())).setHeader(getTranslation("dispatch.resource"));
         assignedResources.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
         assignedResources.setSelectionMode(Grid.SelectionMode.MULTI);
+        assignedResources.setAriaLabel(getTranslation("dispatch.assigned-resources"));
         assignmentLayout.add(assignedResources);
 
         var dispatchAll = new Button(getTranslation("dispatch.dispatch-all"), event -> dispatchAll());
