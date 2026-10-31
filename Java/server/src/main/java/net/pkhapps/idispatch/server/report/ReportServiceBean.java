@@ -3,7 +3,6 @@ package net.pkhapps.idispatch.server.report;
 import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentRepository;
-import net.pkhapps.idispatch.server.assignment.AssignmentSpecifications;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
 import net.pkhapps.idispatch.server.municipality.Municipality;
 import net.pkhapps.idispatch.server.resource.ArchivedResourceStatus;
@@ -66,7 +65,7 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
     @Override
     public List<ClosedAssignmentDTO> findClosedAssignments(ClosedAssignmentFilter filter, Pageable pageable) {
         logger.debug("Looking up closed assignments matching {}, {}", filter, pageable);
-        var spec = toSpecification(filter).and(AssignmentSpecifications.orderedBy(pageable.getSort()));
+        var spec = toSpecification(filter).and(ClosedAssignmentSpecifications.orderedBy(pageable.getSort()));
         // The specification sorts, since the page request can't sort by report status
         var unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         var assignments = assignmentRepository.findBy(spec, query -> query.slice(unsorted)).getContent();
@@ -85,21 +84,21 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
     private static Specification<Assignment> toSpecification(ClosedAssignmentFilter filter) {
         var zone = ZoneId.systemDefault();
         var specs = new ArrayList<Specification<Assignment>>();
-        specs.add(AssignmentSpecifications.closedOnly());
+        specs.add(ClosedAssignmentSpecifications.closedOnly());
         if (filter.closedFrom() != null) {
-            specs.add(AssignmentSpecifications.closedAtOrAfter(filter.closedFrom().atStartOfDay(zone).toInstant()));
+            specs.add(ClosedAssignmentSpecifications.closedAtOrAfter(filter.closedFrom().atStartOfDay(zone).toInstant()));
         }
         if (filter.closedTo() != null) {
-            specs.add(AssignmentSpecifications.closedBefore(filter.closedTo().plusDays(1).atStartOfDay(zone).toInstant()));
+            specs.add(ClosedAssignmentSpecifications.closedBefore(filter.closedTo().plusDays(1).atStartOfDay(zone).toInstant()));
         }
         if (filter.municipality() != null) {
-            specs.add(AssignmentSpecifications.municipality(filter.municipality()));
+            specs.add(ClosedAssignmentSpecifications.municipality(filter.municipality()));
         }
         if (filter.type() != null) {
-            specs.add(AssignmentSpecifications.type(filter.type()));
+            specs.add(ClosedAssignmentSpecifications.type(filter.type()));
         }
         if (filter.reportClosed() != null) {
-            specs.add(AssignmentSpecifications.reportClosed(filter.reportClosed()));
+            specs.add(ClosedAssignmentSpecifications.reportClosed(filter.reportClosed()));
         }
         return Specification.allOf(specs);
     }

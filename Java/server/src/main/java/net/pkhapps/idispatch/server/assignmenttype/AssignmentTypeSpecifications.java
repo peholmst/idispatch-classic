@@ -3,7 +3,7 @@ package net.pkhapps.idispatch.server.assignmenttype;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 
-public final class AssignmentTypeSpecifications {
+final class AssignmentTypeSpecifications {
 
     private AssignmentTypeSpecifications() {
     }

@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.dispatch.DispatchValidationGroup;
 import net.pkhapps.idispatch.server.municipality.Municipality;
 import net.pkhapps.idispatch.server.shared.AbstractLockableEntity;
 

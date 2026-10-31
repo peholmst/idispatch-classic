@@ -23,8 +23,8 @@ class MunicipalityAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorSeesTheMunicipalitiesThatAreInUse() {
-        var active = given.municipality(unique("Active ")).getNameFi();
-        var deleted = given.deletedMunicipality(unique("Deleted ")).getNameFi();
+        var active = given.municipality(unique("Active ")).nameFi();
+        var deleted = given.deletedMunicipality(unique("Deleted ")).nameFi();
 
         var admin = administratorAtWork();
 
@@ -35,7 +35,7 @@ class MunicipalityAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorShowsTheDeletedMunicipalitiesToo() {
-        var deleted = given.deletedMunicipality(unique("Deleted ")).getNameFi();
+        var deleted = given.deletedMunicipality(unique("Deleted ")).nameFi();
         var admin = administratorAtWork();
 
         admin.togglesShowingDeleted();
@@ -47,7 +47,7 @@ class MunicipalityAdministrationTest extends UseCaseTest {
     @Test
     void administratorFindsAMunicipalityByTheBeginningOfItsName() {
         var prefix = unique("Srch");
-        var match = given.municipality(prefix + " North").getNameFi();
+        var match = given.municipality(prefix + " North").nameFi();
         given.municipality(unique("Other "));
         var admin = administratorAtWork();
 
@@ -127,7 +127,7 @@ class MunicipalityAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorIsWarnedWhenTheMunicipalityAlreadyExists() {
-        var name = given.municipality(unique("Duplicate ")).getNameFi();
+        var name = given.municipality(unique("Duplicate ")).nameFi();
         var admin = administratorAtWork();
 
         admin.startsAdding();
@@ -154,7 +154,7 @@ class MunicipalityAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorRenamesAMunicipality() {
-        var original = given.municipality(unique("Original ")).getNameFi();
+        var original = given.municipality(unique("Original ")).nameFi();
         var renamed = unique("Renamed ");
         var admin = administratorAtWork();
 
@@ -169,8 +169,8 @@ class MunicipalityAdministrationTest extends UseCaseTest {
 
     @Test
     void renameThatFailsLeavesTheListAsItWas() {
-        var original = given.municipality(unique("Original ")).getNameFi();
-        var taken = given.municipality(unique("Taken ")).getNameFi();
+        var original = given.municipality(unique("Original ")).nameFi();
+        var taken = given.municipality(unique("Taken ")).nameFi();
         var admin = administratorAtWork();
 
         admin.opens(original);
@@ -182,8 +182,8 @@ class MunicipalityAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorIsAskedBeforeUnsavedChangesAreThrownAway() {
-        var first = given.municipality(unique("First ")).getNameFi();
-        var second = given.municipality(unique("Second ")).getNameFi();
+        var first = given.municipality(unique("First ")).nameFi();
+        var second = given.municipality(unique("Second ")).nameFi();
         var edited = unique("Edited ");
         var admin = administratorAtWork();
         admin.opens(first);
@@ -205,7 +205,7 @@ class MunicipalityAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorDeletesAMunicipalityAndRestoresIt() {
-        var name = given.municipality(unique("Lifecycle ")).getNameFi();
+        var name = given.municipality(unique("Lifecycle ")).nameFi();
         var admin = administratorAtWork();
 
         admin.opens(name);

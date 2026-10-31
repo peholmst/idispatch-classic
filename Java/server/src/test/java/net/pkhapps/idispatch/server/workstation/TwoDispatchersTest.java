@@ -1,7 +1,11 @@
 package net.pkhapps.idispatch.server.workstation;
 
 import net.pkhapps.idispatch.server.resource.ResourceState;
+import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusChanged;
+import net.pkhapps.idispatch.server.resource.ResourceStatusService;
+import net.pkhapps.idispatch.server.ui.RunAs;
+import net.pkhapps.idispatch.server.ui.TestData.GivenResource;
 import net.pkhapps.idispatch.server.ui.UseCaseTest;
 import org.junit.jupiter.api.Test;
 
@@ -37,24 +41,36 @@ class TwoDispatchersTest extends UseCaseTest {
         var bob = new Dispatcher(user("bob", "DISPATCHER"));
 
         alice.opensANewAssignment();
-        alice.addsResource(resource.getCallSign());
+        alice.addsResource(resource.callSign());
         bob.receivesUpdates();
 
-        assertThat(bob.stateOf(resource.getCallSign())).isEqualTo("Reserved");
+        assertThat(bob.stateOf(resource.callSign())).isEqualTo("Reserved");
     }
 
     @Test
     void stateChangeMadeWhileAnAdministratorIsActiveStillReachesTheDispatcher() {
         var resource = given.resource(unique("CS"), ResourceState.AT_STATION);
+        var status = currentStatusOf(resource);
         var bob = new Dispatcher(user("bob", "DISPATCHER"));
         var carol = user("carol", "ADMIN").newWindow();
 
         // The change is announced while an administrator, who may not use the dispatcher services, is active, as when
         // a change made in the administration views reaches the dispatchers
         carol.activate();
-        spring.publishEvent(new ResourceStatusChanged(this, given.statusOf(resource)));
+        spring.publishEvent(new ResourceStatusChanged(this, status));
         bob.receivesUpdates();
 
-        assertThat(bob.stateOf(resource.getCallSign())).isEqualTo("At station");
+        assertThat(bob.stateOf(resource.callSign())).isEqualTo("At station");
+    }
+
+    /**
+     * The status as the event carries it, which the resource service still holds as an entity.
+     */
+    private ResourceStatus currentStatusOf(GivenResource resource) {
+        var resourceStatusService = spring.getBean(ResourceStatusService.class);
+        return RunAs.dispatcher(() -> resourceStatusService.getStatusOfAllResources().stream()
+                .filter(status -> status.getResource().getId() == resource.id())
+                .findFirst()
+                .orElseThrow());
     }
 }

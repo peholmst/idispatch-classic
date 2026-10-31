@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.server.workstation;
 
-import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceState;
+import net.pkhapps.idispatch.server.ui.TestData.GivenResource;
 import net.pkhapps.idispatch.server.ui.UseCaseTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ class DispatchingTest extends UseCaseTest {
         var code = unique("T");
         given.assignmentType(code, "Fire");
         fire = code + " - Fire";
-        town = given.municipality(unique("Town ")).getNameFi();
+        town = given.municipality(unique("Town ")).nameFi();
     }
 
     /**
@@ -75,7 +75,7 @@ class DispatchingTest extends UseCaseTest {
         dispatcher.opensANewAssignment();
         var code = unique("T");
         given.assignmentType(code, "Added later");
-        var laterTown = given.municipality(unique("Town ")).getNameFi();
+        var laterTown = given.municipality(unique("Town ")).nameFi();
 
         dispatcher.opensANewAssignment();
 
@@ -134,12 +134,12 @@ class DispatchingTest extends UseCaseTest {
         var dispatcher = dispatcherAtWork();
         var number = dispatcher.opensANewAssignment();
 
-        dispatcher.addsResource(resource.getCallSign());
+        dispatcher.addsResource(resource.callSign());
 
-        assertThat(dispatcher.resourcesOnAssignment()).containsExactly(resource.getCallSign());
-        assertThat(dispatcher.stateOf(resource.getCallSign())).isEqualTo("Reserved");
-        assertThat(dispatcher.assignmentOf(resource.getCallSign())).endsWith("(" + number + ")");
-        assertThat(dispatcher.availableResources()).doesNotContain(resource.getCallSign());
+        assertThat(dispatcher.resourcesOnAssignment()).containsExactly(resource.callSign());
+        assertThat(dispatcher.stateOf(resource.callSign())).isEqualTo("Reserved");
+        assertThat(dispatcher.assignmentOf(resource.callSign())).endsWith("(" + number + ")");
+        assertThat(dispatcher.availableResources()).doesNotContain(resource.callSign());
         assertThat(stateOf(resource)).isEqualTo(ResourceState.RESERVED);
     }
 
@@ -150,7 +150,7 @@ class DispatchingTest extends UseCaseTest {
         var dispatcher = dispatcherAtWork();
         dispatcher.opensANewAssignment();
 
-        assertThat(dispatcher.availableResources()).doesNotContain(resource.getCallSign());
+        assertThat(dispatcher.availableResources()).doesNotContain(resource.callSign());
     }
 
     @Test
@@ -158,14 +158,14 @@ class DispatchingTest extends UseCaseTest {
         var resource = given.resource(unique("CS"), ResourceState.AT_STATION);
         var dispatcher = dispatcherAtWork();
         dispatcher.opensANewAssignment();
-        dispatcher.addsResource(resource.getCallSign());
+        dispatcher.addsResource(resource.callSign());
         assertThat(dispatcher.canRemoveResources()).as("Nothing selected yet").isFalse();
 
-        dispatcher.removesResource(resource.getCallSign());
+        dispatcher.removesResource(resource.callSign());
 
         assertThat(dispatcher.resourcesOnAssignment()).isEmpty();
         assertThat(stateOf(resource)).isEqualTo(ResourceState.AT_STATION);
-        assertThat(given.statusOf(resource).getAssignment()).isNull();
+        assertThat(given.statusOf(resource).assignmentId()).isNull();
     }
 
     @Test
@@ -173,7 +173,7 @@ class DispatchingTest extends UseCaseTest {
         var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
         var dispatcher = dispatcherAtWork();
         dispatcher.opensANewAssignment();
-        dispatcher.addsResource(resource.getCallSign());
+        dispatcher.addsResource(resource.callSign());
 
         dispatcher.dispatchesAll();
 
@@ -189,8 +189,8 @@ class DispatchingTest extends UseCaseTest {
         var dispatcher = dispatcherAtWork();
         dispatcher.opensANewAssignment();
         dispatcher.fillsIn(fire, town, "Fire Street 1");
-        dispatcher.addsResource(first.getCallSign());
-        dispatcher.addsResource(second.getCallSign());
+        dispatcher.addsResource(first.callSign());
+        dispatcher.addsResource(second.callSign());
 
         dispatcher.dispatchesAll();
 
@@ -207,11 +207,11 @@ class DispatchingTest extends UseCaseTest {
         var dispatcher = dispatcherAtWork();
         dispatcher.opensANewAssignment();
         dispatcher.fillsIn(fire, town, "Fire Street 1");
-        dispatcher.addsResource(selected.getCallSign());
-        dispatcher.addsResource(other.getCallSign());
+        dispatcher.addsResource(selected.callSign());
+        dispatcher.addsResource(other.callSign());
         assertThat(dispatcher.canDispatchSelected()).as("Nothing selected yet").isFalse();
 
-        dispatcher.dispatches(selected.getCallSign());
+        dispatcher.dispatches(selected.callSign());
 
         assertThat(stateOf(selected)).isEqualTo(ResourceState.DISPATCHED);
         assertThat(stateOf(other)).isEqualTo(ResourceState.RESERVED);
@@ -224,9 +224,9 @@ class DispatchingTest extends UseCaseTest {
         var dispatcher = dispatcherAtWork();
         dispatcher.opensANewAssignment();
         dispatcher.fillsIn(fire, town, "Fire Street 1");
-        dispatcher.addsResource(reserved.getCallSign());
-        dispatcher.addsResource(enRoute.getCallSign());
-        dispatcher.setsStateOnAssignment(enRoute.getCallSign(), "En route");
+        dispatcher.addsResource(reserved.callSign());
+        dispatcher.addsResource(enRoute.callSign());
+        dispatcher.setsStateOnAssignment(enRoute.callSign(), "En route");
 
         dispatcher.dispatchesReserved();
 
@@ -238,18 +238,18 @@ class DispatchingTest extends UseCaseTest {
     void dispatcherChangesTheStateOfAResourceByHand() {
         var resource = given.resource(unique("CS"), ResourceState.OUT_OF_SERVICE);
         var dispatcher = dispatcherAtWork();
-        assertThat(dispatcher.stateOf(resource.getCallSign())).isEqualTo("Out of service");
+        assertThat(dispatcher.stateOf(resource.callSign())).isEqualTo("Out of service");
 
-        dispatcher.opensStateOf(resource.getCallSign());
+        dispatcher.opensStateOf(resource.callSign());
 
-        assertThat(dispatcher.stateQuestion()).isEqualTo("Change state of " + resource.getCallSign());
+        assertThat(dispatcher.stateQuestion()).isEqualTo("Change state of " + resource.callSign());
         assertThat(dispatcher.stateChoices()).as("Only the states a dispatcher may set by hand")
                 .containsExactlyInAnyOrder("Available", "At station");
 
         dispatcher.choosesState("Available");
 
         assertThat(dispatcher.isChoosingAState()).isFalse();
-        assertThat(dispatcher.stateOf(resource.getCallSign())).isEqualTo("Available");
+        assertThat(dispatcher.stateOf(resource.callSign())).isEqualTo("Available");
         assertThat(stateOf(resource)).isEqualTo(ResourceState.AVAILABLE);
     }
 
@@ -258,7 +258,7 @@ class DispatchingTest extends UseCaseTest {
         var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
         var dispatcher = dispatcherAtWork();
         var number = dispatcher.opensANewAssignment();
-        dispatcher.addsResource(resource.getCallSign());
+        dispatcher.addsResource(resource.callSign());
 
         dispatcher.closesTheAssignment();
 
@@ -283,18 +283,18 @@ class DispatchingTest extends UseCaseTest {
         var dispatcher = dispatcherAtWork();
         var number = dispatcher.opensANewAssignment();
         dispatcher.fillsIn(fire, town, "Fire Street 1");
-        dispatcher.addsResource(resource.getCallSign());
+        dispatcher.addsResource(resource.callSign());
         dispatcher.dispatchesAll();
-        dispatcher.setsStateOnAssignment(resource.getCallSign(), "Available");
+        dispatcher.setsStateOnAssignment(resource.callSign(), "Available");
 
         dispatcher.closesTheAssignment();
 
         assertThat(dispatcher.seesAssignment(number)).isFalse();
         assertThat(stateOf(resource)).isEqualTo(ResourceState.AVAILABLE);
-        assertThat(given.statusOf(resource).getAssignment()).isNull();
+        assertThat(given.statusOf(resource).assignmentId()).isNull();
     }
 
-    private ResourceState stateOf(Resource resource) {
-        return given.statusOf(resource).getState();
+    private ResourceState stateOf(GivenResource resource) {
+        return given.statusOf(resource).state();
     }
 }

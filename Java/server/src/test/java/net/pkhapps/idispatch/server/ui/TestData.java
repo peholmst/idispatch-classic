@@ -1,49 +1,71 @@
 package net.pkhapps.idispatch.server.ui;
 
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeRepository;
-import net.pkhapps.idispatch.server.dispatch.Destination;
-import net.pkhapps.idispatch.server.dispatch.DestinationRepository;
-import net.pkhapps.idispatch.server.municipality.Municipality;
-import net.pkhapps.idispatch.server.municipality.MunicipalityRepository;
-import net.pkhapps.idispatch.server.resource.Resource;
-import net.pkhapps.idispatch.server.resource.ResourceRepository;
 import net.pkhapps.idispatch.server.resource.ResourceState;
-import net.pkhapps.idispatch.server.resource.ResourceStatus;
-import net.pkhapps.idispatch.server.resource.ResourceStatusRepository;
-import net.pkhapps.idispatch.server.resource.ResourceType;
-import net.pkhapps.idispatch.server.resource.ResourceTypeRepository;
+import org.jooq.DSLContext;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.test.context.TestComponent;
 
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static net.pkhapps.idispatch.server.jooq.Sequences.ASSIGNMENT_TYPES_SEQ;
+import static net.pkhapps.idispatch.server.jooq.Sequences.MUNICIPALITIES_SEQ;
+import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCES_SEQ;
+import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_STATUS_SEQ;
+import static net.pkhapps.idispatch.server.jooq.Sequences.RESOURCE_TYPES_SEQ;
+import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENT_TYPES;
+import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATIONS;
+import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATION_RESOURCES;
+import static net.pkhapps.idispatch.server.jooq.Tables.MUNICIPALITIES;
+import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCES;
+import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCE_STATUS;
+import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCE_TYPES;
+import static net.pkhapps.idispatch.server.jooq.Tables.SMS_DESTINATION_PHONE_NUMBERS;
 
 /**
- * Creates test fixtures directly through the repositories, bypassing the secured services. All services use
- * {@code REQUIRES_NEW} transactions, so tests cannot roll back their changes; instead, every fixture gets a unique
- * name so that tests sharing the same application context do not interfere with each other.
+ * Creates test fixtures directly in the database with jOOQ, bypassing the secured services, and reads back what the
+ * stories check besides the screen. It works on the schema only, so it does not change when a feature moves from JPA to
+ * jOOQ. All services use {@code REQUIRES_NEW} transactions, so tests cannot roll back their changes; instead, every
+ * fixture gets a unique name so that tests sharing the same application context do not interfere with each other.
+ * <p>
+ * IDs come from the same sequences that Hibernate allocates from. Hibernate hands out blocks of IDs ending or starting
+ * at the value it gets from a sequence, so a value taken here is never in one of its blocks.
  */
 @TestComponent
 public class TestData {
 
-    private final MunicipalityRepository municipalityRepository;
-    private final AssignmentTypeRepository assignmentTypeRepository;
-    private final ResourceTypeRepository resourceTypeRepository;
-    private final ResourceRepository resourceRepository;
-    private final ResourceStatusRepository resourceStatusRepository;
-    private final DestinationRepository destinationRepository;
+    /**
+     * A name or description that is not given in Swedish is empty, as the entities store it.
+     */
+    public record GivenMunicipality(long id, String nameFi, String nameSv) {
+    }
 
-    TestData(MunicipalityRepository municipalityRepository,
-             AssignmentTypeRepository assignmentTypeRepository,
-             ResourceTypeRepository resourceTypeRepository,
-             ResourceRepository resourceRepository,
-             ResourceStatusRepository resourceStatusRepository,
-             DestinationRepository destinationRepository) {
-        this.municipalityRepository = municipalityRepository;
-        this.assignmentTypeRepository = assignmentTypeRepository;
-        this.resourceTypeRepository = resourceTypeRepository;
-        this.resourceRepository = resourceRepository;
-        this.resourceStatusRepository = resourceStatusRepository;
-        this.destinationRepository = destinationRepository;
+    public record GivenAssignmentType(long id, String code, String descriptionFi, String descriptionSv) {
+    }
+
+    public record GivenResourceType(long id, String code, String descriptionFi) {
+    }
+
+    public record GivenResource(long id, String callSign) {
+    }
+
+    public record GivenStatus(ResourceState state, @Nullable Long assignmentId) {
+    }
+
+    /**
+     * A destination as stored; the phone numbers are empty for a runboard.
+     */
+    public record GivenDestination(@Nullable String description, Locale locale, Set<String> phoneNumbers) {
+    }
+
+    private final DSLContext dsl;
+
+    TestData(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     /**
@@ -53,77 +75,134 @@ public class TestData {
         return prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    public Municipality municipality(String name) {
-        var municipality = new Municipality();
-        municipality.setNameFi(name);
-        return municipalityRepository.saveAndFlush(municipality);
+    public GivenMunicipality municipality(String name) {
+        return municipality(name, "", true);
     }
 
-    public Municipality municipality(String nameFi, String nameSv) {
-        var municipality = new Municipality();
-        municipality.setNameFi(nameFi);
-        municipality.setNameSv(nameSv);
-        return municipalityRepository.saveAndFlush(municipality);
+    public GivenMunicipality municipality(String nameFi, String nameSv) {
+        return municipality(nameFi, nameSv, true);
     }
 
-    public Municipality deletedMunicipality(String name) {
-        var municipality = new Municipality();
-        municipality.setNameFi(name);
-        municipality.setActive(false);
-        return municipalityRepository.saveAndFlush(municipality);
+    public GivenMunicipality deletedMunicipality(String name) {
+        return municipality(name, "", false);
     }
 
-    public AssignmentType assignmentType(String code, String description) {
-        var type = new AssignmentType();
-        type.setCode(code);
-        type.setDescriptionFi(description);
-        return assignmentTypeRepository.saveAndFlush(type);
+    private GivenMunicipality municipality(String nameFi, String nameSv, boolean active) {
+        var id = dsl.nextval(MUNICIPALITIES_SEQ);
+        dsl.insertInto(MUNICIPALITIES)
+                .set(MUNICIPALITIES.ID, id)
+                .set(MUNICIPALITIES.VERSION, 0L)
+                .set(MUNICIPALITIES.NAME_FI, nameFi)
+                .set(MUNICIPALITIES.NAME_SV, nameSv)
+                .set(MUNICIPALITIES.ACTIVE, active)
+                .execute();
+        return new GivenMunicipality(id, nameFi, nameSv);
     }
 
-    public AssignmentType assignmentType(String code, String descriptionFi, String descriptionSv) {
-        var type = new AssignmentType();
-        type.setCode(code);
-        type.setDescriptionFi(descriptionFi);
-        type.setDescriptionSv(descriptionSv);
-        return assignmentTypeRepository.saveAndFlush(type);
+    public GivenAssignmentType assignmentType(String code, String description) {
+        return assignmentType(code, description, "");
     }
 
-    public ResourceType resourceType(String code, String description) {
-        var type = new ResourceType();
-        type.setCode(code);
-        type.setDescriptionFi(description);
-        return resourceTypeRepository.saveAndFlush(type);
+    public GivenAssignmentType assignmentType(String code, String descriptionFi, String descriptionSv) {
+        var id = dsl.nextval(ASSIGNMENT_TYPES_SEQ);
+        dsl.insertInto(ASSIGNMENT_TYPES)
+                .set(ASSIGNMENT_TYPES.ID, id)
+                .set(ASSIGNMENT_TYPES.VERSION, 0L)
+                .set(ASSIGNMENT_TYPES.CODE, code)
+                .set(ASSIGNMENT_TYPES.DESCRIPTION_FI, descriptionFi)
+                .set(ASSIGNMENT_TYPES.DESCRIPTION_SV, descriptionSv)
+                .set(ASSIGNMENT_TYPES.ACTIVE, true)
+                .execute();
+        return new GivenAssignmentType(id, code, descriptionFi, descriptionSv);
     }
 
-    public ResourceType deletedResourceType(String code, String description) {
-        var type = new ResourceType();
-        type.setCode(code);
-        type.setDescriptionFi(description);
-        type.setActive(false);
-        return resourceTypeRepository.saveAndFlush(type);
+    public GivenResourceType resourceType(String code, String description) {
+        return resourceType(code, description, true);
     }
 
-    public Resource resource(String callSign, ResourceState initialState) {
-        var resource = new Resource();
-        resource.setCallSign(callSign);
-        resource.setType(resourceType(unique("RT"), "Test resource type"));
-        resource = resourceRepository.saveAndFlush(resource);
-        resourceStatusRepository.saveAndFlush(new ResourceStatus(resource, initialState));
-        return resource;
+    public GivenResourceType deletedResourceType(String code, String description) {
+        return resourceType(code, description, false);
     }
 
-    public Resource resourceCalled(String callSign) {
-        return resourceRepository.findByCallSign(callSign);
+    private GivenResourceType resourceType(String code, String description, boolean active) {
+        var id = dsl.nextval(RESOURCE_TYPES_SEQ);
+        dsl.insertInto(RESOURCE_TYPES)
+                .set(RESOURCE_TYPES.ID, id)
+                .set(RESOURCE_TYPES.VERSION, 0L)
+                .set(RESOURCE_TYPES.CODE, code)
+                .set(RESOURCE_TYPES.DESCRIPTION_FI, description)
+                .set(RESOURCE_TYPES.DESCRIPTION_SV, "")
+                .set(RESOURCE_TYPES.ACTIVE, active)
+                .execute();
+        return new GivenResourceType(id, code, description);
     }
 
-    public ResourceStatus statusOf(Resource resource) {
-        return resourceStatusRepository.findByResource(resource);
+    /**
+     * An active resource of a type of its own, in the given state and on no assignment.
+     */
+    public GivenResource resource(String callSign, ResourceState initialState) {
+        var type = resourceType(unique("RT"), "Test resource type");
+        var id = dsl.nextval(RESOURCES_SEQ);
+        dsl.insertInto(RESOURCES)
+                .set(RESOURCES.ID, id)
+                .set(RESOURCES.VERSION, 0L)
+                .set(RESOURCES.CALL_SIGN, callSign)
+                .set(RESOURCES.TYPE_ID, type.id())
+                .set(RESOURCES.ACTIVE, true)
+                .execute();
+        // Without an assignment, the resource is not assigned; see ResourceStatus
+        dsl.insertInto(RESOURCE_STATUS)
+                .set(RESOURCE_STATUS.ID, dsl.nextval(RESOURCE_STATUS_SEQ))
+                .set(RESOURCE_STATUS.VERSION, 0L)
+                .set(RESOURCE_STATUS.TS, OffsetDateTime.now())
+                .set(RESOURCE_STATUS.STATE, initialState.name())
+                .set(RESOURCE_STATUS.RESOURCE_ID, id)
+                .set(RESOURCE_STATUS.AVAILABLE, initialState.isAvailableForNewAssignments())
+                .set(RESOURCE_STATUS.ASSIGNED, false)
+                .execute();
+        return new GivenResource(id, callSign);
+    }
+
+    public GivenResource resourceCalled(String callSign) {
+        return dsl.select(RESOURCES.ID, RESOURCES.CALL_SIGN)
+                .from(RESOURCES)
+                .where(RESOURCES.CALL_SIGN.eq(callSign))
+                .fetchSingle(record -> new GivenResource(record.value1(), record.value2()));
+    }
+
+    public GivenStatus statusOf(GivenResource resource) {
+        return dsl.select(RESOURCE_STATUS.STATE, RESOURCE_STATUS.ASSIGNMENT_ID)
+                .from(RESOURCE_STATUS)
+                .where(RESOURCE_STATUS.RESOURCE_ID.eq(resource.id()))
+                .fetchSingle(record -> new GivenStatus(ResourceState.valueOf(record.value1()), record.value2()));
     }
 
     /**
      * Returns the active destinations that receive the notifications of the given resource.
      */
-    public java.util.List<Destination> destinationsFor(Resource resource) {
-        return destinationRepository.findDestinationsForResource(resource);
+    public List<GivenDestination> destinationsFor(GivenResource resource) {
+        return dsl.select(DESTINATIONS.ID, DESTINATIONS.DESCRIPTION, DESTINATIONS.LOCALE)
+                .from(DESTINATIONS)
+                .join(DESTINATION_RESOURCES).on(DESTINATION_RESOURCES.DESTINATION_ID.eq(DESTINATIONS.ID))
+                .where(DESTINATION_RESOURCES.RESOURCE_ID.eq(resource.id()))
+                .and(DESTINATIONS.ACTIVE.isTrue())
+                .fetch(record -> new GivenDestination(record.value2(), toLocale(record.value3()),
+                        phoneNumbersOf(record.value1())));
+    }
+
+    private Set<String> phoneNumbersOf(long destinationId) {
+        return dsl.select(SMS_DESTINATION_PHONE_NUMBERS.PHONE_NUMBERS)
+                .from(SMS_DESTINATION_PHONE_NUMBERS)
+                .where(SMS_DESTINATION_PHONE_NUMBERS.SMS_DESTINATION_ID.eq(destinationId))
+                .fetch(SMS_DESTINATION_PHONE_NUMBERS.PHONE_NUMBERS)
+                .stream()
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Hibernate stores a locale as {@link Locale#toString()}, such as {@code sv} or {@code sv_FI}.
+     */
+    private static Locale toLocale(String stored) {
+        return Locale.forLanguageTag(stored.replace('_', '-'));
     }
 }

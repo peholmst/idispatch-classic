@@ -10,16 +10,15 @@ import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
 import net.pkhapps.idispatch.server.shared.ValidationFailedException;
 import net.pkhapps.idispatch.server.ui.Formatters;
+import net.pkhapps.idispatch.server.ui.RunAs;
 import net.pkhapps.idispatch.server.ui.TestData;
 import org.springframework.boot.test.context.TestComponent;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Locale;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
@@ -76,11 +75,19 @@ public class HandledAssignments {
      */
     public Handled closedAssignment(String... callSigns) {
         var code = unique("T");
-        var type = given.assignmentType(code, "Building fire");
-        var municipality = given.municipality(unique("Town "));
-        var resources = Stream.of(callSigns).map(callSign -> given.resource(callSign, ResourceState.AT_STATION)).toList();
+        var givenType = given.assignmentType(code, "Building fire");
+        var givenMunicipality = given.municipality(unique("Town "));
+        var resourceIds = Stream.of(callSigns)
+                .map(callSign -> given.resource(callSign, ResourceState.AT_STATION).id())
+                .collect(Collectors.toSet());
 
         var assignment = asDispatcher(() -> {
+            var type = assignmentService.findApplicableAssignmentTypes().stream()
+                    .filter(t -> t.getId() == givenType.id()).findFirst().orElseThrow();
+            var municipality = assignmentService.findApplicableMunicipalities().stream()
+                    .filter(m -> m.getId() == givenMunicipality.id()).findFirst().orElseThrow();
+            var resources = resourceStatusService.getAllResources().stream()
+                    .filter(r -> resourceIds.contains(r.getId())).toList();
             var opened = assignmentService.findAssignment(assignmentService.openAssignment()).orElseThrow();
             opened.setType(type);
             opened.setMunicipality(municipality);
@@ -106,7 +113,8 @@ public class HandledAssignments {
             }
             return assignmentService.findAssignment(updated.getId()).orElseThrow();
         });
-        return new Handled(assignment, type.getFormattedDescription(Locale.ENGLISH), municipality.getNameFi());
+        return new Handled(assignment, assignment.getType().getFormattedDescription(Locale.ENGLISH),
+                givenMunicipality.nameFi());
     }
 
     /**
@@ -151,19 +159,10 @@ public class HandledAssignments {
     }
 
     private <T> T asDispatcher(Supplier<T> action) {
-        return as(Roles.ROLE_DISPATCHER, action);
+        return RunAs.dispatcher(action);
     }
 
     private <T> T as(String role, Supplier<T> action) {
-        var previous = SecurityContextHolder.getContext();
-        var context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated("fixture", null,
-                AuthorityUtils.createAuthorityList(role, Roles.ROLE_REPORT_READER)));
-        SecurityContextHolder.setContext(context);
-        try {
-            return action.get();
-        } finally {
-            SecurityContextHolder.setContext(previous);
-        }
+        return RunAs.role(role, action);
     }
 }

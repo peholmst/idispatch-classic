@@ -1,0 +1,22 @@
+# Throwaway database for regenerating the jOOQ metadata classes; see the jooq-codegen profile in pom.xml. It runs as a
+# project of its own, on a port of its own and without a volume, so it never touches the development database. The
+# port is below the range Docker and Testcontainers pick random host ports from, so a test run cannot be holding it.
+name: idispatch-jooq-codegen
+
+services:
+  postgres:
+    # Keep the same version as the development database in compose.yaml
+    image: postgres:18
+    environment:
+      POSTGRES_DB: idispatch
+      POSTGRES_USER: idispatch
+      POSTGRES_PASSWORD: idispatch
+    ports:
+      - "15432:5432"
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U idispatch -d idispatch"]
+      interval: 1s
+      timeout: 5s
+      retries: 30

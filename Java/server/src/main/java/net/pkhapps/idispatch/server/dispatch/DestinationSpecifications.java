@@ -4,7 +4,7 @@ import jakarta.persistence.criteria.JoinType;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 
-public final class DestinationSpecifications {
+final class DestinationSpecifications {
 
     private DestinationSpecifications() {
     }

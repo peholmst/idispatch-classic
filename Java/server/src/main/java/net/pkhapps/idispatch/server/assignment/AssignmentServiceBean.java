@@ -5,7 +5,6 @@ import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeRepository;
 import net.pkhapps.idispatch.server.municipality.Municipality;
 import net.pkhapps.idispatch.server.municipality.MunicipalityRepository;
-import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractServiceBean;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
@@ -24,14 +23,14 @@ import java.util.Optional;
 class AssignmentServiceBean extends AbstractServiceBean implements AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
-    private final ResourceStatusService resourceStatusService;
+    private final ResourcesOnAssignment resourcesOnAssignment;
     private final MunicipalityRepository municipalityRepository;
     private final AssignmentTypeRepository assignmentTypeRepository;
 
-    AssignmentServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentRepository assignmentRepository, ResourceStatusService resourceStatusService, MunicipalityRepository municipalityRepository, AssignmentTypeRepository assignmentTypeRepository) {
+    AssignmentServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentRepository assignmentRepository, ResourcesOnAssignment resourcesOnAssignment, MunicipalityRepository municipalityRepository, AssignmentTypeRepository assignmentTypeRepository) {
         super(applicationContext, txManager);
         this.assignmentRepository = assignmentRepository;
-        this.resourceStatusService = resourceStatusService;
+        this.resourcesOnAssignment = resourcesOnAssignment;
         this.municipalityRepository = municipalityRepository;
         this.assignmentTypeRepository = assignmentTypeRepository;
     }
@@ -88,13 +87,13 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
             logger.debug("Assignment {} is already closed, ignoring", assignment);
             return false;
         }
-        if (!resourceStatusService.getStatusOfResourcesAssignedToAssignment(assignment).isEmpty()) {
+        if (resourcesOnAssignment.anyAssignedTo(assignment)) {
             logger.debug("Resources are still assigned to assignment {}, ignoring", assignment);
             return false;
         }
         assignment.setClosed(Instant.now());
         final Assignment closedAssignment = getTxTemplate().execute(status -> assignmentRepository.saveAndFlush(assignment));
-        resourceStatusService.clearAssignmentFromAllResources(closedAssignment);
+        resourcesOnAssignment.releaseAllFrom(closedAssignment);
         getApplicationContext().publishEvent(new AssignmentClosed(this, closedAssignment));
         return true;
     }

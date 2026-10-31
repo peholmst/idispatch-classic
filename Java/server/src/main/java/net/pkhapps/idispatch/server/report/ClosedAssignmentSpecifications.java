@@ -1,13 +1,13 @@
-package net.pkhapps.idispatch.server.assignment;
+package net.pkhapps.idispatch.server.report;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
 import net.pkhapps.idispatch.server.municipality.Municipality;
-import net.pkhapps.idispatch.server.report.AssignmentReport;
 import net.pkhapps.idispatch.server.shared.AbstractEntity;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Sort;
@@ -17,7 +17,7 @@ import org.springframework.data.jpa.repository.query.QueryUtils;
 import java.time.Instant;
 import java.util.ArrayList;
 
-public final class AssignmentSpecifications {
+final class ClosedAssignmentSpecifications {
 
     /**
      * Sort property for whether a reviewer has closed the assignment's report, which {@link #orderedBy(Sort)} sorts
@@ -25,7 +25,7 @@ public final class AssignmentSpecifications {
      */
     public static final String REPORT_CLOSED = "reportClosed";
 
-    private AssignmentSpecifications() {
+    private ClosedAssignmentSpecifications() {
     }
 
     public static Specification<Assignment> closedOnly() {

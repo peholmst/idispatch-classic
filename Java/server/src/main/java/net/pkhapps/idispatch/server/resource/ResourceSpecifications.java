@@ -3,7 +3,7 @@ package net.pkhapps.idispatch.server.resource;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 
-public final class ResourceSpecifications {
+final class ResourceSpecifications {
 
     private ResourceSpecifications() {
     }

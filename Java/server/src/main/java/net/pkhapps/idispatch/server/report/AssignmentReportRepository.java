@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * Repository of {@link AssignmentReport}s.
  */
-public interface AssignmentReportRepository extends JpaRepository<AssignmentReport, Long> {
+interface AssignmentReportRepository extends JpaRepository<AssignmentReport, Long> {
 
     Optional<AssignmentReport> findByAssignment(Assignment assignment);
 
