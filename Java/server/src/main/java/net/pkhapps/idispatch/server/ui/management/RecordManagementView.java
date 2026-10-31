@@ -38,8 +38,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Base class for the management views of master data stored as immutable records: a master-detail view with the list
  * items in a grid and a {@link RecordForm} for the selected or new record in the detail area. Deleted records are shown
- * read-only, with a button for restoring them. Every management view uses it; {@link AbstractManagementView} is no
- * longer used and goes with JPA.
+ * read-only, with a button for restoring them.
  *
  * @param <I> the list item shown in the grid, flattened to what the grid shows
  * @param <R> the record that the form edits

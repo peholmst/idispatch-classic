@@ -9,8 +9,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
 /**
- * Keeps the dependencies between the feature packages pointing one way, so that each feature can be changed, and
- * moved from JPA to jOOQ, without touching the features it depends on.
+ * Keeps the dependencies between the feature packages pointing one way, so that each feature can be changed without
+ * touching the features it depends on.
  * <p>
  * The jOOQ metadata classes in {@code jooq} are generated from the whole schema and may be used by every feature; which
  * tables a feature queries is a matter of review, not of these rules.

@@ -34,12 +34,11 @@ import static net.pkhapps.idispatch.server.jooq.Tables.SMS_DESTINATION_PHONE_NUM
 
 /**
  * Creates test fixtures directly in the database with jOOQ, bypassing the secured services, and reads back what the
- * stories check besides the screen. It works on the schema only, so it does not change when a feature moves from JPA to
- * jOOQ. All services use {@code REQUIRES_NEW} transactions, so tests cannot roll back their changes; instead, every
+ * stories check besides the screen. It works on the schema only, so it does not change when a feature's records or
+ * repositories do. All services use {@code REQUIRES_NEW} transactions, so tests cannot roll back their changes; instead, every
  * fixture gets a unique name so that tests sharing the same application context do not interfere with each other.
  * <p>
- * IDs come from the same sequences that Hibernate allocates from. Hibernate hands out blocks of IDs ending or starting
- * at the value it gets from a sequence, so a value taken here is never in one of its blocks.
+ * IDs come from the same sequences that the repositories take theirs from.
  */
 @TestComponent
 public class TestData {
@@ -321,7 +320,7 @@ public class TestData {
     }
 
     /**
-     * Hibernate stores a locale as {@link Locale#toString()}, such as {@code sv} or {@code sv_FI}.
+     * A locale is stored as {@link Locale#toString()}, such as {@code sv} or {@code sv_FI}.
      */
     private static Locale toLocale(String stored) {
         return Locale.forLanguageTag(stored.replace('_', '-'));
