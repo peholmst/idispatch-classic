@@ -3,7 +3,7 @@ package net.pkhapps.idispatch.server.dispatch;
 
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
 
@@ -26,7 +26,7 @@ public interface DispatchService {
      *
      * @throws AssignmentNotReadyForDispatchException if the assignment did not contain enough information
      */
-    DispatchNotification dispatchSelectedResources(Assignment assignment, Collection<Resource> resources) throws AssignmentNotReadyForDispatchException;
+    DispatchNotification dispatchSelectedResources(Assignment assignment, Collection<ResourceId> resources) throws AssignmentNotReadyForDispatchException;
 
     /**
      * Same as calling {@link #dispatchSelectedResources(Assignment, Collection)}, but passing in all assigned

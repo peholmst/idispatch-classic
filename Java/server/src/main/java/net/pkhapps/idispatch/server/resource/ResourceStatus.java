@@ -35,10 +35,6 @@ public class ResourceStatus extends AbstractResourceStateChange {
         put(ResourceState.OUT_OF_SERVICE, newHashSet(ResourceState.AVAILABLE, ResourceState.AT_STATION));
     }};
 
-    @OneToOne(optional = false)
-    @JoinColumn(name = "resource_id", nullable = false, unique = true)
-    private Resource resource;
-
     @Column(name = "available", nullable = false)
     private boolean available;
 
@@ -51,8 +47,8 @@ public class ResourceStatus extends AbstractResourceStateChange {
     protected ResourceStatus() {
     }
 
-    public ResourceStatus(Resource resource, ResourceState state) {
-        this.resource = resource;
+    public ResourceStatus(ResourceId resource, ResourceState state) {
+        setResourceId(resource);
         setState(state);
     }
 
@@ -62,11 +58,6 @@ public class ResourceStatus extends AbstractResourceStateChange {
 
     protected void setVersion(Long version) {
         this.version = version;
-    }
-
-    @Override
-    public Resource getResource() {
-        return resource;
     }
 
     @Override
@@ -127,7 +118,7 @@ public class ResourceStatus extends AbstractResourceStateChange {
         return toStringHelper(this)
                 .add(PROP_ID, getId())
                 .add(PROP_VERSION, version)
-                .add(PROP_RESOURCE, resource)
+                .add(PROP_RESOURCE_ID, getResourceId())
                 .add(PROP_STATE, getState())
                 .add(PROP_ASSIGNMENT_ID, getAssignmentId())
                 .add(PROP_TIMESTAMP, getTimestamp())

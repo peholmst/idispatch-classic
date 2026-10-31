@@ -40,7 +40,7 @@ class ResourceManagementServiceBean extends AbstractSoftDeletableManagementServi
         if (entity.isNew()) {
             final Resource saved = super.save(entity);
             logger.debug("Creating new status entry for resource {}", saved);
-            final ResourceStatus resourceStatus = new ResourceStatus(saved, ResourceState.OUT_OF_SERVICE);
+            final ResourceStatus resourceStatus = new ResourceStatus(saved.getResourceId(), ResourceState.OUT_OF_SERVICE);
             resourceStatusRepository.saveAndFlush(resourceStatus);
             return saved;
         } else {

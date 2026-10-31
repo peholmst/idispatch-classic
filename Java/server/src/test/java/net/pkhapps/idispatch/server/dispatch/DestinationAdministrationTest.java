@@ -145,6 +145,21 @@ class DestinationAdministrationTest extends UseCaseTest {
     }
 
     @Test
+    void destinationKeepsShowingAResourceDeletedAfterItWasChosen() {
+        var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
+        var callSign = resource.callSign();
+        addsRunboardDestination(administratorAtWork(), callSign);
+        given.deleteResource(resource);
+
+        var admin = administratorAtWork();
+        admin.searchesFor(callSign.toLowerCase());
+
+        assertThat(admin.listed()).containsExactly(callSign);
+        admin.opens(callSign);
+        assertThat(admin.chosenItems(RESOURCES)).containsExactly(callSign);
+    }
+
+    @Test
     void deletedDestinationsAreHiddenUnlessAskedFor() {
         var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var admin = administratorAtWork();

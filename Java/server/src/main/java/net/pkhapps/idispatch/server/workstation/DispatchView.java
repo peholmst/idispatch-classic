@@ -12,6 +12,7 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
 import net.pkhapps.idispatch.server.dispatch.DispatchService;
+import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.RootLayout;
@@ -29,12 +30,13 @@ public class DispatchView extends VerticalLayout implements HasDynamicTitle {
 
     public DispatchView(AssignmentService assignmentService,
                         ResourceStatusService resourceStatusService,
+                        ResourceQueries resourceQueries,
                         DispatchService dispatchService,
                         ApplicationEventMulticaster eventMulticaster) {
         this.assignmentService = assignmentService;
-        assignmentPanel = new AssignmentPanel(assignmentService, resourceStatusService, dispatchService, eventMulticaster);
+        assignmentPanel = new AssignmentPanel(assignmentService, resourceStatusService, resourceQueries, dispatchService, eventMulticaster);
         assignmentListPanel = new AssignmentListPanel(assignmentService, eventMulticaster, assignmentPanel::setAssignmentId);
-        resourceListPanel = new ResourceListPanel(resourceStatusService, assignmentService, eventMulticaster);
+        resourceListPanel = new ResourceListPanel(resourceStatusService, assignmentService, resourceQueries, eventMulticaster);
         setSizeFull();
         setMargin(false);
         setSpacing(false);

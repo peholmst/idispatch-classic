@@ -5,16 +5,16 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.shared.AbstractLockableEntity;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import net.pkhapps.idispatch.server.shared.Deactivatable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-
-import static com.google.common.base.MoreObjects.firstNonNull;
+import java.util.stream.Collectors;
 
 /**
  * Base class for a destination that receives dispatch notifications.
@@ -39,12 +39,11 @@ public abstract class Destination extends AbstractLockableEntity implements Deac
     @NotNull(message = "{idispatch.destination.locale.required}")
     private Locale locale = Bilingual.FINNISH;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "destination_resources",
-            joinColumns = @JoinColumn(name = "destination_id"),
-            inverseJoinColumns = @JoinColumn(name = "resource_id"))
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "destination_resources", joinColumns = @JoinColumn(name = "destination_id"))
+    @Column(name = "resource_id", nullable = false)
     @NotEmpty(message = "{idispatch.destination.resources.required}")
-    private Set<Resource> resources = new HashSet<>();
+    private Set<Long> resources = new HashSet<>();
 
     /**
      * Free-text description shown only in the management console, never sent to the destination.
@@ -69,12 +68,16 @@ public abstract class Destination extends AbstractLockableEntity implements Deac
         this.locale = locale;
     }
 
-    public Set<Resource> getResources() {
-        return resources;
+    /**
+     * Returns the resources whose dispatch notifications the destination receives.
+     */
+    public Set<ResourceId> getResources() {
+        return resources.stream().map(ResourceId::new).collect(Collectors.toSet());
     }
 
-    public void setResources(Set<Resource> resources) {
-        this.resources = firstNonNull(resources, new HashSet<Resource>());
+    public void setResources(@Nullable Set<ResourceId> resources) {
+        this.resources = resources == null ? new HashSet<>()
+                : resources.stream().map(ResourceId::value).collect(Collectors.toCollection(HashSet::new));
     }
 
     @Override

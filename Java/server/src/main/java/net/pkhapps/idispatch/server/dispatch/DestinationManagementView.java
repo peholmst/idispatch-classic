@@ -9,12 +9,14 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.dispatch.runboard.RunboardDestination;
 import net.pkhapps.idispatch.server.dispatch.sms.SmsDestination;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.management.AbstractManagementView;
 import net.pkhapps.idispatch.server.ui.management.ManagementForm;
 
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Route(value = "management/destination", layout = RootLayout.class)
@@ -31,7 +33,12 @@ public class DestinationManagementView extends AbstractManagementView<Destinatio
         grid.addColumn(Destination::getDescription).setHeader(getTranslation("management.description"));
         grid.addColumn(destination -> DestinationForm.formatLanguage(destination.getLocale()))
                 .setHeader(getTranslation("management.destination.language"));
-        grid.addColumn(destination -> destination.getResources().stream().map(Resource::getCallSign).sorted().collect(Collectors.joining(", "))).setHeader(getTranslation("management.resources"));
+        grid.addColumn(destination -> callSigns(destination.getResources())).setHeader(getTranslation("management.resources"));
+    }
+
+    private String callSigns(Set<ResourceId> resources) {
+        return getService().findResources(resources).stream().map(ResourceListItem::callSign)
+                .collect(Collectors.joining(", "));
     }
 
     private String formatType(Destination destination) {

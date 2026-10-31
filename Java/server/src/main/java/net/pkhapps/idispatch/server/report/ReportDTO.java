@@ -4,12 +4,13 @@ import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import org.jspecify.annotations.Nullable;
 
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class ReportDTO implements Serializable {
@@ -88,8 +89,9 @@ public class ReportDTO implements Serializable {
     /**
      * Returns every resource that responded to the assignment once, in call sign order.
      */
-    public List<Resource> getRespondingResources() {
-        return resources.stream().map(ReportResourceDTO::getResource).distinct().sorted().toList();
+    public List<ResourceListItem> getRespondingResources() {
+        return resources.stream().map(ReportResourceDTO::getResource).distinct()
+                .sorted(Comparator.comparing(ResourceListItem::callSign)).toList();
     }
 
     /**

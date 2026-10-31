@@ -8,6 +8,7 @@ import net.pkhapps.idispatch.server.dispatch.AssignmentNotReadyForDispatchExcept
 import net.pkhapps.idispatch.server.dispatch.DispatchService;
 import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.resource.ResourceState;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
@@ -84,8 +85,8 @@ public class HandledAssignments {
                 .collect(Collectors.toSet());
 
         var assignment = asDispatcher(() -> {
-            var resources = resourceStatusService.getAllResources().stream()
-                    .filter(r -> resourceIds.contains(r.getId())).toList();
+            var resources = resourceStatusService.getAllResources().stream().map(ResourceListItem::id)
+                    .filter(id -> resourceIds.contains(id.value())).toList();
             var opened = assignmentService.findAssignment(assignmentService.openAssignment()).orElseThrow();
             var filledIn = opened.withTypeId(new AssignmentTypeId(givenType.id()))
                     .withMunicipalityId(new MunicipalityId(givenMunicipality.id()))

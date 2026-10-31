@@ -1,8 +1,9 @@
 package net.pkhapps.idispatch.server.dispatch;
 
 import jakarta.validation.Validator;
-import net.pkhapps.idispatch.server.resource.Resource;
-import net.pkhapps.idispatch.server.resource.ResourceRepository;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
+import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.management.AbstractSoftDeletableManagementServiceBean;
 import org.springframework.data.jpa.domain.Specification;
@@ -10,6 +11,7 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -17,13 +19,13 @@ import java.util.List;
 class DestinationManagementServiceBean extends AbstractSoftDeletableManagementServiceBean<Destination, DestinationRepository> implements DestinationManagementService {
 
     private final DestinationRepository repository;
-    private final ResourceRepository resourceRepository;
+    private final ResourceQueries resourceQueries;
 
     DestinationManagementServiceBean(Validator validator, DestinationRepository repository,
-                                     ResourceRepository resourceRepository) {
+                                     ResourceQueries resourceQueries) {
         super(validator);
         this.repository = repository;
-        this.resourceRepository = resourceRepository;
+        this.resourceQueries = resourceQueries;
     }
 
     @Override
@@ -44,7 +46,12 @@ class DestinationManagementServiceBean extends AbstractSoftDeletableManagementSe
     }
 
     @Override
-    public List<Resource> findApplicableResources() {
-        return resourceRepository.findByActiveTrueOrderByCallSignAsc();
+    public List<ResourceListItem> findApplicableResources() {
+        return resourceQueries.findActive();
+    }
+
+    @Override
+    public List<ResourceListItem> findResources(Collection<ResourceId> ids) {
+        return resourceQueries.findByIds(ids);
     }
 }

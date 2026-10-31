@@ -6,7 +6,7 @@ import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityId;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.shared.AbstractTimestampedEntity;
 
 import java.util.Collection;
@@ -24,11 +24,11 @@ import static java.util.Collections.unmodifiableSet;
 @Table(name = "dispatch_notifications")
 public class DispatchNotification extends AbstractTimestampedEntity {
 
-    @ManyToMany
-    @JoinTable(name = "dispatch_notification_assigned_resources",
-            joinColumns = @JoinColumn(name = "dispatch_notification_id"),
-            inverseJoinColumns = @JoinColumn(name = "resource_id"))
-    private Set<Resource> assignedResources;
+    @ElementCollection
+    @CollectionTable(name = "dispatch_notification_assigned_resources",
+            joinColumns = @JoinColumn(name = "dispatch_notification_id"))
+    @Column(name = "resource_id", nullable = false)
+    private Set<Long> assignedResources;
 
     @ManyToMany
     @JoinTable(name = "dispatch_notification_destinations",
@@ -58,8 +58,8 @@ public class DispatchNotification extends AbstractTimestampedEntity {
     protected DispatchNotification() {
     }
 
-    public DispatchNotification(Assignment assignment, Collection<Resource> assignedResources, Collection<Destination> destinations) {
-        this.assignedResources = newHashSet(checkNotNull(assignedResources));
+    public DispatchNotification(Assignment assignment, Collection<ResourceId> assignedResources, Collection<Destination> destinations) {
+        this.assignedResources = checkNotNull(assignedResources).stream().map(ResourceId::value).collect(Collectors.toSet());
         this.destinations = newHashSet(checkNotNull(destinations));
         this.assignmentId = checkNotNull(assignment).id().value();
         municipalityId = checkNotNull(assignment.municipalityId(), "The assignment has no municipality").value();
@@ -69,8 +69,8 @@ public class DispatchNotification extends AbstractTimestampedEntity {
         description = assignment.description();
     }
 
-    public Set<Resource> getAssignedResources() {
-        return unmodifiableSet(assignedResources);
+    public Set<ResourceId> getAssignedResources() {
+        return assignedResources.stream().map(ResourceId::new).collect(Collectors.toUnmodifiableSet());
     }
 
     public Set<Destination> getDestinations() {

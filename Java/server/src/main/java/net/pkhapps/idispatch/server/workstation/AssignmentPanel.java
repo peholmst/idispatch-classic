@@ -36,7 +36,9 @@ import net.pkhapps.idispatch.server.dispatch.DispatchService;
 import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
 import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
-import net.pkhapps.idispatch.server.resource.Resource;
+import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
+import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.resource.ResourceFormatters;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusChanged;
@@ -51,7 +53,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -60,6 +62,9 @@ public class AssignmentPanel extends VerticalLayout {
 
     private final AssignmentService assignmentService;
     private final ResourceStatusService resourceStatusService;
+    private final ResourceQueries resourceQueries;
+    // The call signs of the assigned resources, loaded with them
+    private final Map<ResourceId, String> assignedCallSigns = new HashMap<>();
     private final DispatchService dispatchService;
     private final ApplicationEventMulticaster eventMulticaster;
     // The assignment in the form, as last saved, or null when none is selected. The fields show it, and every change a
@@ -75,16 +80,18 @@ public class AssignmentPanel extends VerticalLayout {
     private final Component assignmentForm;
     private final ComboBox<AssignmentTypeListItem> assignmentType;
     private final ComboBox<MunicipalityListItem> municipality;
-    private final ComboBox<Resource> availableResource;
+    private final ComboBox<ResourceListItem> availableResource;
 
     private final Grid<ResourceStatus> assignedResources;
     private OwnerUpdater ownerUpdater;
     private final ApplicationListener<ResourceStatusChanged> resourceStatusChangedListener = event -> ownerUpdater.update(this::updateResources);
 
     public AssignmentPanel(AssignmentService assignmentService, ResourceStatusService resourceStatusService,
-                           DispatchService dispatchService, ApplicationEventMulticaster eventMulticaster) {
+                           ResourceQueries resourceQueries, DispatchService dispatchService,
+                           ApplicationEventMulticaster eventMulticaster) {
         this.assignmentService = assignmentService;
         this.resourceStatusService = resourceStatusService;
+        this.resourceQueries = resourceQueries;
         this.dispatchService = dispatchService;
         this.eventMulticaster = eventMulticaster;
 
@@ -154,7 +161,7 @@ public class AssignmentPanel extends VerticalLayout {
         assignmentLayout.add(new H4(getTranslation("dispatch.resources")));
         availableResource = new ComboBox<>();
         availableResource.setWidthFull();
-        availableResource.setItemLabelGenerator(Resource::getCallSign);
+        availableResource.setItemLabelGenerator(ResourceListItem::callSign);
         availableResource.setAriaLabel(getTranslation("dispatch.available-resource"));
         var addToAssignment = new Button(VaadinIcon.PLUS_CIRCLE.create(), event -> addToAssignment());
         var removeFromAssignment = new Button(VaadinIcon.MINUS_CIRCLE.create(), event -> removeFromAssignment());
@@ -170,7 +177,7 @@ public class AssignmentPanel extends VerticalLayout {
         assignedResources.addThemeVariants(GridVariant.ROW_STRIPES);
         assignedResources.setWidthFull();
         assignedResources.setHeight(200, Unit.PIXELS);
-        assignedResources.addColumn(rs -> ResourceFormatters.formatResource(rs.getResource())).setHeader(getTranslation("dispatch.resource"));
+        assignedResources.addColumn(rs -> assignedCallSigns.get(rs.getResourceId())).setHeader(getTranslation("dispatch.resource"));
         assignedResources.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
         assignedResources.setSelectionMode(Grid.SelectionMode.MULTI);
         assignedResources.setAriaLabel(getTranslation("dispatch.assigned-resources"));
@@ -215,29 +222,30 @@ public class AssignmentPanel extends VerticalLayout {
         var btn = new Button(ResourceFormatters.formatResourceState(resourceStatus.getState()));
         btn.addThemeVariants(ButtonVariant.SMALL);
         btn.addClassName(ResourceFormatters.resourceStateClassName(resourceStatus.getState()));
-        btn.addClickListener(event -> new ChangeResourceStatusDialog(resourceStatusService, resourceStatus).open());
+        btn.addClickListener(event -> new ChangeResourceStatusDialog(resourceStatusService, resourceStatus,
+                assignedCallSigns.get(resourceStatus.getResourceId())).open());
         return btn;
     }
 
     private void updateResources() {
         availableResource.setItems(resourceStatusService.getAvailableResources());
-        if (shownAssignmentId != null) {
-            assignedResources.setItems(resourceStatusService.getStatusOfResourcesAssignedToAssignment(shownAssignmentId));
-        } else {
-            assignedResources.setItems(Collections.emptyList());
-        }
+        var statuses = shownAssignmentId == null ? List.<ResourceStatus>of()
+                : resourceStatusService.getStatusOfResourcesAssignedToAssignment(shownAssignmentId);
+        assignedCallSigns.clear();
+        assignedCallSigns.putAll(resourceQueries.findCallSigns(statuses.stream().map(ResourceStatus::getResourceId).toList()));
+        assignedResources.setItems(statuses);
     }
 
     private void addToAssignment() {
         var resource = availableResource.getValue();
         var current = assignment.peek();
         if (resource != null && current != null) {
-            resourceStatusService.setResourceAssignment(resource, current.id());
+            resourceStatusService.setResourceAssignment(resource.id(), current.id());
         }
     }
 
     private void removeFromAssignment() {
-        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::getResource).collect(Collectors.toSet());
+        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::getResourceId).collect(Collectors.toSet());
         resources.forEach(resourceStatusService::clearResourceAssignment);
     }
 
@@ -253,7 +261,7 @@ public class AssignmentPanel extends VerticalLayout {
     }
 
     private void dispatchSelected() {
-        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::getResource).collect(Collectors.toSet());
+        var resources = assignedResources.getSelectedItems().stream().map(ResourceStatus::getResourceId).collect(Collectors.toSet());
         var assignment = this.assignment.peek();
         if (resources.size() > 0 && assignment != null) {
             try {

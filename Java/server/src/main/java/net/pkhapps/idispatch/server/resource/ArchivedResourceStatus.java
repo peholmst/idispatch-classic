@@ -9,22 +9,13 @@ import jakarta.persistence.*;
 @Table(name = "resource_status_archive", indexes = @Index(columnList = "ts"))
 public class ArchivedResourceStatus extends AbstractResourceStateChange {
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "resource_id", nullable = false)
-    private Resource resource;
-
     protected ArchivedResourceStatus() {
     }
 
     public ArchivedResourceStatus(ResourceStatus status) {
-        this.resource = status.getResource();
+        setResourceId(status.getResourceId());
         setTimestamp(status.getTimestamp());
         setAssignmentId(status.getAssignmentId());
         setState(status.getState());
-    }
-
-    @Override
-    public Resource getResource() {
-        return resource;
     }
 }
