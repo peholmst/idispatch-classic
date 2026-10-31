@@ -63,19 +63,19 @@ public class ResourceListPanel extends VerticalLayout {
         grid.setAriaLabel(getTranslation("dispatch.all-resources"));
         add(grid);
 
-        grid.addColumn(rs -> callSigns.get(rs.getResourceId())).setHeader(getTranslation("dispatch.resource"));
+        grid.addColumn(rs -> callSigns.get(rs.resourceId())).setHeader(getTranslation("dispatch.resource"));
         grid.addColumn(new ComponentRenderer<>(this::createStatusButton)).setHeader(getTranslation("dispatch.state"));
-        grid.addColumn(rs -> Formatters.formatDateTime(rs.getTimestamp())).setHeader(getTranslation("dispatch.timestamp"));
-        grid.addColumn(rs -> rs.getAssignmentId() == null ? null
-                : AssignmentFormatters.formatAssignment(assignments.get(rs.getAssignmentId()))).setHeader(getTranslation("dispatch.assignment"));
+        grid.addColumn(rs -> Formatters.formatDateTime(rs.timestamp())).setHeader(getTranslation("dispatch.timestamp"));
+        grid.addColumn(rs -> rs.assignment() == null ? null
+                : AssignmentFormatters.formatAssignment(assignments.get(rs.assignment()))).setHeader(getTranslation("dispatch.assignment"));
     }
 
     private Button createStatusButton(ResourceStatus resourceStatus) {
-        var btn = new Button(ResourceFormatters.formatResourceState(resourceStatus.getState()));
+        var btn = new Button(ResourceFormatters.formatResourceState(resourceStatus.state()));
         btn.addThemeVariants(ButtonVariant.SMALL);
-        btn.addClassName(ResourceFormatters.resourceStateClassName(resourceStatus.getState()));
+        btn.addClassName(ResourceFormatters.resourceStateClassName(resourceStatus.state()));
         btn.addClickListener(event -> new ChangeResourceStatusDialog(resourceStatusService, resourceStatus,
-                callSigns.get(resourceStatus.getResourceId())).open());
+                callSigns.get(resourceStatus.resourceId())).open());
         return btn;
     }
 
@@ -94,11 +94,11 @@ public class ResourceListPanel extends VerticalLayout {
     private void refresh() {
         var statuses = resourceStatusService.getStatusOfAllResources();
         callSigns.clear();
-        callSigns.putAll(resourceQueries.findCallSigns(statuses.stream().map(ResourceStatus::getResourceId).toList()));
+        callSigns.putAll(resourceQueries.findCallSigns(statuses.stream().map(ResourceStatus::resourceId).toList()));
         assignments.clear();
         assignmentService.findOpenAssignments().forEach(assignment -> assignments.put(assignment.id(), assignment));
         // Resources can still refer to an assignment that has been closed
-        var others = statuses.stream().map(ResourceStatus::getAssignmentId).filter(Objects::nonNull)
+        var others = statuses.stream().map(ResourceStatus::assignment).filter(Objects::nonNull)
                 .filter(id -> !assignments.containsKey(id)).collect(Collectors.toSet());
         assignmentService.findAssignments(others).forEach(assignment -> assignments.put(assignment.id(), assignment));
         grid.setItems(statuses);

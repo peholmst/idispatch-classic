@@ -214,6 +214,10 @@ public class Dispatcher {
         return page.canDispatchSelected();
     }
 
+    public List<String> listedResources() {
+        return page.listedResources();
+    }
+
     public String stateOf(String callSign) {
         return page.stateOf(callSign);
     }

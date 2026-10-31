@@ -10,6 +10,7 @@ import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
 import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
+import net.pkhapps.idispatch.server.resource.ArchivedResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceQueries;
@@ -88,6 +89,16 @@ class SmsDispatcherTest {
 
         @Override
         public List<ResourceListItem> findByIds(Collection<ResourceId> ids) {
+            return List.of();
+        }
+
+        @Override
+        public List<ResourceListItem> findByCallSignContaining(String searchTerm) {
+            return List.of();
+        }
+
+        @Override
+        public List<ArchivedResourceStatus> findPastStatesOn(AssignmentId assignment) {
             return List.of();
         }
     }

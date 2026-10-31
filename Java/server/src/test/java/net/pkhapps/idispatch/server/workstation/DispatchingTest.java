@@ -187,6 +187,18 @@ class DispatchingTest extends UseCaseTest {
     }
 
     @Test
+    void deletedResourcesAreNeitherListedNorOffered() {
+        var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
+        given.deleteResource(resource);
+
+        var dispatcher = dispatcherAtWork();
+        dispatcher.opensANewAssignment();
+
+        assertThat(dispatcher.availableResources()).doesNotContain(resource.callSign());
+        assertThat(dispatcher.listedResources()).doesNotContain(resource.callSign());
+    }
+
+    @Test
     void resourcesThatAreOutOfServiceAreNotOffered() {
         var resource = given.resource(unique("CS"), ResourceState.OUT_OF_SERVICE);
 

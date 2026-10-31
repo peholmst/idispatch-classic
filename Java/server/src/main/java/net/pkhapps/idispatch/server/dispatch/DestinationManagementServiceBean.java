@@ -40,7 +40,8 @@ class DestinationManagementServiceBean extends AbstractSoftDeletableManagementSe
             specs.add(DestinationSpecifications.activeOnly());
         }
         if (filter instanceof TextSearchFilter textSearchFilter) {
-            textSearchFilter.doWithSearchTerm(st -> specs.add(DestinationSpecifications.searchTerm(st)));
+            textSearchFilter.doWithSearchTerm(st -> specs.add(DestinationSpecifications.searchTerm(st,
+                    resourceQueries.findByCallSignContaining(st).stream().map(r -> r.id().value()).toList())));
         }
         return repository.findAll(Specification.allOf(specs));
     }

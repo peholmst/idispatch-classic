@@ -1,21 +1,24 @@
 package net.pkhapps.idispatch.server.resource;
 
-import jakarta.persistence.*;
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
+import org.jspecify.annotations.Nullable;
+
+import java.time.Instant;
+
+import static java.util.Objects.requireNonNull;
 
 /**
- * Entity that contains past states of a {@link Resource}.
+ * A past state of a {@link Resource}, kept for the reports.
+ *
+ * @param assignment the assignment the resource was on or had last been on, or {@code null} if none
+ * @param timestamp  when the resource got this state or assignment
  */
-@Entity
-@Table(name = "resource_status_archive", indexes = @Index(columnList = "ts"))
-public class ArchivedResourceStatus extends AbstractResourceStateChange {
+public record ArchivedResourceStatus(ResourceId resourceId, ResourceState state, @Nullable AssignmentId assignment,
+                                     Instant timestamp) {
 
-    protected ArchivedResourceStatus() {
-    }
-
-    public ArchivedResourceStatus(ResourceStatus status) {
-        setResourceId(status.getResourceId());
-        setTimestamp(status.getTimestamp());
-        setAssignmentId(status.getAssignmentId());
-        setState(status.getState());
+    public ArchivedResourceStatus {
+        requireNonNull(resourceId);
+        requireNonNull(state);
+        requireNonNull(timestamp);
     }
 }

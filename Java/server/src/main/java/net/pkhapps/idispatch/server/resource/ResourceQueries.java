@@ -1,5 +1,7 @@
 package net.pkhapps.idispatch.server.resource;
 
+import net.pkhapps.idispatch.server.assignment.AssignmentId;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +23,17 @@ public interface ResourceQueries {
      * Finds the resources with the given IDs, whether deleted or not, in call sign order.
      */
     List<ResourceListItem> findByIds(Collection<ResourceId> ids);
+
+    /**
+     * Finds the resources whose call sign contains the search term, ignoring case, whether deleted or not, in call
+     * sign order.
+     */
+    List<ResourceListItem> findByCallSignContaining(String searchTerm);
+
+    /**
+     * Finds the past states of every resource that has been on the assignment, oldest first.
+     */
+    List<ArchivedResourceStatus> findPastStatesOn(AssignmentId assignment);
 
     /**
      * Returns the call signs of the resources with the given IDs, whether deleted or not. An ID that matches no
