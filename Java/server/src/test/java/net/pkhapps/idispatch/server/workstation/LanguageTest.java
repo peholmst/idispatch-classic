@@ -24,7 +24,7 @@ class LanguageTest extends UseCaseTest {
 
         assertThat(dispatcher.viewTitle()).isEqualTo("Hätäkeskus");
         assertThat(dispatcher.seesButton("Uusi tehtävä")).isTrue();
-        assertThat(dispatcher.stateOf(resource.getCallSign())).isEqualTo("Kohteessa");
+        assertThat(dispatcher.stateOf(resource.callSign())).isEqualTo("Kohteessa");
     }
 
     @Test
@@ -36,7 +36,7 @@ class LanguageTest extends UseCaseTest {
 
         assertThat(dispatcher.viewTitle()).isEqualTo("Larmcentral");
         assertThat(dispatcher.seesButton("Nytt uppdrag")).isTrue();
-        assertThat(dispatcher.stateOf(resource.getCallSign())).isEqualTo("På plats");
+        assertThat(dispatcher.stateOf(resource.callSign())).isEqualTo("På plats");
     }
 
     @Test
@@ -47,6 +47,6 @@ class LanguageTest extends UseCaseTest {
 
         assertThat(dispatcher.viewTitle()).isEqualTo("Dispatcher");
         assertThat(dispatcher.seesButton("New Assignment")).isTrue();
-        assertThat(dispatcher.stateOf(resource.getCallSign())).isEqualTo("On scene");
+        assertThat(dispatcher.stateOf(resource.callSign())).isEqualTo("On scene");
     }
 }

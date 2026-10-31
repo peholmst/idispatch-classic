@@ -15,6 +15,13 @@
 
     <properties>
         <idispatch-aspsms-integration.version>3.0.0</idispatch-aspsms-integration.version>
+        <archunit.version>1.4.1</archunit.version>
+        <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
+        <!-- The throwaway database that the jooq-codegen profile generates the jOOQ metadata classes from -->
+        <jooq-codegen.compose-file>${project.basedir}/compose.jooq-codegen.yaml</jooq-codegen.compose-file>
+        <jooq-codegen.url>jdbc:postgresql://localhost:15432/idispatch</jooq-codegen.url>
+        <jooq-codegen.user>idispatch</jooq-codegen.user>
+        <jooq-codegen.password>idispatch</jooq-codegen.password>
     </properties>
 
     <dependencies>
@@ -60,6 +67,10 @@
             <artifactId>guava</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jooq</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>
@@ -123,6 +134,12 @@
             <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>${archunit.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -148,6 +165,137 @@
     </build>
 
     <profiles>
+        <!--
+            Regenerates the jOOQ metadata classes in src/main/java/net/pkhapps/idispatch/server/jooq, which are checked
+            in, from the Flyway migrations: `mvn -Pjooq-codegen generate-sources` in this directory. Run it after adding
+            a migration. Starts a throwaway PostgreSQL from compose.jooq-codegen.yaml, migrates it and generates the
+            classes (all in the initialize phase, in the order the plugins are declared here), then removes the database
+            again in the generate-sources phase.
+        -->
+        <profile>
+            <id>jooq-codegen</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${exec-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <!-- A fresh database every time, so the classes match the migrations and nothing else -->
+                                <id>start-codegen-database</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>compose</argument>
+                                        <argument>--file</argument>
+                                        <argument>${jooq-codegen.compose-file}</argument>
+                                        <argument>up</argument>
+                                        <argument>--detach</argument>
+                                        <argument>--force-recreate</argument>
+                                        <argument>--renew-anon-volumes</argument>
+                                        <argument>--wait</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>stop-codegen-database</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>compose</argument>
+                                        <argument>--file</argument>
+                                        <argument>${jooq-codegen.compose-file}</argument>
+                                        <argument>down</argument>
+                                        <argument>--volumes</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>migrate-codegen-database</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>migrate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <url>${jooq-codegen.url}</url>
+                            <user>${jooq-codegen.user}</user>
+                            <password>${jooq-codegen.password}</password>
+                            <locations>
+                                <location>filesystem:${project.basedir}/src/main/resources/db/migration</location>
+                            </locations>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.flywaydb</groupId>
+                                <artifactId>flyway-database-postgresql</artifactId>
+                                <version>${flyway.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.postgresql</groupId>
+                                <artifactId>postgresql</artifactId>
+                                <version>${postgresql.version}</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.jooq</groupId>
+                        <artifactId>jooq-codegen-maven</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-jooq-metadata</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <jdbc>
+                                <driver>org.postgresql.Driver</driver>
+                                <url>${jooq-codegen.url}</url>
+                                <user>${jooq-codegen.user}</user>
+                                <password>${jooq-codegen.password}</password>
+                            </jdbc>
+                            <generator>
+                                <database>
+                                    <name>org.jooq.meta.postgres.PostgresDatabase</name>
+                                    <inputSchema>public</inputSchema>
+                                    <excludes>flyway_schema_history</excludes>
+                                </database>
+                                <target>
+                                    <packageName>net.pkhapps.idispatch.server.jooq</packageName>
+                                    <directory>${project.basedir}/src/main/java</directory>
+                                </target>
+                            </generator>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.postgresql</groupId>
+                                <artifactId>postgresql</artifactId>
+                                <version>${postgresql.version}</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>assemble</id>
             <build>

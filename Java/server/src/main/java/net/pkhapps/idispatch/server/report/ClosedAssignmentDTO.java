@@ -1,7 +1,6 @@
 package net.pkhapps.idispatch.server.report;
 
 import net.pkhapps.idispatch.server.assignment.Assignment;
-import net.pkhapps.idispatch.server.assignment.AssignmentSpecifications;
 
 import java.io.Serializable;
 
@@ -13,5 +12,5 @@ public record ClosedAssignmentDTO(Assignment assignment, boolean reportClosed) i
     /**
      * Sort property for {@link #reportClosed()}. The other sort properties are those of {@link Assignment}.
      */
-    public static final String SORT_REPORT_CLOSED = AssignmentSpecifications.REPORT_CLOSED;
+    public static final String SORT_REPORT_CLOSED = ClosedAssignmentSpecifications.REPORT_CLOSED;
 }

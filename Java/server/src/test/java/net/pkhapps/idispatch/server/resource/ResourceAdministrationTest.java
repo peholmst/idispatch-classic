@@ -34,7 +34,7 @@ class ResourceAdministrationTest extends UseCaseTest {
 
         assertThat(admin.row(callSign)).containsEntry(TYPE, "Ambulance");
         var added = given.resourceCalled(callSign);
-        assertThat(given.statusOf(added).getState()).isEqualTo(ResourceState.OUT_OF_SERVICE);
+        assertThat(given.statusOf(added).state()).isEqualTo(ResourceState.OUT_OF_SERVICE);
     }
 
     @Test
@@ -53,7 +53,7 @@ class ResourceAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorChangesTheCallSignOfAResource() {
-        var original = given.resource(unique("CS"), ResourceState.AVAILABLE).getCallSign();
+        var original = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var renamed = unique("CS");
         var admin = administratorAtWork();
 
@@ -68,7 +68,7 @@ class ResourceAdministrationTest extends UseCaseTest {
     @Test
     void administratorFindsAResourceByAnyPartOfItsCallSign() {
         var marker = unique("");
-        var match = given.resource("X" + marker + "Y", ResourceState.AVAILABLE).getCallSign();
+        var match = given.resource("X" + marker + "Y", ResourceState.AVAILABLE).callSign();
         given.resource(unique("CS"), ResourceState.AVAILABLE);
         var admin = administratorAtWork();
 
@@ -79,7 +79,7 @@ class ResourceAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorDeletesAResource() {
-        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).getCallSign();
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var admin = administratorAtWork();
 
         admin.opens(callSign);

@@ -2,6 +2,7 @@ package net.pkhapps.idispatch.server.dispatch;
 
 import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.DispatchValidationGroup;
 import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;

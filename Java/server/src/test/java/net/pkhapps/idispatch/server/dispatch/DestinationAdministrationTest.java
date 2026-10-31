@@ -1,9 +1,8 @@
 package net.pkhapps.idispatch.server.dispatch;
 
-import net.pkhapps.idispatch.server.dispatch.sms.SmsDestination;
-import net.pkhapps.idispatch.server.resource.Resource;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.shared.Bilingual;
+import net.pkhapps.idispatch.server.ui.TestData.GivenDestination;
 import net.pkhapps.idispatch.server.ui.UseCaseTest;
 import net.pkhapps.idispatch.server.ui.management.Administrator;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,7 @@ class DestinationAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorAddsARunboardDestinationInSwedish() {
-        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).getCallSign();
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var description = unique("Station hall ");
         var admin = administratorAtWork();
 
@@ -58,22 +57,22 @@ class DestinationAdministrationTest extends UseCaseTest {
                 "Type", RUNBOARD,
                 "Description", description,
                 "Language", "Swedish"));
-        assertThat(destinationOf(callSign).getLocale()).isEqualTo(Bilingual.SWEDISH);
+        assertThat(destinationOf(callSign).locale()).isEqualTo(Bilingual.SWEDISH);
     }
 
     @Test
     void destinationWithoutADescriptionHasNone() {
-        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).getCallSign();
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var admin = administratorAtWork();
 
         addsRunboardDestination(admin, callSign);
 
-        assertThat(destinationOf(callSign).getDescription()).as("Not even an empty one").isNull();
+        assertThat(destinationOf(callSign).description()).as("Not even an empty one").isNull();
     }
 
     @Test
     void administratorDescribesADestinationAndFindsItByTheDescription() {
-        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).getCallSign();
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var description = unique("Garage ");
         var admin = administratorAtWork();
         addsRunboardDestination(admin, callSign);
@@ -89,7 +88,7 @@ class DestinationAdministrationTest extends UseCaseTest {
 
     @Test
     void administratorAddsAnSmsDestinationWithNumbersSeparatedByCommasAndLines() {
-        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).getCallSign();
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var number = "+358" + Math.abs(callSign.hashCode());
         var admin = administratorAtWork();
 
@@ -99,13 +98,13 @@ class DestinationAdministrationTest extends UseCaseTest {
         admin.saves();
 
         assertThat(admin.row(callSign)).containsEntry("Type", SMS);
-        assertThat(((SmsDestination) destinationOf(callSign)).getPhoneNumbers())
+        assertThat(destinationOf(callSign).phoneNumbers())
                 .containsExactlyInAnyOrder(number + "1", number + "2", number + "3");
     }
 
     @Test
     void administratorOpensAnSmsDestinationAndSeesItsNumbersAndResources() {
-        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).getCallSign();
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var number = "+358" + Math.abs(callSign.hashCode());
         var admin = administratorAtWork();
         admin.startsAdding(SMS);
@@ -134,8 +133,8 @@ class DestinationAdministrationTest extends UseCaseTest {
     @Test
     void administratorFindsADestinationByTheCallSignOfItsResource() {
         var marker = unique("");
-        var callSign = given.resource("D" + marker, ResourceState.AVAILABLE).getCallSign();
-        var other = given.resource(unique("CS"), ResourceState.AVAILABLE).getCallSign();
+        var callSign = given.resource("D" + marker, ResourceState.AVAILABLE).callSign();
+        var other = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var admin = administratorAtWork();
         addsRunboardDestination(admin, callSign);
         addsRunboardDestination(admin, other);
@@ -147,7 +146,7 @@ class DestinationAdministrationTest extends UseCaseTest {
 
     @Test
     void deletedDestinationsAreHiddenUnlessAskedFor() {
-        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).getCallSign();
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var admin = administratorAtWork();
         addsRunboardDestination(admin, callSign);
         admin.searchesFor(callSign.toLowerCase());
@@ -171,8 +170,8 @@ class DestinationAdministrationTest extends UseCaseTest {
         admin.saves();
     }
 
-    private Destination destinationOf(String callSign) {
-        Resource resource = given.resourceCalled(callSign);
+    private GivenDestination destinationOf(String callSign) {
+        var resource = given.resourceCalled(callSign);
         var destinations = given.destinationsFor(resource);
         assertThat(destinations).as("Destinations of " + callSign).hasSize(1);
         return destinations.getFirst();

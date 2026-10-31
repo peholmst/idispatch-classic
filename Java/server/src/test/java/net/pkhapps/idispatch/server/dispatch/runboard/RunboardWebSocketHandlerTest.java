@@ -1,10 +1,12 @@
 package net.pkhapps.idispatch.server.dispatch.runboard;
 
+import jakarta.persistence.EntityManager;
 import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentRepository;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
 import net.pkhapps.idispatch.server.dispatch.Destination;
 import net.pkhapps.idispatch.server.dispatch.DestinationRepository;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
@@ -67,6 +69,8 @@ class RunboardWebSocketHandlerTest {
     DispatchNotificationRepository dispatchNotificationRepository;
     @Autowired
     ReceiptRepository receiptRepository;
+    @Autowired
+    EntityManager entityManager;
 
     private final List<TestClient> clients = new ArrayList<>();
 
@@ -77,7 +81,7 @@ class RunboardWebSocketHandlerTest {
 
     @Test
     void waitingNotifications_areSentOnConnect_andAcknowledgementCreatesReceipt() throws Exception {
-        var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
+        var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
         var destination = runboardDestination(resource);
         var notification = dispatch(resource, destination);
 
@@ -101,12 +105,12 @@ class RunboardWebSocketHandlerTest {
 
     @Test
     void eachRunboard_getsTheNotificationInItsOwnLanguage() throws Exception {
-        var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
+        var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
         var finnish = runboardDestination(resource);
         var swedish = runboardDestination(resource, Bilingual.SWEDISH);
         var assignment = new Assignment();
-        assignment.setMunicipality(testData.municipality(unique("Parainen "), unique("Pargas ")));
-        assignment.setType(testData.assignmentType(unique("AT"), "Rakennuspalo", "Byggnadsbrand"));
+        assignment.setMunicipality(entity(Municipality.class, testData.municipality(unique("Parainen "), unique("Pargas ")).id()));
+        assignment.setType(entity(AssignmentType.class, testData.assignmentType(unique("AT"), "Rakennuspalo", "Byggnadsbrand").id()));
         assignment.setUrgency(AssignmentUrgency.A);
         var notification = dispatch(assignment, resource, Set.of(finnish, swedish));
 
@@ -123,9 +127,9 @@ class RunboardWebSocketHandlerTest {
 
     @Test
     void newNotifications_arePushedOnlyToRunboardsTheyAreFor() throws Exception {
-        var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
+        var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
         var destination = runboardDestination(resource);
-        var otherDestination = runboardDestination(testData.resource(unique("R"), ResourceState.AVAILABLE));
+        var otherDestination = runboardDestination(entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id()));
         var client = connect(destination.getRunboardKey());
         var otherClient = connect(otherDestination.getRunboardKey());
 
@@ -137,7 +141,7 @@ class RunboardWebSocketHandlerTest {
 
     @Test
     void acknowledgedNotifications_areNotSentAgainOnReconnect() throws Exception {
-        var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
+        var resource = entity(Resource.class, testData.resource(unique("R"), ResourceState.AVAILABLE).id());
         var destination = runboardDestination(resource);
         var notification = dispatch(resource, destination);
         var client = connect(destination.getRunboardKey());
@@ -169,6 +173,14 @@ class RunboardWebSocketHandlerTest {
         assertThat(client.closed.get(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(1008);
     }
 
+    /**
+     * Loads a fixture as the entity that the dispatch classes still work with, detached like the ones the services
+     * return.
+     */
+    private <T> T entity(Class<T> type, long id) {
+        return entityManager.find(type, id);
+    }
+
     private RunboardDestination runboardDestination(Resource resource) {
         return runboardDestination(resource, Bilingual.FINNISH);
     }
@@ -183,8 +195,8 @@ class RunboardWebSocketHandlerTest {
 
     private DispatchNotification dispatch(Resource resource, Destination destination) {
         var assignment = new Assignment();
-        assignment.setMunicipality(testData.municipality(unique("Municipality")));
-        assignment.setType(testData.assignmentType(unique("AT"), "Test assignment type"));
+        assignment.setMunicipality(entity(Municipality.class, testData.municipality(unique("Municipality")).id()));
+        assignment.setType(entity(AssignmentType.class, testData.assignmentType(unique("AT"), "Test assignment type").id()));
         assignment.setUrgency(AssignmentUrgency.A);
         return dispatch(assignment, resource, Set.of(destination));
     }
