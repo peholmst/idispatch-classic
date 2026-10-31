@@ -41,13 +41,20 @@ public class TestData {
 
     public Municipality municipality(String name) {
         var municipality = new Municipality();
-        municipality.setName(name);
+        municipality.setNameFi(name);
+        return municipalityRepository.saveAndFlush(municipality);
+    }
+
+    public Municipality municipality(String nameFi, String nameSv) {
+        var municipality = new Municipality();
+        municipality.setNameFi(nameFi);
+        municipality.setNameSv(nameSv);
         return municipalityRepository.saveAndFlush(municipality);
     }
 
     public Municipality deletedMunicipality(String name) {
         var municipality = new Municipality();
-        municipality.setName(name);
+        municipality.setNameFi(name);
         municipality.setActive(false);
         return municipalityRepository.saveAndFlush(municipality);
     }
@@ -55,21 +62,29 @@ public class TestData {
     public AssignmentType assignmentType(String code, String description) {
         var type = new AssignmentType();
         type.setCode(code);
-        type.setDescription(description);
+        type.setDescriptionFi(description);
+        return assignmentTypeRepository.saveAndFlush(type);
+    }
+
+    public AssignmentType assignmentType(String code, String descriptionFi, String descriptionSv) {
+        var type = new AssignmentType();
+        type.setCode(code);
+        type.setDescriptionFi(descriptionFi);
+        type.setDescriptionSv(descriptionSv);
         return assignmentTypeRepository.saveAndFlush(type);
     }
 
     public ResourceType resourceType(String code, String description) {
         var type = new ResourceType();
         type.setCode(code);
-        type.setDescription(description);
+        type.setDescriptionFi(description);
         return resourceTypeRepository.saveAndFlush(type);
     }
 
     public ResourceType deletedResourceType(String code, String description) {
         var type = new ResourceType();
         type.setCode(code);
-        type.setDescription(description);
+        type.setDescriptionFi(description);
         type.setActive(false);
         return resourceTypeRepository.saveAndFlush(type);
     }

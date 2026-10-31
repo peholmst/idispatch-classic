@@ -4,7 +4,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
 
 /**
- * Form for the assignment and resource types, which both have a {@code code} and a {@code description}.
+ * Form for the assignment and resource types, which both have a {@code code} and a description in Finnish
+ * ({@code descriptionFi}) and Swedish ({@code descriptionSv}).
  */
 class CodeAndDescriptionForm<E extends AbstractEntity> extends ManagementForm<E> {
 
@@ -14,11 +15,12 @@ class CodeAndDescriptionForm<E extends AbstractEntity> extends ManagementForm<E>
         super(entityType);
 
         code = new TextField(getTranslation("management.code"));
-        var description = new TextField(getTranslation("management.description"));
-        getContent().add(code, description);
+        var descriptionFi = new TextField(getTranslation("management.description-fi"));
+        var descriptionSv = new TextField(getTranslation("management.description-sv"));
+        getContent().add(code, descriptionFi, descriptionSv);
 
         binder.forField(code).bind("code");
-        binder.forField(description).bind("description");
+        bindBilingual(descriptionFi, "descriptionFi", descriptionSv, "descriptionSv", "management.description-required");
     }
 
     @Override

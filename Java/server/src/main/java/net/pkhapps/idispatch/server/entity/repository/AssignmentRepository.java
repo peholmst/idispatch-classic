@@ -20,14 +20,14 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long>, J
     List<Assignment> findByClosedIsNotNull(Pageable pageable);
 
     /**
-     * Returns the municipalities that at least one closed assignment is in, by name.
+     * Returns the municipalities that at least one closed assignment is in, in no particular order.
      */
-    @Query("select distinct m from Assignment a join a.municipality m where a.closed is not null order by m.name")
+    @Query("select distinct m from Assignment a join a.municipality m where a.closed is not null")
     List<Municipality> findMunicipalitiesOfClosedAssignments();
 
     /**
-     * Returns the types that at least one closed assignment has, by code and description.
+     * Returns the types that at least one closed assignment has, by code.
      */
-    @Query("select distinct t from Assignment a join a.type t where a.closed is not null order by t.code, t.description")
+    @Query("select distinct t from Assignment a join a.type t where a.closed is not null order by t.code")
     List<AssignmentType> findTypesOfClosedAssignments();
 }

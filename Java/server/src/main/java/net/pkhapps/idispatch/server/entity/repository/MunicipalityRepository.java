@@ -11,5 +11,5 @@ import java.util.List;
  */
 public interface MunicipalityRepository extends JpaRepository<Municipality, Long>, JpaSpecificationExecutor<Municipality> {
 
-    List<Municipality> findByActiveTrueOrderByNameAsc();
+    List<Municipality> findByActiveTrue();
 }

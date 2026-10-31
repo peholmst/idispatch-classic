@@ -22,7 +22,7 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
         add();
         assertThat(editorTitle()).isEqualTo("Add Assignment Type");
         test(editorTextField("Code")).setValue(code);
-        test(editorTextField("Description")).setValue("Structure fire");
+        test(editorTextField("Description in Finnish")).setValue("Structure fire");
         save();
 
         var row = rowOf(this.<AssignmentType>grid(), AssignmentType::getCode, code);
@@ -37,7 +37,7 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
         save();
 
         assertThat(editorTextField("Code").getErrorMessage()).isEqualTo("Please enter a code");
-        assertThat(editorTextField("Description").getErrorMessage()).isEqualTo("Please enter a description");
+        assertThat(editorTextField("Description in Finnish").getErrorMessage()).isEqualTo("Please enter a description in Finnish or Swedish");
     }
 
     @Test
@@ -48,7 +48,7 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
 
         test(this.<AssignmentType>grid()).select(rowOf(this.<AssignmentType>grid(), AssignmentType::getCode, code));
         assertThat(editorTitle()).isEqualTo("Edit Assignment Type");
-        test(editorTextField("Description")).setValue("Changed");
+        test(editorTextField("Description in Finnish")).setValue("Changed");
         save();
 
         var row = rowOf(this.<AssignmentType>grid(), AssignmentType::getCode, code);
@@ -77,7 +77,7 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
         assertThat(items(this.<AssignmentType>grid())).extracting(AssignmentType::getCode).containsExactly(code);
 
         search(marker.toLowerCase());
-        assertThat(items(this.<AssignmentType>grid())).extracting(AssignmentType::getDescription)
+        assertThat(items(this.<AssignmentType>grid())).extracting(AssignmentType::getDescriptionFi)
                 .containsExactly("Has " + marker + " inside");
     }
 
@@ -101,7 +101,7 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
         add();
         assertThat(editorTitle()).isEqualTo("Add Resource Type");
         test(editorTextField("Code")).setValue(code);
-        test(editorTextField("Description")).setValue("Rescue unit");
+        test(editorTextField("Description in Finnish")).setValue("Rescue unit");
         save();
 
         var row = rowOf(this.<ResourceType>grid(), ResourceType::getCode, code);
@@ -116,7 +116,7 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
 
         test(this.<ResourceType>grid()).select(rowOf(this.<ResourceType>grid(), ResourceType::getCode, code));
         assertThat(editorTitle()).isEqualTo("Edit Resource Type");
-        test(editorTextField("Description")).setValue("Changed");
+        test(editorTextField("Description in Finnish")).setValue("Changed");
         save();
 
         test(this.<ResourceType>grid()).select(rowOf(this.<ResourceType>grid(), ResourceType::getCode, code));
@@ -129,7 +129,7 @@ class TypeManagementViewsTest extends AbstractManagementViewTest {
 
         var restored = test(this.<ResourceType>grid()).getRow(rowOf(this.<ResourceType>grid(), ResourceType::getCode, code));
         assertThat(restored.isActive()).isTrue();
-        assertThat(restored.getDescription()).isEqualTo("Changed");
+        assertThat(restored.getDescriptionFi()).isEqualTo("Changed");
     }
 
     @Test

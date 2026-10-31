@@ -30,6 +30,7 @@ import net.pkhapps.idispatch.server.boundary.ReportService;
 import net.pkhapps.idispatch.server.entity.AbstractEntity;
 import net.pkhapps.idispatch.server.entity.Assignment;
 import net.pkhapps.idispatch.server.entity.AssignmentType;
+import net.pkhapps.idispatch.server.entity.Bilingual;
 import net.pkhapps.idispatch.server.entity.Municipality;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.ui.Formatters;
@@ -81,12 +82,15 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
                 .setSortProperty(Assignment.PROP_URGENCY).setAutoWidth(true).setFlexGrow(0);
         assignmentsGrid.addColumn(item -> Formatters.formatAssignmentType(item.assignment().getType()))
                 .setHeader(getTranslation("assignment.type"))
-                .setSortProperty(Assignment.PROP_TYPE + "." + AssignmentType.PROP_CODE,
-                        Assignment.PROP_TYPE + "." + AssignmentType.PROP_DESCRIPTION)
+                .setSortProperty(Stream.concat(Stream.of(AssignmentType.PROP_CODE),
+                                inPreferredOrder(AssignmentType.PROP_DESCRIPTION_FI, AssignmentType.PROP_DESCRIPTION_SV))
+                        .map(property -> Assignment.PROP_TYPE + "." + property).toArray(String[]::new))
                 .setResizable(true);
         assignmentsGrid.addColumn(item -> Formatters.formatMunicipality(item.assignment().getMunicipality()))
                 .setHeader(getTranslation("assignment.municipality"))
-                .setSortProperty(Assignment.PROP_MUNICIPALITY + "." + Municipality.PROP_NAME).setResizable(true);
+                .setSortProperty(inPreferredOrder(Municipality.PROP_NAME_FI, Municipality.PROP_NAME_SV)
+                        .map(property -> Assignment.PROP_MUNICIPALITY + "." + property).toArray(String[]::new))
+                .setResizable(true);
         assignmentsGrid.addColumn(item -> item.assignment().getAddress()).setHeader(getTranslation("assignment.address"))
                 .setSortProperty(Assignment.PROP_ADDRESS).setResizable(true);
         assignmentsGrid.sort(GridSortOrder.desc(closedColumn).build());
@@ -283,9 +287,22 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
     private void refresh() {
         assignmentsGrid.deselectAll();
         // Offer only the municipalities and types that some closed assignment has, so every choice matches something
-        updateChoices(municipalityFilter, reportService.findMunicipalitiesOfClosedAssignments());
-        updateChoices(typeFilter, reportService.findTypesOfClosedAssignments());
+        updateChoices(municipalityFilter, Formatters.sortedByLabel(reportService.findMunicipalitiesOfClosedAssignments(),
+                Formatters::formatMunicipality));
+        updateChoices(typeFilter, Formatters.sortedByLabel(reportService.findTypesOfClosedAssignments(),
+                Formatters::formatAssignmentType));
         assignmentsDataView.refreshAll();
+    }
+
+    /**
+     * Returns the Finnish and Swedish properties of a bilingual text, the one shown in the user's language first. The
+     * database sorts by both, so a row that only has the other language is sorted by that one among the rows that
+     * have neither.
+     */
+    private Stream<String> inPreferredOrder(String finnishProperty, String swedishProperty) {
+        return Bilingual.isSwedish(getLocale())
+                ? Stream.of(swedishProperty, finnishProperty)
+                : Stream.of(finnishProperty, swedishProperty);
     }
 
     private static <T> void updateChoices(ComboBox<T> comboBox, List<T> choices) {

@@ -3,9 +3,11 @@ package net.pkhapps.idispatch.server.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -19,6 +21,7 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 public abstract class Destination extends AbstractLockableEntity implements Deactivatable {
 
     public static final String PROP_DESCRIPTION = "description";
+    public static final String PROP_LOCALE = "locale";
     public static final String PROP_RESOURCES = "resources";
 
     @Column(name = "active", nullable = false)
@@ -27,6 +30,10 @@ public abstract class Destination extends AbstractLockableEntity implements Deac
     @Column(name = "description")
     @Size(max = 255, message = "{idispatch.destination.description.size}")
     private String description;
+
+    @Column(name = "locale", nullable = false)
+    @NotNull(message = "{idispatch.destination.locale.required}")
+    private Locale locale = Bilingual.FINNISH;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "destination_resources",
@@ -44,6 +51,18 @@ public abstract class Destination extends AbstractLockableEntity implements Deac
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    /**
+     * The language the destination receives notifications in. It picks the language of the municipality names and
+     * assignment type descriptions, as described in {@link Bilingual#select}.
+     */
+    public Locale getLocale() {
+        return locale;
+    }
+
+    public void setLocale(Locale locale) {
+        this.locale = locale;
     }
 
     public Set<Resource> getResources() {

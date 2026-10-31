@@ -14,6 +14,9 @@ public final class MunicipalitySpecifications {
     }
 
     public static Specification<Municipality> searchTerm(@NonNull String term) {
-        return (root, query, cb) -> cb.like(cb.lower(root.get("name")), term.toLowerCase() + "%");
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get(Municipality.PROP_NAME_FI)), term.toLowerCase() + "%"),
+                cb.like(cb.lower(root.get(Municipality.PROP_NAME_SV)), term.toLowerCase() + "%")
+        );
     }
 }

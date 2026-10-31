@@ -111,7 +111,7 @@ class AssignmentServiceBean extends AbstractServiceBean implements AssignmentSer
 
     @Override
     public List<Municipality> findApplicableMunicipalities() {
-        return municipalityRepository.findByActiveTrueOrderByNameAsc();
+        return municipalityRepository.findByActiveTrue();
     }
 
     @Override

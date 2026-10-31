@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,14 +57,20 @@ class SmsDispatcher extends AbstractDispatcher {
             logger.warn("Received dispatch notification, but SmsDispatcher is disabled");
             return;
         }
+        // Each destination gets the message in its own language, so send one message per language
+        destinations.stream()
+                .collect(Collectors.groupingBy(SmsDestination::getLocale))
+                .forEach((locale, destinationsInLocale) -> dispatch(destinationsInLocale, notification, locale));
+    }
 
+    private void dispatch(Collection<SmsDestination> destinations, DispatchNotification notification, Locale locale) {
         final Set<String> phoneNumbers = destinations
                 .stream()
                 .flatMap(destination -> destination.getPhoneNumbers().stream())
                 .collect(Collectors.toSet());
 
         if (!phoneNumbers.isEmpty()) {
-            final String messageText = buildMessageText(notification);
+            final String messageText = buildMessageText(notification, locale);
             logger.debug("Sending SMS \"{}\" to recipients {}", messageText, phoneNumbers);
             String resultCode = aspsmsx2Soap.sendSimpleTextSMS(
                     userKey,
@@ -82,9 +89,9 @@ class SmsDispatcher extends AbstractDispatcher {
         }
     }
 
-    private String buildMessageText(DispatchNotification notification) {
+    String buildMessageText(DispatchNotification notification, Locale locale) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(notification.getMunicipality().getName());
+        sb.append(notification.getMunicipality().getName(locale));
         sb.append(",");
         sb.append(notification.getAssignmentType().getCode());
         sb.append(notification.getUrgency());

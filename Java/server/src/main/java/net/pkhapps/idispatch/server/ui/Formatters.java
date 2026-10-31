@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.ui;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.i18n.I18NProvider;
 import net.pkhapps.idispatch.server.entity.*;
 
@@ -7,7 +8,12 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.text.Collator;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Function;
 
 public final class Formatters {
     private Formatters() {
@@ -26,11 +32,15 @@ public final class Formatters {
     }
 
     public static String formatAssignmentType(AssignmentType assignmentType) {
-        return assignmentType == null ? null : assignmentType.getFormattedDescription();
+        return assignmentType == null ? null : assignmentType.getFormattedDescription(currentLocale());
+    }
+
+    public static String formatResourceType(ResourceType resourceType) {
+        return resourceType == null ? null : resourceType.getFormattedDescription(currentLocale());
     }
 
     public static String formatMunicipality(Municipality municipality) {
-        return municipality == null ? null : municipality.getName();
+        return municipality == null ? null : municipality.getName(currentLocale());
     }
 
     public static String formatResource(Resource resource) {
@@ -46,7 +56,7 @@ public final class Formatters {
             return null;
         }
         var code = Optional.ofNullable(assignment.getType()).map(AssignmentType::getCode).orElse("?");
-        var municipality = Optional.ofNullable(assignment.getMunicipality()).map(Municipality::getName).orElse("?");
+        var municipality = Optional.ofNullable(assignment.getMunicipality()).map(m -> m.getName(currentLocale())).orElse("?");
         var address = Optional.ofNullable(assignment.getAddress()).orElse("?");
         return String.format("%s%s - %s - %s (%d)", code, assignment.getUrgency(), municipality, address, assignment.getId());
     }
@@ -57,6 +67,23 @@ public final class Formatters {
 
     public static String resourceStateClassName(ResourceState resourceState) {
         return resourceState == null ? null : String.format("resource-state-%s", resourceState.name().toLowerCase());
+    }
+
+    /**
+     * Returns the items sorted by their labels, using the sorting rules of the language of the current UI.
+     */
+    public static <T> List<T> sortedByLabel(List<T> items, Function<T, String> label) {
+        var locale = currentLocale();
+        var collator = Collator.getInstance(locale == null ? Locale.getDefault() : locale);
+        return items.stream().sorted(Comparator.comparing(label, collator)).toList();
+    }
+
+    /**
+     * Returns the locale of the current UI, which picks the language of the bilingual names and descriptions.
+     */
+    private static Locale currentLocale() {
+        var ui = UI.getCurrent();
+        return ui == null ? null : ui.getLocale();
     }
 
     public static String formatBoolean(Boolean bool) {

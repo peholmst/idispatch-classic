@@ -21,7 +21,8 @@ public class AssignmentTypeManagementView extends AbstractManagementView<Assignm
     @Override
     protected void configureGrid(Grid<AssignmentType> grid) {
         var code = grid.addColumn(AssignmentType::getCode).setHeader(getTranslation("management.code")).setSortable(true);
-        grid.addColumn(AssignmentType::getDescription).setHeader(getTranslation("management.description"));
+        grid.addColumn(AssignmentType::getDescriptionFi).setHeader(getTranslation("management.description-fi"));
+        grid.addColumn(AssignmentType::getDescriptionSv).setHeader(getTranslation("management.description-sv"));
         grid.sort(GridSortOrder.asc(code).build());
     }
 

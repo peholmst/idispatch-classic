@@ -3,28 +3,33 @@ package net.pkhapps.idispatch.server.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
+import org.jspecify.annotations.Nullable;
+
+import java.util.Locale;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Strings.nullToEmpty;
 
 /**
- * Entity representing a assignment type.
+ * Entity representing an assignment type. The description is in Finnish and Swedish, and at least one of them is required.
  */
 @Entity
 @Table(name = "assignment_types")
 public class AssignmentType extends AbstractLockableEntity implements Deactivatable {
 
     public static final String PROP_CODE = "code";
-    public static final String PROP_DESCRIPTION = "description";
-    public static final String PROP_FORMATTED_DESCRIPTION = "formattedDescription";
+    public static final String PROP_DESCRIPTION_FI = "descriptionFi";
+    public static final String PROP_DESCRIPTION_SV = "descriptionSv";
 
     @Column(name = "code", unique = true, nullable = false)
     @NotBlank(message = "{idispatch.assignment-type.code.required}")
     private String code = "";
-    @Column(name = "description", nullable = false)
-    @NotBlank(message = "{idispatch.assignment-type.description.required}")
-    private String description = "";
+    @Column(name = "description_fi", nullable = false)
+    private String descriptionFi = "";
+    @Column(name = "description_sv", nullable = false)
+    private String descriptionSv = "";
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
@@ -36,16 +41,36 @@ public class AssignmentType extends AbstractLockableEntity implements Deactivata
         this.code = nullToEmpty(code);
     }
 
-    public String getDescription() {
-        return description;
+    public String getDescriptionFi() {
+        return descriptionFi;
     }
 
-    public void setDescription(String description) {
-        this.description = nullToEmpty(description);
+    public void setDescriptionFi(String descriptionFi) {
+        this.descriptionFi = nullToEmpty(descriptionFi);
     }
 
-    public String getFormattedDescription() {
-        return String.format("%s - %s", code, description);
+    public String getDescriptionSv() {
+        return descriptionSv;
+    }
+
+    public void setDescriptionSv(String descriptionSv) {
+        this.descriptionSv = nullToEmpty(descriptionSv);
+    }
+
+    /**
+     * Returns the description to show to a user with the given locale, as described in {@link Bilingual#select}.
+     */
+    public String getDescription(@Nullable Locale locale) {
+        return Bilingual.select(descriptionFi, descriptionSv, locale);
+    }
+
+    public String getFormattedDescription(@Nullable Locale locale) {
+        return String.format("%s - %s", code, getDescription(locale));
+    }
+
+    @AssertTrue(message = "{idispatch.assignment-type.description.required}")
+    public boolean isDescriptionGiven() {
+        return Bilingual.isGiven(descriptionFi, descriptionSv);
     }
 
     @Override

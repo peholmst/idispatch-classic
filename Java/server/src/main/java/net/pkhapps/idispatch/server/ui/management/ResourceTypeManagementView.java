@@ -21,7 +21,8 @@ public class ResourceTypeManagementView extends AbstractManagementView<ResourceT
     @Override
     protected void configureGrid(Grid<ResourceType> grid) {
         var code = grid.addColumn(ResourceType::getCode).setHeader(getTranslation("management.code")).setSortable(true);
-        grid.addColumn(ResourceType::getDescription).setHeader(getTranslation("management.description"));
+        grid.addColumn(ResourceType::getDescriptionFi).setHeader(getTranslation("management.description-fi"));
+        grid.addColumn(ResourceType::getDescriptionSv).setHeader(getTranslation("management.description-sv"));
         grid.sort(GridSortOrder.asc(code).build());
     }
 

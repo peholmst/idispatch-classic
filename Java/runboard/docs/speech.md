@@ -20,14 +20,9 @@ Errors from the engine are logged and never stop the alarm. An engine that can't
 
 ## Configuration
 
-The language comes from the server, so that it matches the language that assignment types and municipalities are
-entered in:
-
-```yaml
-idispatch:
-  runboard:
-    language: fi   # ISO 639-1 code, default fi
-```
+The language comes from the server: it is set for each runboard destination under Administration → Destinations
+(Finnish or Swedish), and the server also sends the municipality name and assignment type description in that language
+(or in the other one, if it has only been entered in one).
 
 Servers from before that setting send no language. For those, the runboard can fall back to a language of its own:
 

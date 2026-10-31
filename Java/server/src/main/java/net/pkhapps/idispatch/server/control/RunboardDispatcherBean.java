@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.control;
 
+import net.pkhapps.idispatch.server.entity.Bilingual;
 import net.pkhapps.idispatch.server.entity.DispatchNotification;
 import net.pkhapps.idispatch.server.entity.RunboardDestination;
 import net.pkhapps.idispatch.server.events.DispatchNotificationSent;
@@ -53,6 +54,11 @@ class RunboardDispatcherBean extends AbstractDispatcher implements RunboardDispa
             return getDispatchNotifications(runboard.get());
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public Locale getLocale(String runboardKey) {
+        return getDestinationByKey(runboardKey).map(RunboardDestination::getLocale).orElse(Bilingual.FINNISH);
     }
 
     private Optional<RunboardDestination> getDestinationByKey(String runboardKey) {
