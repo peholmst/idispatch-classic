@@ -7,8 +7,9 @@ public final class ResourceFormatters {
     private ResourceFormatters() {
     }
 
-    public static String formatResourceType(ResourceType resourceType) {
-        return resourceType == null ? null : resourceType.getFormattedDescription(Formatters.currentLocale());
+    public static String formatResourceType(ResourceTypeListItem resourceType) {
+        return resourceType == null ? null
+                : resourceType.code() + " - " + resourceType.description(Formatters.currentLocale());
     }
 
     public static String formatResource(Resource resource) {

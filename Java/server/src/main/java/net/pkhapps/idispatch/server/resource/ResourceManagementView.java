@@ -21,7 +21,7 @@ public class ResourceManagementView extends AbstractManagementView<Resource, Res
     @Override
     protected void configureGrid(Grid<Resource> grid) {
         var callSign = grid.addColumn(Resource::getCallSign).setHeader(getTranslation("management.call-sign")).setSortable(true);
-        grid.addColumn(r -> r.getType().getDescription(getLocale())).setHeader(getTranslation("management.type"));
+        grid.addColumn(r -> r.getTypeDescription(getLocale())).setHeader(getTranslation("management.type"));
         grid.sort(GridSortOrder.asc(callSign).build());
     }
 

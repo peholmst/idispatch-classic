@@ -52,6 +52,32 @@ class ResourceAdministrationTest extends UseCaseTest {
     }
 
     @Test
+    void resourceWithoutCallSignOrTypeIsNotSaved() {
+        var admin = administratorAtWork();
+
+        admin.startsAdding();
+        admin.saves();
+
+        assertThat(admin.errorOf(CALL_SIGN)).isEqualTo("Please enter a call sign");
+        assertThat(admin.errorOf(TYPE)).isEqualTo("Please select a type");
+        assertThat(admin.editorTitle()).isEqualTo("Add Resource");
+    }
+
+    @Test
+    void resourceKeepsShowingItsTypeAfterTheTypeHasBeenDeleted() {
+        var typeCode = unique("RT");
+        var type = given.deletedResourceType(typeCode, "Retired type");
+        var callSign = given.resource(unique("CS"), ResourceState.AVAILABLE, type).callSign();
+        var admin = administratorAtWork();
+
+        assertThat(admin.row(callSign)).containsEntry(TYPE, "Retired type");
+        admin.opens(callSign);
+
+        assertThat(admin.chosen(TYPE)).isEqualTo(typeCode + " - Retired type");
+        assertThat(admin.choicesOf(TYPE)).as("Not offered for others").doesNotContain(typeCode + " - Retired type");
+    }
+
+    @Test
     void administratorChangesTheCallSignOfAResource() {
         var original = given.resource(unique("CS"), ResourceState.AVAILABLE).callSign();
         var renamed = unique("CS");
