@@ -145,8 +145,13 @@ public class AdministrationPage extends AppShell {
         return window.findComboBox(Object.class).withLabel(label).getSuggestions();
     }
 
+    /**
+     * Adds the item to those already chosen; the tester's selection replaces them all.
+     */
     public void chooseAlso(String label, String item) {
-        window.findMultiSelectComboBox(Object.class).withLabel(label).selectItem(item);
+        var chosen = new java.util.ArrayList<>(chosenItems(label));
+        chosen.add(item);
+        window.findMultiSelectComboBox(Object.class).withLabel(label).selectItem(chosen.toArray(String[]::new));
     }
 
     @SuppressWarnings("unchecked")

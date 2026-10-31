@@ -1,97 +1,76 @@
 package net.pkhapps.idispatch.server.dispatch.runboard;
 
 import net.pkhapps.idispatch.server.dispatch.AbstractDispatcher;
+import net.pkhapps.idispatch.server.dispatch.DestinationId;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
+import net.pkhapps.idispatch.server.dispatch.DispatchNotificationId;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationSent;
+import net.pkhapps.idispatch.server.dispatch.RunboardDestination;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Queues the notifications per runboard destination. A runboard is known by its key, as the destination was when a
+ * notification was last queued for it.
+ */
 @Component
 class RunboardDispatcherBean extends AbstractDispatcher implements RunboardDispatcher {
 
-    private final Map<String, RunboardDestination> runboardKeyMap = new HashMap<>();
-    private final Map<RunboardDestination, Map<Long, DispatchNotification>> waitingNotifications = new HashMap<>();
+    private static final Duration EXPIRY = Duration.ofMinutes(2);
+
+    private final Map<String, RunboardDestination> runboardsByKey = new ConcurrentHashMap<>();
+    private final Map<DestinationId, Map<DispatchNotificationId, DispatchNotification>> waitingNotifications =
+            new ConcurrentHashMap<>();
 
     @Override
     @Async
     public void onApplicationEvent(DispatchNotificationSent event) {
         final DispatchNotification notification = event.getDispatchNotification();
-        final Set<RunboardDestination> runboards = notification.getDestinationsOfType(RunboardDestination.class);
-        runboards.forEach(runboard -> {
-            final Map<Long, DispatchNotification> notifications = getOrCreateDispatchNotificationSet(runboard);
-            logger.debug("Adding dispatch notification {} for destination {}", notification, runboard);
-            synchronized (notifications) {
-                notifications.put(notification.getId(), notification);
-            }
-            applicationContext.publishEvent(new RunboardNotificationQueued(this, runboard.getRunboardKey()));
+        event.getDestinationsOfType(RunboardDestination.class).forEach(runboard -> {
+            runboardsByKey.put(runboard.runboardKey().value(), runboard);
+            logger.debug("Adding dispatch notification {} for destination {}", notification.id(), runboard.id());
+            waitingNotifications.computeIfAbsent(runboard.id(), id -> new ConcurrentHashMap<>())
+                    .put(notification.id(), notification);
+            applicationContext.publishEvent(new RunboardNotificationQueued(this, runboard.runboardKey().value()));
         });
-    }
-
-    private Map<Long, DispatchNotification> getOrCreateDispatchNotificationSet(RunboardDestination destination) {
-        synchronized (runboardKeyMap) {
-            runboardKeyMap.put(destination.getRunboardKey(), destination);
-        }
-        synchronized (waitingNotifications) {
-            Map<Long, DispatchNotification> notificationMap = waitingNotifications.get(destination);
-            if (notificationMap == null) {
-                notificationMap = new HashMap<>();
-                waitingNotifications.put(destination, notificationMap);
-            }
-            return notificationMap;
-        }
     }
 
     @Override
     public Collection<DispatchNotification> getDispatchNotifications(String runboardKey) {
         logger.trace("Looking up dispatch notifications for runboard {}", runboardKey);
-        Optional<RunboardDestination> runboard = getDestinationByKey(runboardKey);
-        if (runboard.isPresent()) {
-            return getDispatchNotifications(runboard.get());
-        }
-        return Collections.emptyList();
+        return getDestinationByKey(runboardKey)
+                .map(runboard -> waitingNotifications.getOrDefault(runboard.id(), Map.of()))
+                .<Collection<DispatchNotification>>map(notifications -> List.copyOf(notifications.values()))
+                .orElse(List.of());
     }
 
     @Override
     public Locale getLocale(String runboardKey) {
-        return getDestinationByKey(runboardKey).map(RunboardDestination::getLocale).orElse(Bilingual.FINNISH);
+        return getDestinationByKey(runboardKey).map(RunboardDestination::locale).orElse(Bilingual.FINNISH);
     }
 
     private Optional<RunboardDestination> getDestinationByKey(String runboardKey) {
-        synchronized (runboardKeyMap) {
-            return Optional.ofNullable(runboardKeyMap.get(runboardKey));
-        }
-    }
-
-    private Collection<DispatchNotification> getDispatchNotifications(RunboardDestination destination) {
-        Map<Long, DispatchNotification> result;
-        synchronized (waitingNotifications) {
-            result = waitingNotifications.getOrDefault(destination, new HashMap<>());
-        }
-        synchronized (result) {
-            return new HashSet<>(result.values());
-        }
-    }
-
-    private DispatchNotification popDispatchNotification(RunboardDestination destination, Long id) {
-        Map<Long, DispatchNotification> result;
-        synchronized (waitingNotifications) {
-            result = waitingNotifications.getOrDefault(destination, new HashMap<>());
-        }
-        synchronized (result) {
-            return result.remove(id);
-        }
+        return Optional.ofNullable(runboardsByKey.get(runboardKey));
     }
 
     @Override
     @Async
-    public void acknowledgeDispatchNotification(String runboardKey, Long notificationId) {
+    public void acknowledgeDispatchNotification(String runboardKey, DispatchNotificationId notificationId) {
         logger.debug("Acknowledging notification {} for runboard {}", notificationId, runboardKey);
         getDestinationByKey(runboardKey).ifPresent(runboard -> {
-            DispatchNotification notification = popDispatchNotification(runboard, notificationId);
+            var notifications = waitingNotifications.get(runboard.id());
+            var notification = notifications == null ? null : notifications.remove(notificationId);
             if (notification != null) {
                 createReceipt(runboard, notification);
             }
@@ -102,26 +81,13 @@ class RunboardDispatcherBean extends AbstractDispatcher implements RunboardDispa
     @Scheduled(fixedDelay = 60000)
     public void cleanUp() {
         logger.trace("Cleaning up expired dispatch notifications");
-        Collection<Map<Long, DispatchNotification>> notificationMaps;
-        synchronized (waitingNotifications) {
-            notificationMaps = new HashSet<>(waitingNotifications.values());
-        }
-        notificationMaps.forEach(map -> {
-            synchronized (map) {
-                Iterator<DispatchNotification> iterator = map.values().iterator();
-                while (iterator.hasNext()) {
-                    DispatchNotification notification = iterator.next();
-                    if (isExpired(notification)) {
-                        logger.debug("Removing expired notification {}", notification);
-                        iterator.remove();
-                    }
-                }
+        var expired = Instant.now().minus(EXPIRY);
+        waitingNotifications.values().forEach(notifications -> notifications.values().removeIf(notification -> {
+            if (notification.timestamp().isBefore(expired)) {
+                logger.debug("Removing expired notification {}", notification.id());
+                return true;
             }
-        });
+            return false;
+        }));
     }
-
-    private boolean isExpired(DispatchNotification notification) {
-        return notification.getTimestamp().toEpochMilli() < System.currentTimeMillis() - 120000;
-    }
-
 }

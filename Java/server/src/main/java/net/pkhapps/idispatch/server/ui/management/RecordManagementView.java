@@ -38,8 +38,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * Base class for the management views of master data stored as immutable records: a master-detail view with the list
  * items in a grid and a {@link RecordForm} for the selected or new record in the detail area. Deleted records are shown
- * read-only, with a button for restoring them. Looks and works like {@link AbstractManagementView}, which the views of
- * JPA entities still use.
+ * read-only, with a button for restoring them. Every management view uses it; {@link AbstractManagementView} is no
+ * longer used and goes with JPA.
  *
  * @param <I> the list item shown in the grid, flattened to what the grid shows
  * @param <R> the record that the form edits
@@ -55,7 +55,10 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
     private sealed interface Editing<R> {
     }
 
-    private record Adding<R>() implements Editing<R> {
+    /**
+     * @param kind which kind of record, for views that add more than one; see {@link #startAdding(Object)}
+     */
+    private record Adding<R>(@Nullable Object kind) implements Editing<R> {
     }
 
     private record Existing<R>(R record) implements Editing<R> {
@@ -108,17 +111,13 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
         var refresh = new Button(VaadinIcon.REFRESH.create(), event -> refresh());
         refresh.setAriaLabel(getTranslation("common.refresh"));
 
-        var add = new Button(getTranslation("management.add"), VaadinIcon.PLUS_CIRCLE.create(),
-                event -> confirmDiscardChanges(() -> editing.set(new Adding<>()), () -> {
-                }));
-        add.addThemeVariants(ButtonVariant.PRIMARY);
 
         setSizeFull();
         setPadding(false);
         setSpacing(false);
 
         var toolbar = new HorizontalLayout(new ViewTitle(getTranslation(titleKey)));
-        toolbar.addToEnd(searchField, viewOptions, refresh, add);
+        toolbar.addToEnd(searchField, viewOptions, refresh, createAddButton());
         toolbar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
         toolbar.setWidthFull();
         toolbar.setPadding(true);
@@ -142,6 +141,42 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
     }
 
     protected abstract void configureGrid(Grid<I> grid);
+
+    /**
+     * Creates the button that starts adding a record. A view that adds more than one kind of record overrides this
+     * with a menu whose items call {@link #startAdding(Object)} with the kind.
+     */
+    protected Component createAddButton() {
+        var add = new Button(getTranslation("management.add"), VaadinIcon.PLUS_CIRCLE.create(),
+                event -> startAdding(null));
+        add.addThemeVariants(ButtonVariant.PRIMARY);
+        return add;
+    }
+
+    /**
+     * Shows an empty form for a new record of the given kind, once the user agrees to discard any changes.
+     *
+     * @param kind passed to {@link #createFormToAdd(Object)} and {@link #getTitleToAdd(Object)}
+     */
+    protected final void startAdding(@Nullable Object kind) {
+        confirmDiscardChanges(() -> editing.set(new Adding<>(kind)), () -> {
+        });
+    }
+
+    /**
+     * Creates the empty form for a new record of the given kind. Calls {@link #createForm(Object)} unless overridden.
+     */
+    protected RecordForm<D> createFormToAdd(@Nullable Object kind) {
+        return createForm(null);
+    }
+
+    /**
+     * Returns the title of the detail area for a new record of the given kind. Calls {@link #getTitle(Object)} unless
+     * overridden.
+     */
+    protected String getTitleToAdd(@Nullable Object kind) {
+        return getTitle(null);
+    }
 
     protected abstract List<I> findItems(DefaultFilter filter);
 
@@ -224,13 +259,13 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
                 form = null;
                 masterDetail.setDetail(null);
             }
-            case Adding<R> adding -> masterDetail.setDetail(createEditor(null));
-            case Existing<R>(var record) -> masterDetail.setDetail(createEditor(record));
+            case Adding<R>(var kind) -> masterDetail.setDetail(createEditor(null, kind));
+            case Existing<R>(var record) -> masterDetail.setDetail(createEditor(record, null));
         }
     }
 
-    private Component createEditor(@Nullable R record) {
-        var editor = createForm(record);
+    private Component createEditor(@Nullable R record, @Nullable Object kind) {
+        var editor = record == null ? createFormToAdd(kind) : createForm(record);
         var editable = record == null || isRecordActive(record);
         editor.setReadOnly(!editable);
         if (record == null) {
@@ -238,7 +273,7 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
         }
         form = editor;
 
-        var layout = new VerticalLayout(new H3(getTitle(record)), editor);
+        var layout = new VerticalLayout(new H3(record == null ? getTitleToAdd(kind) : getTitle(record)), editor);
         layout.addClassName("management-editor");
 
         var buttons = new HorizontalLayout();

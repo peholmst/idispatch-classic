@@ -3,6 +3,7 @@ package net.pkhapps.idispatch.server.dispatch.runboard;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
+import net.pkhapps.idispatch.server.dispatch.DispatchNotificationId;
 import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceQueries;
@@ -102,7 +103,8 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
             return;
         }
         if ("ack".equals(json.path("type").asString()) && json.path("id").isIntegralNumber()) {
-            runboardDispatcher.acknowledgeDispatchNotification(connection.runboardKey, json.path("id").asLong());
+            runboardDispatcher.acknowledgeDispatchNotification(connection.runboardKey,
+                    new DispatchNotificationId(json.path("id").asLong()));
         } else {
             logger.warn("Ignoring unknown message from runboard {}: {}", connection.runboardKey, message.getPayload());
         }
@@ -181,18 +183,18 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
 
     private Map<String, Object> notificationToMap(DispatchNotification notification, Locale locale) {
         final Map<String, Object> map = new HashMap<>();
-        map.put("id", notification.getId());
-        map.put("timestamp", notification.getTimestamp().toEpochMilli());
-        map.put("assignment_id", notification.getAssignmentId().value());
-        var type = assignmentTypeQueries.findById(notification.getAssignmentTypeId());
+        map.put("id", notification.id().value());
+        map.put("timestamp", notification.timestamp().toEpochMilli());
+        map.put("assignment_id", notification.assignmentId().value());
+        var type = assignmentTypeQueries.findById(notification.assignmentTypeId());
         map.put("assignment_type_code", type.map(AssignmentTypeListItem::code).orElse("?"));
         map.put("assignment_type_descr", type.map(t -> t.description(locale)).orElse("?"));
-        map.put("urgency", notification.getUrgency());
-        map.put("municipality", municipalityQueries.findById(notification.getMunicipalityId())
+        map.put("urgency", notification.urgency());
+        map.put("municipality", municipalityQueries.findById(notification.municipalityId())
                 .map(municipality -> municipality.name(locale)).orElse("?"));
-        map.put("address", notification.getAddress());
-        map.put("description", notification.getDescription());
-        map.put("resources", resourceQueries.findByIds(notification.getAssignedResources()).stream().map(ResourceListItem::callSign).toList());
+        map.put("address", notification.address());
+        map.put("description", notification.description());
+        map.put("resources", resourceQueries.findByIds(notification.assignedResources()).stream().map(ResourceListItem::callSign).toList());
         map.put("language", locale.getLanguage());
         return map;
     }

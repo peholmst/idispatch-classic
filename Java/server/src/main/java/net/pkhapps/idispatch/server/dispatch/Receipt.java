@@ -1,36 +1,18 @@
 package net.pkhapps.idispatch.server.dispatch;
 
-import jakarta.persistence.*;
-import net.pkhapps.idispatch.server.shared.AbstractTimestampedEntity;
+import java.time.Instant;
+
+import static java.util.Objects.requireNonNull;
 
 /**
- * TODO Document me!
+ * Confirms that a destination received a {@link DispatchNotification}. A destination confirms each notification at
+ * most once, which the database checks.
  */
-@Entity
-@Table(name = "receipts", uniqueConstraints = @UniqueConstraint(columnNames = {"destination_id", "notification_id"}))
-public class Receipt extends AbstractTimestampedEntity {
+public record Receipt(DestinationId destination, DispatchNotificationId notification, Instant timestamp) {
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "destination_id", nullable = false)
-    private Destination destination;
-
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "notification_id", nullable = false)
-    private DispatchNotification notification;
-
-    protected Receipt() {
-    }
-
-    public Receipt(Destination destination, DispatchNotification notification) {
-        this.destination = destination;
-        this.notification = notification;
-    }
-
-    public Destination getDestination() {
-        return destination;
-    }
-
-    public DispatchNotification getNotification() {
-        return notification;
+    public Receipt {
+        requireNonNull(destination);
+        requireNonNull(notification);
+        requireNonNull(timestamp);
     }
 }

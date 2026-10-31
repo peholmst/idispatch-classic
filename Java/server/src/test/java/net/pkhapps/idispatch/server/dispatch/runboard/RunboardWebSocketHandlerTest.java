@@ -2,28 +2,26 @@ package net.pkhapps.idispatch.server.dispatch.runboard;
 
 import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
-import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.AssignmentQueries;
-import net.pkhapps.idispatch.server.dispatch.Destination;
-import net.pkhapps.idispatch.server.dispatch.DestinationRepository;
-import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
-import net.pkhapps.idispatch.server.dispatch.DispatchNotificationRepository;
-import net.pkhapps.idispatch.server.dispatch.DispatchNotificationSent;
-import net.pkhapps.idispatch.server.dispatch.ReceiptRepository;
+import net.pkhapps.idispatch.server.dispatch.AssignmentNotReadyForDispatchException;
+import net.pkhapps.idispatch.server.dispatch.DispatchService;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceState;
+import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import net.pkhapps.idispatch.server.ui.TestData.GivenAssignmentType;
 import net.pkhapps.idispatch.server.ui.TestData.GivenMunicipality;
+import net.pkhapps.idispatch.server.ui.TestData.GivenNotification;
 import net.pkhapps.idispatch.server.ui.TestData.GivenResource;
+import net.pkhapps.idispatch.server.ui.TestData.GivenRunboard;
+import net.pkhapps.idispatch.server.ui.RunAs;
 import net.pkhapps.idispatch.server.ui.TestData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Import;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -35,8 +33,6 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,15 +56,11 @@ class RunboardWebSocketHandlerTest {
     @Autowired
     JsonMapper jsonMapper;
     @Autowired
-    ApplicationEventPublisher eventPublisher;
-    @Autowired
     AssignmentQueries assignmentQueries;
     @Autowired
-    DestinationRepository destinationRepository;
+    DispatchService dispatchService;
     @Autowired
-    DispatchNotificationRepository dispatchNotificationRepository;
-    @Autowired
-    ReceiptRepository receiptRepository;
+    ResourceStatusService resourceStatusService;
 
     private final List<TestClient> clients = new ArrayList<>();
 
@@ -83,22 +75,22 @@ class RunboardWebSocketHandlerTest {
         var destination = runboardDestination(resource);
         var municipality = testData.municipality(unique("Municipality"));
         var type = testData.assignmentType(unique("AT"), "Test assignment type");
-        var notification = dispatch(assignment(municipality, type), resource, Set.of(destination));
+        var notification = dispatch(municipality, type, resource);
 
-        var client = connect(destination.getRunboardKey());
+        var client = connect(destination.runboardKey());
         var message = client.nextMessage();
 
         assertThat(message.path("type").asString()).isEqualTo("notifications");
         var sent = message.path("notifications").get(0);
-        assertThat(sent.path("id").asLong()).isEqualTo(notification.getId());
-        assertThat(sent.path("address").asString()).isEqualTo(notification.getAddress());
+        assertThat(sent.path("id").asLong()).isEqualTo(notification.id());
+        assertThat(sent.path("address").asString()).isEqualTo(notification.address());
         assertThat(sent.path("municipality").asString()).isEqualTo(municipality.nameFi());
         assertThat(sent.path("assignment_type_code").asString()).isEqualTo(type.code());
-        assertThat(sent.path("urgency").asString()).isEqualTo(notification.getUrgency().name());
+        assertThat(sent.path("urgency").asString()).isEqualTo("A");
         assertThat(sent.path("resources").get(0).asString()).isEqualTo(resource.callSign());
         assertThat(sent.path("language").asString()).isEqualTo("fi");
 
-        client.send("{\"type\":\"ack\",\"id\":" + notification.getId() + "}");
+        client.send("{\"type\":\"ack\",\"id\":" + notification.id() + "}");
 
         awaitReceipt(notification, destination);
     }
@@ -107,13 +99,13 @@ class RunboardWebSocketHandlerTest {
     void eachRunboard_getsTheNotificationInItsOwnLanguage() throws Exception {
         var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
         var finnish = runboardDestination(resource);
-        var swedish = runboardDestination(resource, Bilingual.SWEDISH);
+        var swedish = testData.runboard(resource, Bilingual.SWEDISH);
         var municipality = testData.municipality(unique("Parainen "), unique("Pargas "));
         var type = testData.assignmentType(unique("AT"), "Rakennuspalo", "Byggnadsbrand");
-        dispatch(assignment(municipality, type), resource, Set.of(finnish, swedish));
+        dispatch(municipality, type, resource);
 
-        var inFinnish = connect(finnish.getRunboardKey()).nextMessage().path("notifications").get(0);
-        var inSwedish = connect(swedish.getRunboardKey()).nextMessage().path("notifications").get(0);
+        var inFinnish = connect(finnish.runboardKey()).nextMessage().path("notifications").get(0);
+        var inSwedish = connect(swedish.runboardKey()).nextMessage().path("notifications").get(0);
 
         assertThat(inFinnish.path("language").asString()).isEqualTo("fi");
         assertThat(inFinnish.path("municipality").asString()).isEqualTo(municipality.nameFi());
@@ -128,12 +120,12 @@ class RunboardWebSocketHandlerTest {
         var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
         var destination = runboardDestination(resource);
         var otherDestination = runboardDestination(testData.resource(unique("R"), ResourceState.AVAILABLE));
-        var client = connect(destination.getRunboardKey());
-        var otherClient = connect(otherDestination.getRunboardKey());
+        var client = connect(destination.runboardKey());
+        var otherClient = connect(otherDestination.runboardKey());
 
-        var notification = dispatch(resource, destination);
+        var notification = dispatch(resource);
 
-        assertThat(client.nextMessage().path("notifications").get(0).path("id").asLong()).isEqualTo(notification.getId());
+        assertThat(client.nextMessage().path("notifications").get(0).path("id").asLong()).isEqualTo(notification.id());
         assertThat(otherClient.messages.poll(500, TimeUnit.MILLISECONDS)).isNull();
     }
 
@@ -141,14 +133,14 @@ class RunboardWebSocketHandlerTest {
     void acknowledgedNotifications_areNotSentAgainOnReconnect() throws Exception {
         var resource = testData.resource(unique("R"), ResourceState.AVAILABLE);
         var destination = runboardDestination(resource);
-        var notification = dispatch(resource, destination);
-        var client = connect(destination.getRunboardKey());
+        var notification = dispatch(resource);
+        var client = connect(destination.runboardKey());
         client.nextMessage();
-        client.send("{\"type\":\"ack\",\"id\":" + notification.getId() + "}");
+        client.send("{\"type\":\"ack\",\"id\":" + notification.id() + "}");
         awaitReceipt(notification, destination);
         client.abort();
 
-        var reconnected = connect(destination.getRunboardKey());
+        var reconnected = connect(destination.runboardKey());
 
         assertThat(reconnected.messages.poll(500, TimeUnit.MILLISECONDS)).isNull();
     }
@@ -171,45 +163,40 @@ class RunboardWebSocketHandlerTest {
         assertThat(client.closed.get(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(1008);
     }
 
-
-    private RunboardDestination runboardDestination(GivenResource resource) {
-        return runboardDestination(resource, Bilingual.FINNISH);
+    private GivenRunboard runboardDestination(GivenResource resource) {
+        return testData.runboard(resource, Bilingual.FINNISH);
     }
 
-    private RunboardDestination runboardDestination(GivenResource resource, Locale locale) {
-        var destination = new RunboardDestination();
-        destination.setRunboardKey(unique("KEY"));
-        destination.setLocale(locale);
-        destination.setResources(Set.of(new ResourceId(resource.id())));
-        return destinationRepository.saveAndFlush(destination);
+    private GivenNotification dispatch(GivenResource resource) {
+        return dispatch(testData.municipality(unique("Municipality")),
+                testData.assignmentType(unique("AT"), "Test assignment type"), resource);
     }
 
-    private DispatchNotification dispatch(GivenResource resource, Destination destination) {
-        var assignment = assignment(testData.municipality(unique("Municipality")),
-                testData.assignmentType(unique("AT"), "Test assignment type"));
-        return dispatch(assignment, resource, Set.of(destination));
+    /**
+     * Opens an assignment and dispatches the resource to it the way a dispatcher does, which sends the notification to
+     * the resource's destinations.
+     */
+    private GivenNotification dispatch(GivenMunicipality municipality, GivenAssignmentType type,
+                                       GivenResource resource) {
+        var assignmentId = testData.openAssignment(municipality, type, unique("Address "));
+        RunAs.dispatcher(() -> {
+            resourceStatusService.setResourceAssignment(new ResourceId(resource.id()), new AssignmentId(assignmentId));
+            try {
+                return dispatchService.dispatchAllResources(
+                        assignmentQueries.findById(new AssignmentId(assignmentId)).orElseThrow());
+            } catch (AssignmentNotReadyForDispatchException ex) {
+                throw new AssertionError("The assignment could not be dispatched", ex);
+            }
+        });
+        return testData.notificationsFor(assignmentId).getFirst();
     }
 
-    private Assignment assignment(GivenMunicipality municipality, GivenAssignmentType type) {
-        var id = testData.openAssignment(municipality, type, unique("Address"));
-        return assignmentQueries.findById(new AssignmentId(id)).orElseThrow();
-    }
-
-    private DispatchNotification dispatch(Assignment assignment, GivenResource resource, Set<Destination> destinations) {
-        var notification = dispatchNotificationRepository.saveAndFlush(
-                new DispatchNotification(assignment, Set.of(new ResourceId(resource.id())), destinations));
-        eventPublisher.publishEvent(new DispatchNotificationSent(this, notification));
-        return notification;
-    }
-
-    private void awaitReceipt(DispatchNotification notification, Destination destination) throws InterruptedException {
+    private void awaitReceipt(GivenNotification notification, GivenRunboard destination) throws InterruptedException {
         var deadline = System.nanoTime() + Duration.ofSeconds(TIMEOUT_SECONDS).toNanos();
-        while (receiptRepository.findByNotification(notification).isEmpty() && System.nanoTime() < deadline) {
+        while (testData.receiptsFor(notification).isEmpty() && System.nanoTime() < deadline) {
             Thread.sleep(50);
         }
-        assertThat(receiptRepository.findByNotification(notification))
-                .extracting(receipt -> receipt.getDestination().getId())
-                .containsExactly(destination.getId());
+        assertThat(testData.receiptsFor(notification)).containsExactly(destination.id());
     }
 
     private TestClient connect(String runboardKey) throws Exception {

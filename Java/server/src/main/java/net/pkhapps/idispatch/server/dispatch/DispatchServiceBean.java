@@ -15,10 +15,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.google.common.collect.Sets.newHashSet;
 
 @Service
 @Secured(Roles.ROLE_DISPATCHER)
@@ -26,14 +26,14 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
 
     private final DispatchNotificationRepository dispatchNotificationRepository;
     private final DestinationRepository destinationRepository;
-    private final ReceiptRepository receiptRepository;
     private final ResourceStatusService resourceStatusService;
 
-    DispatchServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, DispatchNotificationRepository dispatchNotificationRepository, DestinationRepository destinationRepository, ReceiptRepository receiptRepository, ResourceStatusService resourceStatusService) {
+    DispatchServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager,
+                        DispatchNotificationRepository dispatchNotificationRepository,
+                        DestinationRepository destinationRepository, ResourceStatusService resourceStatusService) {
         super(applicationContext, txManager);
         this.dispatchNotificationRepository = dispatchNotificationRepository;
         this.destinationRepository = destinationRepository;
-        this.receiptRepository = receiptRepository;
         this.resourceStatusService = resourceStatusService;
     }
 
@@ -43,18 +43,25 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
         if (!missing.isEmpty()) {
             throw new AssignmentNotReadyForDispatchException(missing);
         }
-        final Collection<ResourceId> assignedResources = newHashSet(findAssignedResources(assignment));
-        final Collection<ResourceId> resourcesToDispatch = resources.stream()
+        final Set<ResourceId> assignedResources = new LinkedHashSet<>(findAssignedResources(assignment));
+        final List<ResourceId> resourcesToDispatch = resources.stream()
                 .filter(assignedResources::contains)
-                .collect(Collectors.toList());
-        final Collection<Destination> destinations = findDestinations(resourcesToDispatch);
-        logger.debug("Dispatching resources {} to assignment {} using destinations {}", resourcesToDispatch, assignment, destinations);
-        final DispatchNotification notification = getTxTemplate().execute(status ->
-                dispatchNotificationRepository.saveAndFlush(new DispatchNotification(assignment, assignedResources, destinations))
-        );
-        getApplicationContext().publishEvent(new DispatchNotificationSent(this, notification));
+                .toList();
+        logger.debug("Dispatching resources {} to assignment {}", resourcesToDispatch, assignment.id());
+        record Sent(DispatchNotification notification, List<Destination> destinations) {
+        }
+        var sent = getTxTemplate().execute(status -> {
+            var destinations = resourcesToDispatch.isEmpty() ? List.<Destination>of()
+                    : destinationRepository.findActiveFor(resourcesToDispatch);
+            var notification = dispatchNotificationRepository.insert(assignment, assignedResources,
+                    destinations.stream().map(Destination::id).collect(Collectors.toSet()));
+            return new Sent(notification, destinations);
+        });
+        logger.debug("Sent notification {} to destinations {}", sent.notification().id(),
+                sent.destinations().stream().map(Destination::id).toList());
+        getApplicationContext().publishEvent(new DispatchNotificationSent(this, sent.notification(), sent.destinations()));
         resourcesToDispatch.forEach(resource -> resourceStatusService.setResourceState(resource, ResourceState.DISPATCHED));
-        return notification;
+        return sent.notification();
     }
 
     @Override
@@ -68,26 +75,20 @@ class DispatchServiceBean extends AbstractServiceBean implements DispatchService
                 .stream()
                 .filter(status -> status.state() == ResourceState.RESERVED)
                 .map(ResourceStatus::resourceId)
-                .collect(Collectors.toList())
+                .toList()
         );
     }
 
     @Override
     public List<DispatchNotification> findDispatchNotificationsForAssignment(AssignmentId assignment) {
         logger.trace("Looking up dispatch notifications for assignment {}", assignment);
-        return dispatchNotificationRepository.findByAssignmentId(assignment.value());
+        return dispatchNotificationRepository.findByAssignment(assignment);
     }
 
     @Override
-    public List<Receipt> findReceiptsForDispatchNotification(DispatchNotification dispatchNotification) {
+    public List<Receipt> findReceiptsForDispatchNotification(DispatchNotificationId dispatchNotification) {
         logger.debug("Looking up receipts for dispatch notification {}", dispatchNotification);
-        return receiptRepository.findByNotification(dispatchNotification);
-    }
-
-    private Collection<Destination> findDestinations(Collection<ResourceId> resources) {
-        return resources.stream()
-                .flatMap(resource -> destinationRepository.findDestinationsForResource(resource.value()).stream())
-                .collect(Collectors.toSet());
+        return dispatchNotificationRepository.findReceipts(dispatchNotification);
     }
 
     private List<ResourceId> findAssignedResources(Assignment assignment) {
