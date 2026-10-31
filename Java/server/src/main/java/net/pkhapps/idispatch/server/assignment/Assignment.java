@@ -3,11 +3,15 @@ package net.pkhapps.idispatch.server.assignment;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.shared.AbstractLockableEntity;
+import net.pkhapps.idispatch.server.shared.Bilingual;
+import org.hibernate.annotations.Formula;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
+import java.util.Locale;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -24,9 +28,14 @@ public class Assignment extends AbstractLockableEntity {
     public static final String PROP_OPENED = "opened";
     public static final String PROP_CLOSED = "closed";
     public static final String PROP_URGENCY = "urgency";
-    public static final String PROP_TYPE = "type";
+    public static final String PROP_TYPE_ID = "typeId";
+    public static final String PROP_TYPE_CODE = "typeCode";
+    public static final String PROP_TYPE_DESCRIPTION_FI = "typeDescriptionFi";
+    public static final String PROP_TYPE_DESCRIPTION_SV = "typeDescriptionSv";
     public static final String PROP_DESCRIPTION = "description";
-    public static final String PROP_MUNICIPALITY = "municipality";
+    public static final String PROP_MUNICIPALITY_ID = "municipalityId";
+    public static final String PROP_MUNICIPALITY_NAME_FI = "municipalityNameFi";
+    public static final String PROP_MUNICIPALITY_NAME_SV = "municipalityNameSv";
     public static final String PROP_ADDRESS = "address";
 
     @Column(name = "opened", nullable = false)
@@ -36,19 +45,29 @@ public class Assignment extends AbstractLockableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "urgency", nullable = false)
     private AssignmentUrgency urgency = AssignmentUrgency.N;
-    @ManyToOne
-    @JoinColumn(name = "type_id")
+    @Column(name = "type_id")
     @NotNull(message = "{idispatch.assignment.type.required}", groups = DispatchValidationGroup.class)
-    private AssignmentType type;
+    private Long typeId;
     @Column(name = "description", nullable = false)
     private String description = "";
-    @ManyToOne
-    @JoinColumn(name = "municipality_id")
+    @Column(name = "municipality_id")
     @NotNull(message = "{idispatch.assignment.municipality.required}", groups = DispatchValidationGroup.class)
-    private Municipality municipality;
+    private Long municipalityId;
     @Column(name = "address", nullable = false)
     @NotBlank(message = "{idispatch.assignment.address.required}", groups = DispatchValidationGroup.class)
     private String address = "";
+    // Read-only, for showing the type and the municipality until assignments are stored with jOOQ too. They are read
+    // when the assignment is loaded, so they are only up to date in an assignment loaded after its last change.
+    @Formula("(select t.code from assignment_types t where t.id = type_id)")
+    private String typeCode;
+    @Formula("(select t.description_fi from assignment_types t where t.id = type_id)")
+    private String typeDescriptionFi;
+    @Formula("(select t.description_sv from assignment_types t where t.id = type_id)")
+    private String typeDescriptionSv;
+    @Formula("(select m.name_fi from municipalities m where m.id = municipality_id)")
+    private String municipalityNameFi;
+    @Formula("(select m.name_sv from municipalities m where m.id = municipality_id)")
+    private String municipalityNameSv;
 
     public Assignment() {
         opened = Instant.now();
@@ -82,12 +101,28 @@ public class Assignment extends AbstractLockableEntity {
         this.urgency = firstNonNull(urgency, AssignmentUrgency.N);
     }
 
-    public AssignmentType getType() {
-        return type;
+    public @Nullable AssignmentTypeId getTypeId() {
+        return typeId == null ? null : new AssignmentTypeId(typeId);
     }
 
-    public void setType(AssignmentType type) {
-        this.type = type;
+    public void setTypeId(@Nullable AssignmentTypeId typeId) {
+        this.typeId = typeId == null ? null : typeId.value();
+    }
+
+    /**
+     * Returns the code of the assignment's type as it was when the assignment was loaded, or {@code null} if it has no
+     * type.
+     */
+    public @Nullable String getTypeCode() {
+        return typeCode;
+    }
+
+    /**
+     * Returns the description of the assignment's type to show to a user with the given locale, as it was when the
+     * assignment was loaded, or {@code null} if it has no type.
+     */
+    public @Nullable String getTypeDescription(@Nullable Locale locale) {
+        return typeCode == null ? null : Bilingual.select(typeDescriptionFi, typeDescriptionSv, locale);
     }
 
     public String getDescription() {
@@ -98,12 +133,20 @@ public class Assignment extends AbstractLockableEntity {
         this.description = nullToEmpty(description);
     }
 
-    public Municipality getMunicipality() {
-        return municipality;
+    public @Nullable MunicipalityId getMunicipalityId() {
+        return municipalityId == null ? null : new MunicipalityId(municipalityId);
     }
 
-    public void setMunicipality(Municipality municipality) {
-        this.municipality = municipality;
+    public void setMunicipalityId(@Nullable MunicipalityId municipalityId) {
+        this.municipalityId = municipalityId == null ? null : municipalityId.value();
+    }
+
+    /**
+     * Returns the name of the assignment's municipality to show to a user with the given locale, as it was when the
+     * assignment was loaded, or {@code null} if it has no municipality.
+     */
+    public @Nullable String getMunicipalityName(@Nullable Locale locale) {
+        return municipalityId == null ? null : Bilingual.select(municipalityNameFi, municipalityNameSv, locale);
     }
 
     public String getAddress() {
@@ -120,7 +163,7 @@ public class Assignment extends AbstractLockableEntity {
                 .add(PROP_ID, getId())
                 .add(PROP_OPENED, opened)
                 .add(PROP_CLOSED, closed)
-                .add(PROP_TYPE, type)
+                .add(PROP_TYPE_ID, typeId)
                 .toString();
     }
 }

@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.server.report;
 
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
@@ -13,8 +13,8 @@ import java.time.LocalDate;
 public record ClosedAssignmentFilter(
         @Nullable LocalDate closedFrom,
         @Nullable LocalDate closedTo,
-        @Nullable Municipality municipality,
-        @Nullable AssignmentType type,
+        @Nullable MunicipalityId municipality,
+        @Nullable AssignmentTypeId type,
         @Nullable Boolean reportClosed
 ) {
 }

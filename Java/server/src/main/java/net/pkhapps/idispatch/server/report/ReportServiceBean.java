@@ -3,8 +3,12 @@ package net.pkhapps.idispatch.server.report;
 import jakarta.validation.Validator;
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentRepository;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeId;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
+import net.pkhapps.idispatch.server.municipality.MunicipalityId;
+import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
+import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.resource.ArchivedResourceStatus;
 import net.pkhapps.idispatch.server.resource.ArchivedResourceStatusRepository;
 import net.pkhapps.idispatch.server.resource.Resource;
@@ -39,13 +43,19 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
 
     private final AssignmentReportRepository assignmentReportRepository;
 
+    private final MunicipalityQueries municipalityQueries;
+
+    private final AssignmentTypeQueries assignmentTypeQueries;
+
     private final Validator validator;
 
-    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ArchivedResourceStatusRepository archivedResourceStatusRepository, AssignmentRepository assignmentRepository, AssignmentReportRepository assignmentReportRepository, Validator validator) {
+    ReportServiceBean(ApplicationContext applicationContext, PlatformTransactionManager txManager, ArchivedResourceStatusRepository archivedResourceStatusRepository, AssignmentRepository assignmentRepository, AssignmentReportRepository assignmentReportRepository, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, Validator validator) {
         super(applicationContext, txManager);
         this.archivedResourceStatusRepository = archivedResourceStatusRepository;
         this.assignmentRepository = assignmentRepository;
         this.assignmentReportRepository = assignmentReportRepository;
+        this.municipalityQueries = municipalityQueries;
+        this.assignmentTypeQueries = assignmentTypeQueries;
         this.validator = validator;
     }
 
@@ -104,13 +114,15 @@ class ReportServiceBean extends AbstractServiceBean implements ReportService {
     }
 
     @Override
-    public List<Municipality> findMunicipalitiesOfClosedAssignments() {
-        return assignmentRepository.findMunicipalitiesOfClosedAssignments();
+    public List<MunicipalityListItem> findMunicipalitiesOfClosedAssignments() {
+        return municipalityQueries.findByIds(assignmentRepository.findMunicipalityIdsOfClosedAssignments().stream()
+                .map(MunicipalityId::new).toList());
     }
 
     @Override
-    public List<AssignmentType> findTypesOfClosedAssignments() {
-        return assignmentRepository.findTypesOfClosedAssignments();
+    public List<AssignmentTypeListItem> findTypesOfClosedAssignments() {
+        return assignmentTypeQueries.findByIds(assignmentRepository.findTypeIdsOfClosedAssignments().stream()
+                .map(AssignmentTypeId::new).toList());
     }
 
     @Override

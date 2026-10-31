@@ -1,70 +1,32 @@
 package net.pkhapps.idispatch.server.municipality;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.AssertTrue;
-import net.pkhapps.idispatch.server.shared.AbstractLockableEntity;
-import net.pkhapps.idispatch.server.shared.Bilingual;
-import net.pkhapps.idispatch.server.shared.Deactivatable;
-import org.jspecify.annotations.Nullable;
+import net.pkhapps.idispatch.server.shared.BilingualText;
 
-import java.util.Locale;
-
-import static com.google.common.base.Strings.nullToEmpty;
+import static java.util.Objects.requireNonNull;
 
 /**
- * Entity representing a municipality. The name is in Finnish and Swedish, and at least one of them is required.
+ * A municipality that assignments are in. Its name is in Finnish and Swedish, and unique in each language. Assignments
+ * refer to their municipality by its {@link MunicipalityId}.
+ *
+ * @param version incremented on every change, so that a change based on an older version can be refused
+ * @param active  {@code false} once the municipality has been deleted; deleted municipalities are kept for the
+ *                assignments that are in them
  */
-@Entity
-@Table(name = "municipalities")
-public class Municipality extends AbstractLockableEntity implements Deactivatable {
+public record Municipality(MunicipalityId id, long version, BilingualText name, boolean active) {
 
-    public static final String PROP_NAME_FI = "nameFi";
-    public static final String PROP_NAME_SV = "nameSv";
-
-    @Column(name = "name_fi", nullable = false)
-    private String nameFi = "";
-    @Column(name = "name_sv", nullable = false)
-    private String nameSv = "";
-    @Column(name = "active", nullable = false)
-    private boolean active = true;
-
-    public String getNameFi() {
-        return nameFi;
+    public Municipality {
+        requireNonNull(id);
+        requireNonNull(name);
     }
 
-    public void setNameFi(String nameFi) {
-        this.nameFi = nullToEmpty(nameFi);
-    }
-
-    public String getNameSv() {
-        return nameSv;
-    }
-
-    public void setNameSv(String nameSv) {
-        this.nameSv = nullToEmpty(nameSv);
+    public MunicipalityDetails details() {
+        return new MunicipalityDetails(name);
     }
 
     /**
-     * Returns the name to show to a user with the given locale, as described in {@link Bilingual#select}.
+     * Returns this municipality with the given details, to be saved as a change of this version.
      */
-    public String getName(@Nullable Locale locale) {
-        return Bilingual.select(nameFi, nameSv, locale);
-    }
-
-    @AssertTrue(message = "{idispatch.municipality.name.required}")
-    public boolean isNameGiven() {
-        return Bilingual.isGiven(nameFi, nameSv);
-    }
-
-    @Override
-    public boolean isActive() {
-        return active;
-    }
-
-    @Override
-    public void setActive(boolean active) {
-        this.active = active;
+    public Municipality withDetails(MunicipalityDetails details) {
+        return new Municipality(id, version, details.name(), active);
     }
 }

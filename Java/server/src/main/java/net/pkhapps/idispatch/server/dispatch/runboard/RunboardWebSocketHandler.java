@@ -1,6 +1,9 @@
 package net.pkhapps.idispatch.server.dispatch.runboard;
 
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
+import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,13 +50,18 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final RunboardDispatcher runboardDispatcher;
+    private final MunicipalityQueries municipalityQueries;
+    private final AssignmentTypeQueries assignmentTypeQueries;
     private final JsonMapper jsonMapper;
     private final Duration heartbeatTimeout;
     private final Map<String, RunboardConnection> connections = new ConcurrentHashMap<>();
 
-    RunboardWebSocketHandler(RunboardDispatcher runboardDispatcher, JsonMapper jsonMapper,
+    RunboardWebSocketHandler(RunboardDispatcher runboardDispatcher, MunicipalityQueries municipalityQueries,
+                             AssignmentTypeQueries assignmentTypeQueries, JsonMapper jsonMapper,
                              @Value("${idispatch.runboard.heartbeat-interval:10s}") Duration heartbeatInterval) {
         this.runboardDispatcher = runboardDispatcher;
+        this.municipalityQueries = municipalityQueries;
+        this.assignmentTypeQueries = assignmentTypeQueries;
         this.jsonMapper = jsonMapper;
         this.heartbeatTimeout = heartbeatInterval.multipliedBy(3);
     }
@@ -173,10 +181,12 @@ class RunboardWebSocketHandler extends TextWebSocketHandler implements Applicati
         map.put("id", notification.getId());
         map.put("timestamp", notification.getTimestamp().toEpochMilli());
         map.put("assignment_id", notification.getAssignment().getId());
-        map.put("assignment_type_code", notification.getAssignmentType().getCode());
-        map.put("assignment_type_descr", notification.getAssignmentType().getDescription(locale));
+        var type = assignmentTypeQueries.findById(notification.getAssignmentTypeId());
+        map.put("assignment_type_code", type.map(AssignmentTypeListItem::code).orElse("?"));
+        map.put("assignment_type_descr", type.map(t -> t.description(locale)).orElse("?"));
         map.put("urgency", notification.getUrgency());
-        map.put("municipality", notification.getMunicipality().getName(locale));
+        map.put("municipality", municipalityQueries.findById(notification.getMunicipalityId())
+                .map(municipality -> municipality.name(locale)).orElse("?"));
         map.put("address", notification.getAddress());
         map.put("description", notification.getDescription());
         map.put("resources", notification.getAssignedResources().stream().map(Resource::getCallSign).collect(Collectors.toSet()));

@@ -2,8 +2,6 @@ package net.pkhapps.idispatch.server.report;
 
 import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
-import net.pkhapps.idispatch.server.municipality.Municipality;
 import net.pkhapps.idispatch.server.resource.Resource;
 
 import java.io.Serializable;
@@ -48,16 +46,8 @@ public class ReportDTO implements Serializable {
         return assignment.getUrgency();
     }
 
-    public AssignmentType getType() {
-        return assignment.getType();
-    }
-
     public String getDescription() {
         return assignment.getDescription();
-    }
-
-    public Municipality getMunicipality() {
-        return assignment.getMunicipality();
     }
 
     public String getAddress() {

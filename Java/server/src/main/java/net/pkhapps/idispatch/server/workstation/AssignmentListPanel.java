@@ -10,8 +10,6 @@ import net.pkhapps.idispatch.server.assignment.Assignment;
 import net.pkhapps.idispatch.server.assignment.AssignmentEvent;
 import net.pkhapps.idispatch.server.assignment.AssignmentFormatters;
 import net.pkhapps.idispatch.server.assignment.AssignmentService;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
-import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ApplicationEventMulticaster;
@@ -48,9 +46,9 @@ public class AssignmentListPanel extends VerticalLayout {
 
         grid.addColumn(Assignment::getId).setHeader(getTranslation("assignment.id"));
         grid.addColumn(assignment -> Formatters.formatDateTime(assignment.getOpened())).setHeader(getTranslation("assignment.date"));
-        grid.addColumn(assignment -> AssignmentTypeFormatters.formatAssignmentType(assignment.getType())).setHeader(getTranslation("assignment.type"));
+        grid.addColumn(AssignmentFormatters::formatAssignmentType).setHeader(getTranslation("assignment.type"));
         grid.addComponentColumn(this::createUrgencyBadge).setHeader(getTranslation("assignment.urgency"));
-        grid.addColumn(assignment -> MunicipalityFormatters.formatMunicipality(assignment.getMunicipality())).setHeader(getTranslation("assignment.municipality"));
+        grid.addColumn(AssignmentFormatters::formatMunicipality).setHeader(getTranslation("assignment.municipality"));
         grid.addColumn(Assignment::getAddress).setHeader(getTranslation("assignment.address"));
 
         if (onAssignmentSelected != null) {

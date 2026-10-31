@@ -103,6 +103,12 @@ public class TestData {
         return assignmentType(code, description, "");
     }
 
+    public GivenAssignmentType deletedAssignmentType(String code, String description) {
+        var type = assignmentType(code, description);
+        deleteAssignmentType(type);
+        return type;
+    }
+
     public GivenAssignmentType assignmentType(String code, String descriptionFi, String descriptionSv) {
         var id = dsl.nextval(ASSIGNMENT_TYPES_SEQ);
         dsl.insertInto(ASSIGNMENT_TYPES)
@@ -114,6 +120,24 @@ public class TestData {
                 .set(ASSIGNMENT_TYPES.ACTIVE, true)
                 .execute();
         return new GivenAssignmentType(id, code, descriptionFi, descriptionSv);
+    }
+
+    /**
+     * Deletes the assignment type softly, as an administrator does, after it has been put to use.
+     */
+    public void deleteAssignmentType(GivenAssignmentType type) {
+        dsl.update(ASSIGNMENT_TYPES).set(ASSIGNMENT_TYPES.ACTIVE, false)
+                .set(ASSIGNMENT_TYPES.VERSION, ASSIGNMENT_TYPES.VERSION.plus(1))
+                .where(ASSIGNMENT_TYPES.ID.eq(type.id())).execute();
+    }
+
+    /**
+     * Deletes the municipality softly, as an administrator does, after it has been put to use.
+     */
+    public void deleteMunicipality(GivenMunicipality municipality) {
+        dsl.update(MUNICIPALITIES).set(MUNICIPALITIES.ACTIVE, false)
+                .set(MUNICIPALITIES.VERSION, MUNICIPALITIES.VERSION.plus(1))
+                .where(MUNICIPALITIES.ID.eq(municipality.id())).execute();
     }
 
     public GivenResourceType resourceType(String code, String description) {

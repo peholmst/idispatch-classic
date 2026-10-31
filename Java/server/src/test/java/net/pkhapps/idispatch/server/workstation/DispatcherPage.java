@@ -108,6 +108,10 @@ public class DispatcherPage extends AppShell {
         window.findComboBox(Object.class).withLabel(t("Type")).selectItem(type);
     }
 
+    public String type() {
+        return label(window.findComboBox(Object.class).withLabel(t("Type")));
+    }
+
     public List<String> typeChoices() {
         return window.findComboBox(Object.class).withLabel(t("Type")).getSuggestions();
     }
@@ -122,6 +126,10 @@ public class DispatcherPage extends AppShell {
 
     public void chooseMunicipality(String municipality) {
         window.findComboBox(Object.class).withLabel(t("Municipality")).selectItem(municipality);
+    }
+
+    public String municipality() {
+        return label(window.findComboBox(Object.class).withLabel(t("Municipality")));
     }
 
     public List<String> municipalityChoices() {

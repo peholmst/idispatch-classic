@@ -1,7 +1,7 @@
 package net.pkhapps.idispatch.server.shared;
 
 import jakarta.validation.Validation;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.resource.Resource;
 import org.junit.jupiter.api.Test;
 
 import java.util.Locale;
@@ -12,12 +12,13 @@ class ValidationFailedExceptionTest {
 
     @Test
     void violationMessages_areInTheRequestedLanguage() {
-        var violations = Validation.buildDefaultValidatorFactory().getValidator().validate(new Municipality());
+        var violations = Validation.buildDefaultValidatorFactory().getValidator()
+                .validateProperty(new Resource(), Resource.PROP_CALL_SIGN);
         var exception = new ValidationFailedException(violations);
 
-        assertThat(exception.getViolationMessages(Locale.ENGLISH)).containsExactly("Please enter a name in Finnish or Swedish");
-        assertThat(exception.getViolationMessages(Locale.of("sv"))).containsExactly("Ange ett namn på finska eller svenska");
-        assertThat(exception.getViolationMessages(Locale.of("fi"))).containsExactly("Syötä nimi suomeksi tai ruotsiksi");
+        assertThat(exception.getViolationMessages(Locale.ENGLISH)).containsExactly("Please enter a call sign");
+        assertThat(exception.getViolationMessages(Locale.of("sv"))).containsExactly("Ange ett anropsnamn");
+        assertThat(exception.getViolationMessages(Locale.of("fi"))).containsExactly("Syötä tunnus");
     }
 
     @Test
@@ -25,10 +26,11 @@ class ValidationFailedExceptionTest {
         var defaultLocale = Locale.getDefault();
         Locale.setDefault(Locale.of("fi"));
         try {
-            var violations = Validation.buildDefaultValidatorFactory().getValidator().validate(new Municipality());
+            var violations = Validation.buildDefaultValidatorFactory().getValidator()
+                    .validateProperty(new Resource(), Resource.PROP_CALL_SIGN);
 
             assertThat(new ValidationFailedException(violations).getViolationMessages(Locale.ENGLISH))
-                    .containsExactly("Please enter a name in Finnish or Swedish");
+                    .containsExactly("Please enter a call sign");
         } finally {
             Locale.setDefault(defaultLocale);
         }

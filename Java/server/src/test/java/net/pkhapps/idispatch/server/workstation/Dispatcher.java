@@ -170,6 +170,14 @@ public class Dispatcher {
         return page.address();
     }
 
+    public String type() {
+        return page.type();
+    }
+
+    public String municipality() {
+        return page.municipality();
+    }
+
     public List<String> typeChoices() {
         return page.typeChoices();
     }

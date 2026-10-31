@@ -204,6 +204,21 @@ class MunicipalityAdministrationTest extends UseCaseTest {
     }
 
     @Test
+    void puttingBackWhatWasThereIsNoChange() {
+        var first = given.municipality(unique("First ")).nameFi();
+        var second = given.municipality(unique("Second ")).nameFi();
+        var admin = administratorAtWork();
+        admin.opens(first);
+        admin.fillsIn(FINNISH_NAME, unique("Edited "));
+        admin.fillsIn(FINNISH_NAME, first);
+
+        admin.opens(second);
+
+        assertThat(admin.isAskedAnything()).as("Nothing to discard").isFalse();
+        assertThat(admin.valueOf(FINNISH_NAME)).isEqualTo(second);
+    }
+
+    @Test
     void administratorDeletesAMunicipalityAndRestoresIt() {
         var name = given.municipality(unique("Lifecycle ")).nameFi();
         var admin = administratorAtWork();

@@ -3,9 +3,12 @@ package net.pkhapps.idispatch.server.dispatch.sms;
 import jakarta.annotation.PostConstruct;
 import net.pkhapps.idispatch.aspsms.ws.client.generated.ASPSMSX2;
 import net.pkhapps.idispatch.aspsms.ws.client.generated.ASPSMSX2Soap;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeQueries;
 import net.pkhapps.idispatch.server.dispatch.AbstractDispatcher;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotification;
 import net.pkhapps.idispatch.server.dispatch.DispatchNotificationSent;
+import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.resource.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -23,12 +26,20 @@ class SmsDispatcher extends AbstractDispatcher {
     @Autowired
     Environment environment;
 
+    private final MunicipalityQueries municipalityQueries;
+    private final AssignmentTypeQueries assignmentTypeQueries;
+
     private ASPSMSX2Soap aspsmsx2Soap;
     private String userKey;
     private String password;
     private String originator;
 
     private boolean enabled = true;
+
+    SmsDispatcher(MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries) {
+        this.municipalityQueries = municipalityQueries;
+        this.assignmentTypeQueries = assignmentTypeQueries;
+    }
 
     @PostConstruct
     void init() {
@@ -91,9 +102,11 @@ class SmsDispatcher extends AbstractDispatcher {
 
     String buildMessageText(DispatchNotification notification, Locale locale) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(notification.getMunicipality().getName(locale));
+        sb.append(municipalityQueries.findById(notification.getMunicipalityId())
+                .map(municipality -> municipality.name(locale)).orElse("?"));
         sb.append(",");
-        sb.append(notification.getAssignmentType().getCode());
+        sb.append(assignmentTypeQueries.findById(notification.getAssignmentTypeId())
+                .map(AssignmentTypeListItem::code).orElse("?"));
         sb.append(notification.getUrgency());
         sb.append(",");
         sb.append(notification.getAddress());

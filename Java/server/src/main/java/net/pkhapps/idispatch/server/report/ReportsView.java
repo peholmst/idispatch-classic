@@ -25,10 +25,11 @@ import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.assignment.Assignment;
-import net.pkhapps.idispatch.server.assignmenttype.AssignmentType;
+import net.pkhapps.idispatch.server.assignment.AssignmentFormatters;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
-import net.pkhapps.idispatch.server.municipality.Municipality;
+import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
+import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractEntity;
 import net.pkhapps.idispatch.server.shared.Bilingual;
@@ -54,8 +55,8 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
     private final Grid<ClosedAssignmentDTO> assignmentsGrid;
     private final DatePicker closedFrom;
     private final DatePicker closedTo;
-    private final ComboBox<Municipality> municipalityFilter;
-    private final ComboBox<AssignmentType> typeFilter;
+    private final ComboBox<MunicipalityListItem> municipalityFilter;
+    private final ComboBox<AssignmentTypeListItem> typeFilter;
     private final ComboBox<ReportStatus> reportStatusFilter;
     private final GridLazyDataView<ClosedAssignmentDTO> assignmentsDataView;
 
@@ -79,16 +80,16 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
                 .setFlexGrow(0);
         assignmentsGrid.addColumn(item -> item.assignment().getUrgency()).setHeader(getTranslation("assignment.urgency"))
                 .setSortProperty(Assignment.PROP_URGENCY).setAutoWidth(true).setFlexGrow(0);
-        assignmentsGrid.addColumn(item -> AssignmentTypeFormatters.formatAssignmentType(item.assignment().getType()))
+        assignmentsGrid.addColumn(item -> AssignmentFormatters.formatAssignmentType(item.assignment()))
                 .setHeader(getTranslation("assignment.type"))
-                .setSortProperty(Stream.concat(Stream.of(AssignmentType.PROP_CODE),
-                                inPreferredOrder(AssignmentType.PROP_DESCRIPTION_FI, AssignmentType.PROP_DESCRIPTION_SV))
-                        .map(property -> Assignment.PROP_TYPE + "." + property).toArray(String[]::new))
+                .setSortProperty(Stream.concat(Stream.of(Assignment.PROP_TYPE_CODE),
+                                inPreferredOrder(Assignment.PROP_TYPE_DESCRIPTION_FI, Assignment.PROP_TYPE_DESCRIPTION_SV))
+                        .toArray(String[]::new))
                 .setResizable(true);
-        assignmentsGrid.addColumn(item -> MunicipalityFormatters.formatMunicipality(item.assignment().getMunicipality()))
+        assignmentsGrid.addColumn(item -> AssignmentFormatters.formatMunicipality(item.assignment()))
                 .setHeader(getTranslation("assignment.municipality"))
-                .setSortProperty(inPreferredOrder(Municipality.PROP_NAME_FI, Municipality.PROP_NAME_SV)
-                        .map(property -> Assignment.PROP_MUNICIPALITY + "." + property).toArray(String[]::new))
+                .setSortProperty(inPreferredOrder(Assignment.PROP_MUNICIPALITY_NAME_FI, Assignment.PROP_MUNICIPALITY_NAME_SV)
+                        .toArray(String[]::new))
                 .setResizable(true);
         assignmentsGrid.addColumn(item -> item.assignment().getAddress()).setHeader(getTranslation("assignment.address"))
                 .setSortProperty(Assignment.PROP_ADDRESS).setResizable(true);
@@ -314,8 +315,11 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
 
     private ClosedAssignmentFilter currentFilter() {
         var reportStatus = reportStatusFilter.getValue();
-        return new ClosedAssignmentFilter(closedFrom.getValue(), closedTo.getValue(), municipalityFilter.getValue(),
-                typeFilter.getValue(), reportStatus == null ? null : reportStatus == ReportStatus.CLOSED);
+        var municipality = municipalityFilter.getValue();
+        var type = typeFilter.getValue();
+        return new ClosedAssignmentFilter(closedFrom.getValue(), closedTo.getValue(),
+                municipality == null ? null : municipality.id(), type == null ? null : type.id(),
+                reportStatus == null ? null : reportStatus == ReportStatus.CLOSED);
     }
 
     @Override

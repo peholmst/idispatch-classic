@@ -1,8 +1,8 @@
 package net.pkhapps.idispatch.server;
 
+import net.pkhapps.idispatch.server.assignment.Assignment;
+import net.pkhapps.idispatch.server.assignment.AssignmentRepository;
 import net.pkhapps.idispatch.server.jooq.Public;
-import net.pkhapps.idispatch.server.municipality.Municipality;
-import net.pkhapps.idispatch.server.municipality.MunicipalityRepository;
 import org.jooq.DSLContext;
 import org.jooq.Table;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static net.pkhapps.idispatch.server.jooq.Tables.MUNICIPALITIES;
+import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENTS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -30,7 +30,7 @@ class JooqTest {
     @Autowired
     DSLContext dsl;
     @Autowired
-    MunicipalityRepository municipalityRepository;
+    AssignmentRepository assignmentRepository;
     @Autowired
     PlatformTransactionManager txManager;
 
@@ -54,19 +54,19 @@ class JooqTest {
     @Test
     void jooqSeesWhatJpaHasFlushedInTheSameTransaction() {
         var tx = new TransactionTemplate(txManager);
-        var name = "jOOQ " + System.nanoTime();
+        var address = "jOOQ " + System.nanoTime();
 
         var seen = tx.execute(status -> {
-            var municipality = new Municipality();
-            municipality.setNameFi(name);
-            municipalityRepository.saveAndFlush(municipality);
-            var count = dsl.fetchCount(MUNICIPALITIES, MUNICIPALITIES.NAME_FI.eq(name));
+            var assignment = new Assignment();
+            assignment.setAddress(address);
+            assignmentRepository.saveAndFlush(assignment);
+            var count = dsl.fetchCount(ASSIGNMENTS, ASSIGNMENTS.ADDRESS.eq(address));
             status.setRollbackOnly();
             return count;
         });
 
         assertThat(seen).isEqualTo(1);
-        assertThat(dsl.fetchCount(MUNICIPALITIES, MUNICIPALITIES.NAME_FI.eq(name))).as("Rolled back").isZero();
+        assertThat(dsl.fetchCount(ASSIGNMENTS, ASSIGNMENTS.ADDRESS.eq(address))).as("Rolled back").isZero();
     }
 
     private static Map<String, String> columnsByTable(Table<?>... tables) {
