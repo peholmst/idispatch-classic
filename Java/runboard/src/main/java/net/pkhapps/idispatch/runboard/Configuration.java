@@ -89,7 +89,7 @@ class Configuration extends net.pkhapps.idispatch.runboard.client.Configuration 
     /**
      * Returns the gain of the alarm and the error beep in decibels, at most 0. The sound files are close to full scale,
      * far louder than speech even after it has been normalized, so they are attenuated to suit the speech. Default:
-     * -12 dB, which puts the alarm a few decibels above the speech.
+     * -12 dB, which puts the alarm just above the speech.
      */
     public double getAlarmVolume() {
         final String property = "idispatch.alarm.volume";

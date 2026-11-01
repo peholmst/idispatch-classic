@@ -65,12 +65,12 @@ idispatch.speech.phrasePause=500
 ### Volume
 
 Speech is much quieter than the alarm: Piper's voices come out at about -27 LUFS (Finnish) and -21 LUFS (Swedish),
-while the alarm, a tone close to full scale, is at about -5 LUFS. So the runboard sets the levels itself, in software:
+while the alarm, a tone with softened edges, is at about -7 LUFS. So the runboard sets the levels itself, in software:
 
 - Every part of every engine's speech is normalized, amplified or attenuated so that its loudest sample is at -1 dBFS (`Volume`, at
   most +20 dB). The two voices then end up at about -20 LUFS, as loud as they can be without distorting.
 - The alarm and the error beep are attenuated by `idispatch.alarm.volume` decibels when they are loaded. The default,
-  -12, puts the alarm at about -17 LUFS, a few decibels above the speech. It can't be above 0.
+  -12, puts the alarm at about -19 LUFS, just above the speech. It can't be above 0.
 
 ```properties
 idispatch.alarm.volume=-12
