@@ -10,6 +10,8 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    // The app imports the resource state colors from the server's stylesheets
+    fs: { allow: ['..'] },
     // `npm run dev` serves the app at http://localhost:5173/ and passes the API, which the app finds at ../api/, on to
     // the server that the dev loop runs
     proxy: {

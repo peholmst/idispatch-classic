@@ -64,6 +64,26 @@ public class ResourceStatusService extends AbstractService {
     }
 
     /**
+     * Sets the state of the resource to one that may be set by hand, as a dispatcher does from the resource's status or
+     * the unit from its mobile app: one of {@link ResourceStatus#manualValidNextStates()}, which leaves out reserving
+     * and dispatching. A dispatcher may change any resource, a unit only its own.
+     *
+     * @return the new status, or empty if the state may not follow the current one, the resource is deleted, or
+     * another change got there first
+     */
+    @PreAuthorize(Roles.HAS_DISPATCHER_OR_IS_UNIT)
+    public Optional<ResourceStatus> setResourceStateManually(ResourceId resource, ResourceState resourceState) {
+        logger.debug("Attempting to set the state of resource {} to {} by hand", resource, resourceState);
+        return attemptStatusChange(resource, (status, now) -> {
+            if (status.manualValidNextStates().contains(resourceState)) {
+                return Optional.of(status.withState(resourceState, now));
+            }
+            logger.debug("Cannot change the state of resource {} to {} by hand", resource, resourceState);
+            return Optional.empty();
+        });
+    }
+
+    /**
      * Attempts to assign the resource to the specified assignment, settings its state to
      * {@link ResourceState#RESERVED}. If the resource is not active or not available, nothing happens. Otherwise, the
      * new state is saved and a {@link ResourceStatusChanged} event is fired.
@@ -192,8 +212,10 @@ public class ResourceStatusService extends AbstractService {
     /**
      * Changes the status of the resource as the change says, unless the resource is deleted or the change refuses.
      * The previous status is archived. If another change got there first, nothing happens.
+     *
+     * @return the new status, or empty if nothing changed
      */
-    private void attemptStatusChange(ResourceId resource, StatusChange change) {
+    private Optional<ResourceStatus> attemptStatusChange(ResourceId resource, StatusChange change) {
         Optional<ResourceStatus> updated = getTxTemplate().execute(tx -> {
             try {
                 return findCurrentStatus(resource).flatMap(current -> change.apply(current, Instant.now())
@@ -208,9 +230,11 @@ public class ResourceStatusService extends AbstractService {
                 return Optional.empty();
             }
         });
-        if (updated != null) {
-            updated.ifPresent(status -> getApplicationContext().publishEvent(new ResourceStatusChanged(this, status)));
+        if (updated == null) {
+            return Optional.empty();
         }
+        updated.ifPresent(status -> getApplicationContext().publishEvent(new ResourceStatusChanged(this, status)));
+        return updated;
     }
 
     @FunctionalInterface

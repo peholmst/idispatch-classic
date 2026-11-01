@@ -24,6 +24,14 @@ public class DestinationQueries {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Optional<MobileDestination> findActiveMobile(MobileKey key) {
-        return repository.findActiveMobileByKeyHash(key.hash());
+        return findActiveMobile(key.hash());
+    }
+
+    /**
+     * Finds the mobile destination, not deleted, whose key has the given hash.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public Optional<MobileDestination> findActiveMobile(MobileKeyHash keyHash) {
+        return repository.findActiveMobileByKeyHash(keyHash);
     }
 }

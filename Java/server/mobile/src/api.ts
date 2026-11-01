@@ -3,17 +3,27 @@
  * with, in the `Authorization` header, never in the address.
  */
 
+/** A state of the unit, with its name in the destination's language. */
+export interface State {
+  state: string;
+  label: string;
+}
+
 /** The unit the app is paired with. */
 export interface Unit {
   callSign: string;
   /** The language of the destination, `fi` or `sv`. */
   locale: string;
-  /** The unit's current status, or `null` if it has none, as when the unit has been deleted. */
-  status: { state: string; label: string } | null;
+  /** The unit's current state, or `null` if it has none, as when the unit has been deleted. */
+  status: State | null;
+  /** The states the unit may set next, in the order to show them. */
+  nextStates: State[];
 }
 
-export type UnitResult =
-  | { kind: 'unit'; unit: Unit }
+export type StatusChangeResult =
+  | { kind: 'changed'; unit: Unit }
+  /** The state may not follow the current one, which `unit` has. */
+  | { kind: 'refused'; unit: Unit }
   /** The server does not know the key: the destination got a new key or was deleted. */
   | { kind: 'not-paired' }
   | { kind: 'no-connection' };
@@ -25,22 +35,34 @@ export function apiBase(): string {
   return new URL('../api/mobile/', document.baseURI).toString();
 }
 
-export async function fetchUnit(key: string, base: string = apiBase(),
-                                fetchFn: typeof fetch = fetch): Promise<UnitResult> {
+export function authorization(key: string): Record<string, string> {
+  return { Authorization: `Bearer ${key}` };
+}
+
+/**
+ * Asks the server to set the unit's state. Made once: a change that fails is not tried again later.
+ */
+export async function changeStatus(key: string, state: string, base: string = apiBase(),
+                                   fetchFn: typeof fetch = fetch): Promise<StatusChangeResult> {
   let response: Response;
   try {
-    response = await fetchFn(base + 'unit', {
-      headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
+    response = await fetchFn(base + 'unit/status', {
+      method: 'POST',
+      headers: { ...authorization(key), 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ state }),
       cache: 'no-store',
     });
   } catch {
     return { kind: 'no-connection' };
   }
-  if (response.status === 401) {
-    return { kind: 'not-paired' };
+  switch (response.status) {
+    case 200:
+      return { kind: 'changed', unit: await response.json() as Unit };
+    case 409:
+      return { kind: 'refused', unit: await response.json() as Unit };
+    case 401:
+      return { kind: 'not-paired' };
+    default:
+      return { kind: 'no-connection' };
   }
-  if (!response.ok) {
-    return { kind: 'no-connection' };
-  }
-  return { kind: 'unit', unit: await response.json() as Unit };
 }

@@ -36,9 +36,10 @@ final class MobileKeyAuthenticationFilter extends OncePerRequestFilter {
         var header = request.getHeader(HttpHeaders.AUTHORIZATION);
         var value = header != null && header.startsWith(BEARER) ? header.substring(BEARER.length()).trim() : null;
         if (MobileKey.isValid(value)) {
-            destinationQueries.findActiveMobile(new MobileKey(value)).ifPresentOrElse(destination -> {
+            var key = new MobileKey(value);
+            destinationQueries.findActiveMobile(key).ifPresentOrElse(destination -> {
                 var context = SecurityContextHolder.createEmptyContext();
-                context.setAuthentication(new MobileAppAuthentication(destination));
+                context.setAuthentication(new MobileAppAuthentication(destination, key.hash()));
                 SecurityContextHolder.setContext(context);
             }, () -> log.debug("Refusing a mobile app request with a key that no mobile destination has"));
         }

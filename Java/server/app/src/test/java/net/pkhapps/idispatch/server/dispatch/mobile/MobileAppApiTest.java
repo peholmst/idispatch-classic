@@ -56,6 +56,63 @@ class MobileAppApiTest {
         assertThat(unit.get("locale").asString()).isEqualTo("sv");
         assertThat(unit.get("status").get("state").asString()).isEqualTo("AT_STATION");
         assertThat(unit.get("status").get("label").asString()).isEqualTo("På stationen");
+        assertThat(states(unit.get("nextStates"))).as("As the dispatcher's buttons offer them")
+                .containsExactly("AVAILABLE", "OUT_OF_SERVICE");
+        assertThat(unit.get("nextStates").get(0).get("label").asString()).isEqualTo("Ledig");
+    }
+
+    @Test
+    void appChangesTheStatusOfItsUnit() throws Exception {
+        var resource = given.resource(unique("CS"), ResourceState.AT_STATION);
+        var mobile = given.mobile(resource, Bilingual.FINNISH);
+
+        var response = postStatus(mobile.key(), "AVAILABLE");
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        var unit = json(response);
+        assertThat(unit.get("status").get("state").asString()).isEqualTo("AVAILABLE");
+        assertThat(states(unit.get("nextStates"))).containsExactly("AT_STATION", "OUT_OF_SERVICE");
+        assertThat(given.stateOf(resource)).isEqualTo(ResourceState.AVAILABLE);
+    }
+
+    @Test
+    void stateThatMayNotFollowTheCurrentOneIsRefused() throws Exception {
+        var resource = given.resource(unique("CS"), ResourceState.AT_STATION);
+        var mobile = given.mobile(resource, Bilingual.FINNISH);
+
+        var onScene = postStatus(mobile.key(), "ON_SCENE");
+        var dispatched = postStatus(mobile.key(), "DISPATCHED");
+
+        assertThat(onScene.statusCode()).isEqualTo(409);
+        assertThat(json(onScene).get("status").get("state").asString()).as("Tells the status the unit has")
+                .isEqualTo("AT_STATION");
+        assertThat(dispatched.statusCode()).as("Only a dispatcher dispatches").isEqualTo(409);
+        assertThat(given.stateOf(resource)).isEqualTo(ResourceState.AT_STATION);
+    }
+
+    @Test
+    void unknownStateIsRefused() throws Exception {
+        var mobile = given.mobile(given.resource(unique("CS"), ResourceState.AT_STATION), Bilingual.FINNISH);
+
+        var unknown = postStatus(mobile.key(), "PARTYING");
+        var notJson = send(request("api/mobile/unit/status")
+                .header("Authorization", "Bearer " + mobile.key())
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("not json")).build());
+
+        assertThat(unknown.statusCode()).isEqualTo(400);
+        assertThat(notJson.statusCode()).as("Not a redirect to the login").isEqualTo(400);
+    }
+
+    @Test
+    void statusChangeWithoutAKeyIsRefused() throws Exception {
+        var resource = given.resource(unique("CS"), ResourceState.AT_STATION);
+
+        var response = send(request("api/mobile/unit/status").header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"state\":\"AVAILABLE\"}")).build());
+
+        assertThat(response.statusCode()).isEqualTo(401);
+        assertThat(given.stateOf(resource)).isEqualTo(ResourceState.AT_STATION);
     }
 
     @Test
@@ -154,6 +211,20 @@ class MobileAppApiTest {
         assertThat(response.statusCode()).isEqualTo(302);
         assertThat(response.headers().firstValue("Location")).hasValueSatisfying(location ->
                 assertThat(location).contains("/oauth2/authorization/keycloak"));
+    }
+
+    private HttpResponse<String> postStatus(String key, String state) throws IOException, InterruptedException {
+        return send(request("api/mobile/unit/status")
+                .header("Authorization", "Bearer " + key)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"state\":\"" + state + "\"}"))
+                .build());
+    }
+
+    private static java.util.List<String> states(JsonNode states) {
+        var names = new java.util.ArrayList<String>();
+        states.forEach(state -> names.add(state.get("state").asString()));
+        return names;
     }
 
     private HttpResponse<String> getUnit(String key) throws IOException, InterruptedException {

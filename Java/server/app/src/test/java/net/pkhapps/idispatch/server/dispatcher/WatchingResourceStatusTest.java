@@ -1,6 +1,9 @@
 package net.pkhapps.idispatch.server.dispatcher;
 
+import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceState;
+import net.pkhapps.idispatch.server.resource.ResourceStatusService;
+import net.pkhapps.idispatch.server.ui.RunAs;
 import net.pkhapps.idispatch.server.ui.UseCaseTest;
 import org.junit.jupiter.api.Test;
 
@@ -80,5 +83,19 @@ class WatchingResourceStatusTest extends UseCaseTest {
 
         assertThat(watcher.stateOnCardOf(resource.callSign())).isEqualTo("Available");
         assertThat(watcher.assignmentOnCardOf(resource.callSign())).isEmpty();
+    }
+
+    @Test
+    void stateChangeMadeFromTheUnitsMobileAppShowsOnTheCardRightAway() {
+        var resource = given.resource(unique("RS"), ResourceState.AT_STATION);
+        var watcher = new Dispatcher(user("alice", "DISPATCHER"));
+        watcher.opensResourceStatus();
+        watcher.filtersResourceStatusByCallSign(resource.callSign());
+
+        RunAs.unit(resource.id(), () -> spring.getBean(ResourceStatusService.class)
+                .setResourceStateManually(new ResourceId(resource.id()), ResourceState.OUT_OF_SERVICE));
+        watcher.receivesUpdates();
+
+        assertThat(watcher.stateOnCardOf(resource.callSign())).isEqualTo("Out of service");
     }
 }

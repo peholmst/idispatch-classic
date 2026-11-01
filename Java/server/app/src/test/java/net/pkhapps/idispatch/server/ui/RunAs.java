@@ -35,4 +35,20 @@ public final class RunAs {
     public static <T> T dispatcher(Supplier<T> action) {
         return role(Roles.ROLE_DISPATCHER, action);
     }
+
+    /**
+     * Runs the action as the mobile app of the resource with the given ID, which may change only that resource.
+     */
+    public static <T> T unit(long resourceId, Supplier<T> action) {
+        var previous = SecurityContextHolder.getContext();
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated("unit", null,
+                AuthorityUtils.createAuthorityList(Roles.UNIT_PREFIX + resourceId)));
+        SecurityContextHolder.setContext(context);
+        try {
+            return action.get();
+        } finally {
+            SecurityContextHolder.setContext(previous);
+        }
+    }
 }

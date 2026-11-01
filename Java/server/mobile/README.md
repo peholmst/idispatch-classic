@@ -8,6 +8,12 @@ An administrator pairs a device by adding a mobile destination for the unit and 
 the pairing link `…/mobile/#pair=<key>`; the app stores the key in IndexedDB, removes it from the address, and sends it
 with every API call in an `Authorization: Bearer` header. The server stores only the key's hash.
 
+The app keeps the event stream `…/api/mobile/events` open, which tells it the unit and every change of its status,
+whoever made it. It reads the stream with `fetch`, since `EventSource` can't send the key in a header, and connects
+again whenever the stream ends, ever more slowly while the server can't be reached. The status buttons work only while
+the stream is open: a change is never queued to be sent later. The state colors are the dispatcher's, imported from the
+server's `styles/dispatch-view-styles.css`.
+
 ## Building
 
 This directory is a Maven module of the server (`idispatch-mobile`). `mvn package` installs Node into `target/`, runs

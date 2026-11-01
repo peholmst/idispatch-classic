@@ -385,6 +385,14 @@ public class TestData {
         return new GivenMobile(mobile.id(), key);
     }
 
+    /**
+     * The current state of the resource, as stored.
+     */
+    public ResourceState stateOf(GivenResource resource) {
+        return ResourceState.valueOf(dsl.select(RESOURCE_STATUS.STATE).from(RESOURCE_STATUS)
+                .where(RESOURCE_STATUS.RESOURCE_ID.eq(resource.id())).fetchSingle(RESOURCE_STATUS.STATE));
+    }
+
     public void deleteDestination(long id) {
         dsl.update(DESTINATIONS).set(DESTINATIONS.ACTIVE, false)
                 .set(DESTINATIONS.VERSION, DESTINATIONS.VERSION.plus(1))
