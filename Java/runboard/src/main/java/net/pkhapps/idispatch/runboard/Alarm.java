@@ -91,7 +91,7 @@ class Alarm implements Observer {
         }
         try {
             outputs.switchOnAmplifier();
-            startClip(beepClip, 2).await();
+            startClip(beepClip, 1).await();
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         } catch (Exception ex) {
