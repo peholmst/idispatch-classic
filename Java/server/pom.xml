@@ -15,7 +15,7 @@
 
     <groupId>net.pkhapps.idispatch.classic</groupId>
     <artifactId>idispatch-server-parent</artifactId>
-    <version>3.0.0</version>
+    <version>3.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>iDispatch Server</name>
 
