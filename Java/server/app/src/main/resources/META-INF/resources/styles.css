@@ -21,6 +21,11 @@ html {
     font-size: var(--aura-font-size-l);
 }
 
+.app-version {
+    color: var(--vaadin-text-color-secondary);
+    font-size: var(--aura-font-size-s);
+}
+
 .app-footer {
     color: var(--vaadin-text-color-secondary);
     font-size: var(--aura-font-size-s);

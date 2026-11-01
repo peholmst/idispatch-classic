@@ -139,8 +139,16 @@
     <build>
         <plugins>
             <plugin>
+                <!-- build-info gives the application its version (BuildProperties), which the drawer shows -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>com.vaadin</groupId>
