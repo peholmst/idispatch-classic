@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { changeStatus, type Unit } from './api';
+import { changeStatus, confirmNotification, type Unit } from './api';
 
 const BASE = 'https://example.com/idispatch/api/mobile/';
 const KEY = 'k'.repeat(43);
@@ -47,5 +47,27 @@ describe('changing the status', () => {
     expect(await changeStatus(KEY, 'AVAILABLE', BASE, unreachable)).toEqual({ kind: 'no-connection' });
     expect(unreachable).toHaveBeenCalledTimes(1);
     expect(await changeStatus(KEY, 'AVAILABLE', BASE, responding(502))).toEqual({ kind: 'no-connection' });
+  });
+});
+
+describe('confirming a notification', () => {
+  it('puts the receipt with the key in the Authorization header', async () => {
+    const fetchFn = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response(null, { status: 204 }));
+
+    expect(await confirmNotification(KEY, 42, BASE, fetchFn)).toBe(true);
+
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(BASE + 'notifications/42/receipt');
+    expect(init?.method).toBe('PUT');
+    expect(new Headers(init?.headers).get('Authorization')).toBe(`Bearer ${KEY}`);
+  });
+
+  it('tells when the server did not take it, so that it is confirmed when it comes again', async () => {
+    const unreachable = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+
+    expect(await confirmNotification(KEY, 42, BASE, unreachable)).toBe(false);
+    expect(await confirmNotification(KEY, 42, BASE, responding(404))).toBe(false);
   });
 });

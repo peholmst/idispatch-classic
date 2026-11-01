@@ -1,3 +1,5 @@
+import { run, SETTINGS } from './db';
+
 /**
  * Pairing the app with a mobile destination. The administrator shows the QR code of the pairing link
  * `<server>/idispatch/mobile/#pair=<key>`; opening it stores the key, and removes it from the address so that it does
@@ -53,8 +55,6 @@ export async function pair(address: Address, replaceAddress: (url: string) => vo
   return store.get();
 }
 
-const DATABASE = 'idispatch-mobile';
-const STORE = 'settings';
 const KEY = 'key';
 
 /**
@@ -62,29 +62,11 @@ const KEY = 'key';
  * installing works.
  */
 export function indexedDbKeyStore(factory: IDBFactory = indexedDB): KeyStore {
-  const open = () => new Promise<IDBDatabase>((resolve, reject) => {
-    const request = factory.open(DATABASE, 1);
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-  const run = async <T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T>) => {
-    const db = await open();
-    try {
-      return await new Promise<T>((resolve, reject) => {
-        const transaction = db.transaction(STORE, mode);
-        const request = action(transaction.objectStore(STORE));
-        transaction.oncomplete = () => resolve(request.result);
-        transaction.onerror = () => reject(transaction.error);
-      });
-    } finally {
-      db.close();
-    }
-  };
   return {
-    get: async () => (await run<unknown>('readonly', store => store.get(KEY)) as string | undefined) ?? null,
+    get: async () => (await run<unknown>(factory, SETTINGS, 'readonly', store => store.get(KEY)) as string | undefined)
+      ?? null,
     set: async key => {
-      await run('readwrite', store => store.put(key, KEY));
+      await run(factory, SETTINGS, 'readwrite', store => store.put(key, KEY));
     },
   };
 }

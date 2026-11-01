@@ -14,6 +14,12 @@ const texts = {
     statusRefused: 'Tilaa ei voitu vaihtaa, koska yksikön tila oli jo muuttunut.',
     statusFailed: 'Tilaa ei voitu vaihtaa, koska palvelimeen ei saatu yhteyttä.',
     changeStatus: 'Vaihda tila',
+    messages: 'Hälytykset',
+    noMessages: 'Ei hälytyksiä',
+    delete: 'Poista',
+    confirmDelete: 'Poistetaanko hälytys?',
+    cancel: 'Peruuta',
+    resources: 'Yksiköt',
   },
   sv: {
     loading: 'Laddar…',
@@ -26,6 +32,12 @@ const texts = {
     statusRefused: 'Statusen kunde inte ändras, eftersom enhetens status redan hade ändrats.',
     statusFailed: 'Statusen kunde inte ändras, eftersom servern inte gick att nå.',
     changeStatus: 'Ändra status',
+    messages: 'Larm',
+    noMessages: 'Inga larm',
+    delete: 'Ta bort',
+    confirmDelete: 'Ta bort larmet?',
+    cancel: 'Avbryt',
+    resources: 'Enheter',
   },
 } as const;
 

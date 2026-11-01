@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Unit } from './api';
+import type { Notification, Unit } from './api';
 import { type ConnectionState, EventParser, RETRY_DELAYS_MS, UnitConnection } from './events';
 
 const KEY = 'k'.repeat(43);
 const URL = 'https://example.com/idispatch/api/mobile/events';
 const UNIT: Unit = { callSign: 'RVS911', locale: 'fi', status: null, nextStates: [] };
+const NOTIFICATION: Notification = {
+  id: 1, timestamp: '2026-11-01T12:00:00Z', urgency: 'A', typeCode: '402', type: 'Rakennuspalo',
+  municipality: 'Parainen', address: 'Rantatie 1', description: '', resources: ['RVS911'],
+};
 
 describe('reading Server-Sent Events', () => {
   it('splits events, whatever pieces the text arrives in', () => {
@@ -30,6 +34,8 @@ function openStream() {
   return {
     response: new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
     send: (unit: Unit) => controller.enqueue(encoder.encode(`event:unit\ndata:${JSON.stringify(unit)}\n\n`)),
+    sendNotification: (notification: Notification) => controller.enqueue(encoder.encode(
+      `event:notification\nid:${notification.id}\ndata:${JSON.stringify(notification)}\n\n`)),
     end: () => controller.close(),
   };
 }
@@ -37,8 +43,10 @@ function openStream() {
 describe('the connection to the server', () => {
   let states: ConnectionState[];
   let units: Unit[];
+  let notifications: Notification[];
   const listener = {
     unit: (unit: Unit) => void units.push(unit),
+    notification: (notification: Notification) => void notifications.push(notification),
     state: (state: ConnectionState) => void states.push(state),
   };
 
@@ -46,6 +54,7 @@ describe('the connection to the server', () => {
     vi.useFakeTimers();
     states = [];
     units = [];
+    notifications = [];
   });
 
   afterEach(() => {
@@ -65,6 +74,20 @@ describe('the connection to the server', () => {
     expect(new Headers(fetchFn.mock.calls[0][1]?.headers).get('Authorization')).toBe(`Bearer ${KEY}`);
     expect(states).toEqual(['connecting', 'connected']);
     expect(units.map(unit => unit.callSign)).toEqual(['RVS911', 'RVS912']);
+    connection.stop();
+  });
+
+  it('passes on the notifications', async () => {
+    const stream = openStream();
+    const connection = new UnitConnection(KEY, URL, listener, vi.fn(async () => stream.response));
+    const notification = { ...NOTIFICATION, id: 7 };
+
+    connection.start();
+    stream.send(UNIT);
+    stream.sendNotification(notification);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(notifications).toEqual([notification]);
     connection.stop();
   });
 

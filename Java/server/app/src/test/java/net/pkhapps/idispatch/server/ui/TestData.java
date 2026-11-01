@@ -429,6 +429,16 @@ public class TestData {
     }
 
     /**
+     * Moves the moment the notification was sent back by the given amount, as if it had been sent that long ago.
+     */
+    public void sentEarlier(GivenNotification notification, java.time.Duration ago) {
+        dsl.update(DISPATCH_NOTIFICATIONS)
+                .set(DISPATCH_NOTIFICATIONS.TS, OffsetDateTime.now().minus(ago))
+                .where(DISPATCH_NOTIFICATIONS.ID.eq(notification.id()))
+                .execute();
+    }
+
+    /**
      * Returns the IDs of the destinations that have confirmed receiving the notification.
      */
     public List<Long> receiptsFor(GivenNotification notification) {

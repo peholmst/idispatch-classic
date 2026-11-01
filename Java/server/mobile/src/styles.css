@@ -85,3 +85,74 @@ idispatch-mobile-app {
     background: color-mix(in srgb, var(--aura-red) 20%, transparent);
     color: var(--aura-red-text);
 }
+
+.messages {
+    margin-top: 2rem;
+}
+
+.messages h2 {
+    font-size: 1.25rem;
+    margin: 0 0 0.75rem;
+}
+
+.no-messages {
+    color: var(--vaadin-text-color-secondary);
+}
+
+.message-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: var(--vaadin-radius-l);
+    background: var(--vaadin-background-container);
+}
+
+.message-card header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.message-card .urgency {
+    font-weight: var(--aura-font-weight-semibold);
+    padding: 0 0.5rem;
+    border-radius: var(--vaadin-radius-s);
+    background: var(--aura-red);
+    color: var(--aura-accent-contrast-color, white);
+}
+
+.message-card .type {
+    flex: 1;
+    font-weight: var(--aura-font-weight-semibold);
+}
+
+.message-card time {
+    color: var(--vaadin-text-color-secondary);
+}
+
+.message-card p {
+    margin: 0;
+}
+
+.message-card .address {
+    font-size: 1.25rem;
+    font-weight: var(--aura-font-weight-semibold);
+}
+
+.message-card .resources {
+    color: var(--vaadin-text-color-secondary);
+}
+
+.message-card .delete {
+    align-self: flex-end;
+}
+
+.confirm-delete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}

@@ -1,4 +1,4 @@
-import { authorization, type Unit } from './api';
+import { authorization, type Notification, type Unit } from './api';
 
 /** One Server-Sent Event. */
 export interface ServerEvent {
@@ -56,6 +56,8 @@ export type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'not
 
 export interface ConnectionListener {
   unit(unit: Unit): void;
+
+  notification(notification: Notification): void;
 
   state(state: ConnectionState): void;
 }
@@ -151,6 +153,8 @@ export class UnitConnection {
             this.listener.state('connected');
           }
           this.listener.unit(JSON.parse(event.data) as Unit);
+        } else if (event.event === 'notification' && connected) {
+          this.listener.notification(JSON.parse(event.data) as Notification);
         }
       }
     }
