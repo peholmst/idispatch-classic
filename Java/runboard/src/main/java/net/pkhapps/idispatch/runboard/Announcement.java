@@ -11,8 +11,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Builds the text that is read out loud for a notification: the units dispatched, the assignment code and urgency,
- * and the address. The assignment type's description and the free-text description are left out, as they are shown on
+ * Builds the phrases that are read out loud for a notification: the units dispatched, the assignment code and
+ * urgency, and the address. The assignment type's description and the free-text description are left out, as they are shown on
  * the screen.
  */
 final class Announcement {
@@ -44,25 +44,30 @@ final class Announcement {
     }
 
     /**
-     * Returns the text to read for the notification in the given language, which decides the words added around the
-     * notification's own text.
+     * Returns the phrases to read for the notification in the given language, which decides the words added around the
+     * notification's own text. Each unit dispatched is a phrase of its own, the first one after the alert label, so
+     * that the runboard can pause between them; the assignment and the address follow, a phrase each. Every phrase
+     * ends with a full stop.
      */
-    static String text(Notification notification, String language) {
+    static List<String> phrases(Notification notification, String language) {
         final Phrases phrases = PHRASES.getOrDefault(language, NO_PHRASES);
-        final List<String> sentences = new ArrayList<>();
-        sentences.add(labelled(phrases.alert(), notification.getResources().stream()
+        final List<String> result = new ArrayList<>();
+        final List<String> units = notification.getResources().stream()
                 .sorted()
                 .map(Announcement::spellCallSign)
-                .collect(Collectors.joining(", "))));
+                .toList();
+        for (int i = 0; i < units.size(); i++) {
+            result.add(i == 0 ? labelled(phrases.alert(), units.get(i)) : units.get(i));
+        }
         final String urgency = notification.getUrgency();
-        sentences.add(labelled(phrases.assignment(), join(" ", spellDigits(notification.getAssignmentTypeCode()),
+        result.add(labelled(phrases.assignment(), join(" ", spellDigits(notification.getAssignmentTypeCode()),
                 phrases.urgencies().getOrDefault(urgency, urgency))));
-        sentences.add(join(", ", notification.getAddress(), notification.getMunicipality()));
-        return sentences.stream()
+        result.add(join(", ", notification.getAddress(), notification.getMunicipality()));
+        return result.stream()
                 .map(String::strip)
-                .filter(sentence -> !sentence.isEmpty())
-                .map(sentence -> sentence.endsWith(".") ? sentence : sentence + ".")
-                .collect(Collectors.joining(" "));
+                .filter(phrase -> !phrase.isEmpty())
+                .map(phrase -> phrase.endsWith(".") ? phrase : phrase + ".")
+                .toList();
     }
 
     /**

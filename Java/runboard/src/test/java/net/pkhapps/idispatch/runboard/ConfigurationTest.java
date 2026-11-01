@@ -17,6 +17,7 @@ class ConfigurationTest {
 
     private static final List<String> TIMING_PROPERTIES = List.of("idispatch.alarm.plays",
             "idispatch.alarm.playsBeforeSpeech", "idispatch.speech.repeats", "idispatch.speech.pause",
+            "idispatch.speech.phrasePause",
             "idispatch.notification.shownFor", "idispatch.alarm.volume", "idispatch.hideCursor");
 
     @AfterEach
@@ -47,6 +48,17 @@ class ConfigurationTest {
         System.setProperty("idispatch.speech.pause", "1.5");
 
         assertEquals(new AlertTimings(9, 3, 2, Duration.ofSeconds(1)), new Configuration().getAlertTimings());
+    }
+
+    @Test
+    void speechPhrasePause_isReadWithADefault() {
+        assertEquals(Duration.ofMillis(500), new Configuration().getSpeechPhrasePause());
+
+        System.setProperty("idispatch.speech.phrasePause", "750");
+        assertEquals(Duration.ofMillis(750), new Configuration().getSpeechPhrasePause());
+
+        System.setProperty("idispatch.speech.phrasePause", "-1");
+        assertEquals(Duration.ofMillis(500), new Configuration().getSpeechPhrasePause());
     }
 
     @Test

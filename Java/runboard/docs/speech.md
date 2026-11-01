@@ -10,8 +10,11 @@ Two threads share the work: the *speech thread* runs the engine, and the *audio 
 
 1. As soon as the notifications arrive, the speech thread starts synthesizing the text of each one
    (`SpeechEngine.synthesize`), one after the other, even if an earlier alert is still playing. The text comes from
-   `Announcement` and is the same for every engine. It is synthesized a part at a time (with Piper, a sentence at a
-   time), and each part is handed to the audio thread as soon as it is ready.
+   `Announcement` and is the same for every engine. It is made of phrases: each unit dispatched is one, and so are
+   the assignment and the address. Each phrase is synthesized on its own, a part at a time (with Piper, a sentence at
+   a time), and each part is handed to the audio thread as soon as it is ready. Between the phrases, the runboard adds
+   `idispatch.speech.phrasePause` milliseconds of silence (default 500), so the units are not read in one breath,
+   whatever the engine.
 2. The audio thread asks the engine whether it supports the language of any of the new notifications
    (`SpeechEngine.supportsLanguage`).
 3. The alarm starts. It plays `idispatch.alarm.playsBeforeSpeech` times (default 3) if speech is expected, otherwise
@@ -56,6 +59,7 @@ idispatch.alarm.plays=9
 idispatch.alarm.playsBeforeSpeech=3
 idispatch.speech.repeats=2
 idispatch.speech.pause=1000
+idispatch.speech.phrasePause=500
 ```
 
 ### Volume

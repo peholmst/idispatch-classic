@@ -79,6 +79,14 @@ class Configuration extends net.pkhapps.idispatch.runboard.client.Configuration 
     }
 
     /**
+     * Returns the silence between the phrases of a notification that is read out loud: between the units dispatched,
+     * and before the assignment and the address. Default: 500 ms.
+     */
+    public Duration getSpeechPhrasePause() {
+        return Duration.ofMillis(getInt("idispatch.speech.phrasePause", 500, 0));
+    }
+
+    /**
      * Returns the gain of the alarm and the error beep in decibels, at most 0. The sound files are close to full scale,
      * far louder than speech even after it has been normalized, so they are attenuated to suit the speech. Default:
      * -12 dB, which puts the alarm a few decibels above the speech.
