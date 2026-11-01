@@ -3,6 +3,7 @@ package net.pkhapps.idispatch.server.dispatcher;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.card.Card;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.html.Div;
@@ -72,6 +73,7 @@ public class ResourceStatusView extends VerticalLayout implements HasDynamicTitl
         callSignFilter.setClearButtonVisible(true);
         callSignFilter.setValueChangeMode(ValueChangeMode.LAZY);
         callSignFilter.bindValue(viewModel.callSignFilter(), viewModel::filterByCallSign);
+        callSignFilter.setWidth(20, Unit.EM);
 
         var stateFilter = new MultiSelectComboBox<ResourceState>();
         stateFilter.setItems(ResourceState.values());
@@ -121,7 +123,7 @@ public class ResourceStatusView extends VerticalLayout implements HasDynamicTitl
         card.addClassNames("resource-status-card", ResourceFormatters.resourceStateClassName(state));
         card.setAriaRole("listitem");
         card.setWidth(CARD_WIDTH);
-        card.setTitle(Objects.requireNonNullElse(row.callSign(), "?"), 3);
+        card.setTitle(Objects.requireNonNullElse(row.callSign(), "?"), 2);
         card.setSubtitle(ResourceFormatters.formatResourceState(state));
         // A resource that is available again or out of service still refers to its last assignment, but is not on it
         if (row.status().isAssigned() && row.assignment() != null) {
