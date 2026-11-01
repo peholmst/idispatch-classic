@@ -6,15 +6,25 @@ from a *speech engine*, plugged in through a small service provider interface (S
 
 ## How an alert plays
 
-1. The audio thread asks the engine whether it supports the language of any of the new notifications
+Two threads share the work: the *speech thread* runs the engine, and the *audio thread* plays the sound.
+
+1. As soon as the notifications arrive, the speech thread starts synthesizing the text of each one
+   (`SpeechEngine.synthesize`), one after the other, even if an earlier alert is still playing. The text comes from
+   `Announcement` and is the same for every engine. It is synthesized a part at a time (with Piper, a sentence at a
+   time), and each part is handed to the audio thread as soon as it is ready.
+2. The audio thread asks the engine whether it supports the language of any of the new notifications
    (`SpeechEngine.supportsLanguage`).
-2. The alarm starts. It plays `idispatch.alarm.playsBeforeSpeech` times (default 3) if speech is expected, otherwise
+3. The alarm starts. It plays `idispatch.alarm.playsBeforeSpeech` times (default 3) if speech is expected, otherwise
    `idispatch.alarm.plays` times (default 9).
-3. While it plays, the engine synthesizes the text of each notification (`SpeechEngine.synthesize`). The text comes
-   from `Announcement` and is the same for every engine.
 4. When the alarm ends, each notification is read `idispatch.speech.repeats` times (default 2), each time after
-   `idispatch.speech.pause` milliseconds of silence (default 1000). If no speech came out after all, the alarm
-   plays the rest of its `idispatch.alarm.plays` times instead.
+   `idispatch.speech.pause` milliseconds of silence (default 1000). The first reading starts with the first part, while
+   the rest is still being synthesized. Time spent waiting for the first part counts as part of the pause, so speech
+   that is synthesized late starts as soon as it is ready, without a pause on top. If no speech came out after all,
+   the alarm plays the rest of its `idispatch.alarm.plays` times instead.
+
+When the runboard starts, the speech thread creates the engine and then *prepares* each language that it supports
+(`SpeechEngine.prepare`): Piper loads the voice and synthesizes a few words, as the first synthesis with a voice is
+slower than the ones after it. So the first alert after a start is as fast as the rest.
 
 The amplifier is switched on before the alarm starts and off after the last reading (see [outputs.md](outputs.md)).
 Errors from the engine are logged and never stop the alarm. An engine that can't be found or created means alarm only.
@@ -53,7 +63,7 @@ idispatch.speech.pause=1000
 Speech is much quieter than the alarm: Piper's voices come out at about -27 LUFS (Finnish) and -21 LUFS (Swedish),
 while the alarm, a tone close to full scale, is at about -5 LUFS. So the runboard sets the levels itself, in software:
 
-- Every engine's speech is normalized, amplified or attenuated so that its loudest sample is at -1 dBFS (`Volume`, at
+- Every part of every engine's speech is normalized, amplified or attenuated so that its loudest sample is at -1 dBFS (`Volume`, at
   most +20 dB). The two voices then end up at about -20 LUFS, as loud as they can be without distorting.
 - The alarm and the error beep are attenuated by `idispatch.alarm.volume` decibels when they are loaded. The default,
   -12, puts the alarm at about -17 LUFS, a few decibels above the speech. It can't be above 0.
@@ -74,14 +84,15 @@ them without the prefix: Piper's `voice.fi` setting is the `idispatch.speech.pip
 
 ```properties
 idispatch.speech.piper.voice.fi=voices/fi_FI-harri-medium.onnx
-idispatch.speech.piper.voice.sv=voices/sv_SE-nst-medium.onnx
+idispatch.speech.piper.voice.sv=voices/sv_SE-lisa-medium.onnx
 ```
 
 Each value is the path of a voice's `.onnx` file, with its `.onnx.json` file next to it. Voices are downloaded from
 [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices); check each voice's `MODEL_CARD` for its license.
 Piper is used through [piper-jni](https://github.com/jvoice-project/piper-jni), which bundles the native libraries for Linux
-(x86_64, arm64), macOS and Windows. The native libraries load when the runboard starts, and each voice the first time
-a notification in its language arrives.
+(x86_64, arm64), macOS and Windows. The native libraries and the voices load when the runboard starts. The Swedish
+voice is `lisa`, which sounds better than `nst`; an installation upgraded from an older version still has `nst` in its
+`runboard.properties` and needs the line above, and the voice downloaded with the download script.
 
 ## Trying it on a desktop
 
@@ -149,6 +160,25 @@ class ExampleSpeechEngine implements SpeechEngine {
         return Optional.of(SpeechAudio.ofMono16Bit(samples, sampleRate));
     }
 
+    // Optional: hand over each sentence as soon as it is ready, so that the reading starts sooner. Without this,
+    // the whole text from the method above is handed over as one part.
+    @Override
+    public boolean synthesize(String language, String text, Consumer<SpeechAudio> parts) throws Exception {
+        if (!supportsLanguage(language)) {
+            return false;
+        }
+        for (short[] sentence : ...) { // the engine's output, a sentence at a time
+            parts.accept(SpeechAudio.ofMono16Bit(sentence, sampleRate));
+        }
+        return true;
+    }
+
+    // Optional: load the voice and warm it up when the runboard starts, instead of on the first notification.
+    @Override
+    public void prepare(String language) throws Exception {
+        ...
+    }
+
     @Override
     public void close() {
         // Release native resources.
@@ -162,18 +192,23 @@ The contract, as documented on the interfaces:
 |---|---|---|
 | `SpeechEngineProvider()` | When the runboard starts, by `ServiceLoader` | Be public with no arguments, and do nothing heavy |
 | `name()` | When the runboard starts | Return a unique name, lowercase by convention |
-| `create(settings)` | Once, on the audio thread, when the runboard starts | Load everything that is slow to load. Throw if the engine can't run here. |
-| `supportsLanguage(language)` | Before every alert, before the alarm starts | Answer quickly from the configuration, without loading anything, since it delays the alarm |
-| `synthesize(language, text)` | While the alarm plays | Return empty for an unsupported language, throw on failure |
-| `close()` | Once, when the runboard exits, from a shutdown hook after the audio thread has stopped | Free native resources. Native libraries whose objects are still alive when the JVM exits can crash it: Piper's onnxruntime aborts with *mutex lock failed*. |
+| `create(settings)` | Once, on the speech thread, when the runboard starts | Load the engine itself. Throw if the engine can't run here. The first alert waits for this. |
+| `prepare(language)` | On the speech thread after `create`, once for each language notifications can come in that the engine supports | Optional. Load the language's voice and do whatever makes the first synthesis as fast as the rest. Throw on failure. |
+| `supportsLanguage(language)` | On the audio thread before every alert, before the alarm starts, possibly while the speech thread is synthesizing | Answer quickly from the configuration, without loading anything or touching what synthesis uses |
+| `synthesize(language, text, parts)` | On the speech thread, as soon as a notification arrives | Optional. Hand each part to `parts` as soon as it is ready, all in the same format. Return false for an unsupported language, throw on failure. By default calls `synthesize(language, text)`. |
+| `synthesize(language, text)` | Through the method above, unless the engine overrides it | Return empty for an unsupported language, throw on failure |
+| `close()` | Once, when the runboard exits, from a shutdown hook after the speech thread has stopped | Free native resources. Native libraries whose objects are still alive when the JVM exits can crash it: Piper's onnxruntime aborts with *mutex lock failed*. |
 
-- **Threads:** an engine is only used from the audio thread, so it doesn't need to be thread safe.
+- **Threads:** an engine is used from the speech thread, one call at a time, so it doesn't need to be thread safe.
+  Only `supportsLanguage` is called from the audio thread.
 - **Languages:** ISO 639-1 codes (`fi`, `sv`). The code is empty if the server didn't send one.
 - **Audio:** `SpeechAudio` can be any format that `javax.sound.sampled` can play. `ofMono16Bit` covers the usual
   case of signed 16-bit mono samples.
-- **Synthesis time:** must fit within the alarm, about 6 seconds with the default `idispatch.alarm.playsBeforeSpeech`
-  (each play is 2 seconds), or the speech starts late. Measure it on the target
-  hardware: a Raspberry Pi 4.
+- **Synthesis time:** the first part must be ready within the alarm, about 6 seconds with the default
+  `idispatch.alarm.playsBeforeSpeech` (each play is 2 seconds), or the speech starts late, and each following part
+  before the one before it has been read, or there is a gap. Measure it on the target hardware, a Raspberry Pi 4: the
+  log says `Synthesized N parts in X ms, the first in Y ms`, and `Speech started N ms late` when the first part wasn't
+  ready in time.
 
 ### 2. Register it
 

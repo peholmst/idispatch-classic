@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.*;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -16,8 +17,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Sounds the alarm for new notifications and then reads them out loud. Without speech, the alarm plays for longer
- * instead. {@link AlertTimings} sets how many times each part plays. Sound is played on a thread of its own, one alert
- * or beep at a time, with the amplifier switched on. The alarm and the beep are attenuated by the alarm volume, so that
+ * instead. {@link AlertTimings} sets how many times each part plays. Sound is played on a thread of its own, the audio
+ * thread, one alert or beep at a time, with the amplifier switched on. The speech is synthesized on the speech thread,
+ * starting as soon as the notifications arrive, and is read a part at a time as each part is ready. The alarm and the beep are attenuated by the alarm volume, so that
  * they are not much louder than the speech.
  */
 class Alarm implements Observer {
@@ -45,7 +47,7 @@ class Alarm implements Observer {
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
             logger.error("Error initializing sound system, no sounds will be played", ex);
         }
-        audioExecutor.execute(speech::initialize);
+        speech.start();
     }
 
     /**
@@ -112,42 +114,51 @@ class Alarm implements Observer {
         }
         seenNotifications.removeAll(notificationsToDelete);
         if (!newNotifications.isEmpty()) {
-            audioExecutor.execute(() -> alert(newNotifications));
+            // Start synthesizing right away, even if an earlier alert is still playing.
+            final List<Utterance> utterances = newNotifications.stream()
+                    .map(n -> {
+                        final String language = speech.languageOf(n);
+                        logger.info("Notification {} came in language '{}' from the server, reading it in '{}'",
+                                n.getId(), n.getLanguage().isEmpty() ? "none" : n.getLanguage(),
+                                language.isEmpty() ? "none" : language);
+                        return speech.read(language, Announcement.text(n, language));
+                    })
+                    .toList();
+            audioExecutor.execute(() -> alert(newNotifications, utterances));
         }
         if (model.hasError()) {
             soundBeep();
         }
     }
 
-    private void alert(List<Notification> notifications) {
+    /**
+     * @param utterances the speech for each notification, already being synthesized
+     */
+    private void alert(List<Notification> notifications, List<Utterance> utterances) {
         try {
             outputs.switchOnAmplifier();
-            // Synthesize while the alarm plays, so that the speech is ready when it ends.
             final boolean speechExpected = notifications.stream()
                     .anyMatch(n -> speech.supportsLanguage(speech.languageOf(n)));
             final int alarmPlays = speechExpected ? timings.alarmPlaysBeforeSpeech() : timings.alarmPlays();
             final ClipPlayback alarm = startAlarm(alarmPlays);
-            final List<SpeechAudio> announcements = notifications.stream()
-                    .flatMap(n -> {
-                        final String language = speech.languageOf(n);
-                        logger.info("Notification {} came in language '{}' from the server, reading it in '{}'",
-                                n.getId(), n.getLanguage().isEmpty() ? "none" : n.getLanguage(),
-                                language.isEmpty() ? "none" : language);
-                        return speech.synthesize(language, Announcement.text(n, language)).stream();
-                    })
-                    .toList();
             alarm.await();
-            if (announcements.isEmpty()) {
-                if (alarmPlays < timings.alarmPlays()) {
-                    startAlarm(timings.alarmPlays() - alarmPlays).await();
+            long silentSince = System.nanoTime();
+            boolean spoken = false;
+            for (Utterance utterance : utterances) {
+                final Optional<SpeechAudio> reading = readFirstTime(utterance, silentSince);
+                if (reading.isEmpty()) {
+                    continue;
                 }
-                return;
+                spoken = true;
+                silentSince = System.nanoTime();
+                for (int i = 1; i < timings.speechRepeats(); i++) {
+                    pauseAfter(silentSince);
+                    play(reading.get());
+                    silentSince = System.nanoTime();
+                }
             }
-            for (SpeechAudio announcement : announcements) {
-                for (int i = 0; i < timings.speechRepeats(); i++) {
-                    Thread.sleep(timings.speechPause());
-                    play(announcement);
-                }
+            if (!spoken && alarmPlays < timings.alarmPlays()) {
+                startAlarm(timings.alarmPlays() - alarmPlays).await();
             }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -156,6 +167,58 @@ class Alarm implements Observer {
         } finally {
             outputs.switchOffAmplifier();
         }
+    }
+
+    /**
+     * Reads the utterance for the first time, playing each part as soon as it is ready, after the pause or as soon
+     * after it as the first part is ready.
+     *
+     * @param silentSince when the sound before this reading ended, from {@link System#nanoTime()}
+     * @return all the parts that were read, to read again, or an empty optional if there were none
+     */
+    private Optional<SpeechAudio> readFirstTime(Utterance utterance, long silentSince)
+            throws InterruptedException, LineUnavailableException {
+        Optional<SpeechAudio> part = utterance.next();
+        if (part.isEmpty()) {
+            return Optional.empty();
+        }
+        final long lateMilliseconds = -pauseAfter(silentSince) / 1_000_000;
+        if (lateMilliseconds > 0) {
+            logger.info("Speech started {} ms late, as it was still being synthesized", lateMilliseconds);
+        }
+        final AudioFormat format = part.get().format();
+        final ByteArrayOutputStream reading = new ByteArrayOutputStream();
+        try (SourceDataLine line = AudioSystem.getSourceDataLine(format)) {
+            line.open(format);
+            line.start();
+            while (part.isPresent()) {
+                final byte[] samples = part.get().samples();
+                if (part.get().format().matches(format)) {
+                    line.write(samples, 0, samples.length);
+                    reading.writeBytes(samples);
+                } else {
+                    logger.warn("Skipping a part of the speech that is in another format: {}", part.get().format());
+                }
+                part = utterance.next();
+            }
+            line.drain();
+        }
+        return Optional.of(new SpeechAudio(reading.toByteArray(), format));
+    }
+
+    /**
+     * Waits until the pause before a reading has passed since the sound before it ended. Time already spent waiting
+     * for the speech counts, so a reading that was synthesized late does not wait any longer.
+     *
+     * @param silentSince when the sound before the reading ended, from {@link System#nanoTime()}
+     * @return how much of the pause was left, in nanoseconds, or how much it was exceeded by, as a negative number
+     */
+    private long pauseAfter(long silentSince) throws InterruptedException {
+        final long remaining = timings.speechPause().toNanos() - (System.nanoTime() - silentSince);
+        if (remaining > 0) {
+            TimeUnit.NANOSECONDS.sleep(remaining);
+        }
+        return remaining;
     }
 
     /**

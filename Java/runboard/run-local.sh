@@ -26,7 +26,7 @@ idispatch.speech.engine=piper
 # Used when the server doesn't send a language, as servers from before the language setting don't.
 idispatch.speech.defaultLanguage=fi
 idispatch.speech.piper.voice.fi=local/voices/fi_FI-harri-medium.onnx
-idispatch.speech.piper.voice.sv=local/voices/sv_SE-nst-medium.onnx
+idispatch.speech.piper.voice.sv=local/voices/sv_SE-lisa-medium.onnx
 EOF
     echo "Created runboard/$CONFIG."
     echo "Set idispatch.server.url and idispatch.runboardKey in it, then run this script again."

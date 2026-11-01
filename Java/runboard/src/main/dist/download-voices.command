@@ -25,4 +25,4 @@ download_voice() {
 }
 
 download_voice fi/fi_FI/harri/medium/fi_FI-harri-medium
-download_voice sv/sv_SE/nst/medium/sv_SE-nst-medium
+download_voice sv/sv_SE/lisa/medium/sv_SE-lisa-medium
