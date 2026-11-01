@@ -35,6 +35,7 @@
 
     <modules>
         <module>aspsms-integration</module>
+        <module>mobile</module>
         <module>app</module>
     </modules>
 
@@ -55,6 +56,11 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>idispatch-aspsms-integration</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>idispatch-mobile</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

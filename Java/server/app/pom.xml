@@ -94,6 +94,10 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>idispatch-mobile</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>idispatch-aspsms-integration</artifactId>
         </dependency>
 
