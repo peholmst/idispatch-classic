@@ -121,7 +121,7 @@ class Alarm implements Observer {
                         logger.info("Notification {} came in language '{}' from the server, reading it in '{}'",
                                 n.getId(), n.getLanguage().isEmpty() ? "none" : n.getLanguage(),
                                 language.isEmpty() ? "none" : language);
-                        return speech.read(language, Announcement.text(n, language));
+                        return speech.read(language, Announcement.phrases(n, language));
                     })
                     .toList();
             // Keep the notifications on the screen, and the light on, until they have been read out loud.

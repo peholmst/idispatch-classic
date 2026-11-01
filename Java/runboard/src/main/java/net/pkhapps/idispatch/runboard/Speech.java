@@ -1,11 +1,14 @@
 package net.pkhapps.idispatch.runboard;
 
 import net.pkhapps.idispatch.runboard.client.Notification;
+import net.pkhapps.idispatch.runboard.speech.SpeechAudio;
 import net.pkhapps.idispatch.runboard.speech.SpeechEngine;
 import net.pkhapps.idispatch.runboard.speech.SpeechEngineProvider;
 import net.pkhapps.idispatch.runboard.speech.SpeechSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sound.sampled.AudioFormat;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -45,21 +48,25 @@ class Speech {
     private final SpeechSettings settings;
     private final String defaultLanguage;
     private final Collection<String> languages;
+    private final Duration phrasePause;
     private volatile SpeechEngine engine;
 
     Speech(Configuration configuration) {
         this(configuration.getSpeechEngine(), configuration.getSpeechSettings(),
-                configuration.getSpeechDefaultLanguage(), Announcement.languages());
+                configuration.getSpeechDefaultLanguage(), Announcement.languages(), configuration.getSpeechPhrasePause());
     }
 
     /**
-     * @param languages the languages that notifications can come in, prepared when the engine is created
+     * @param languages   the languages that notifications can come in, prepared when the engine is created
+     * @param phrasePause the silence between the phrases of a text, such as between the units dispatched
      */
-    Speech(String engineName, SpeechSettings settings, String defaultLanguage, Collection<String> languages) {
+    Speech(String engineName, SpeechSettings settings, String defaultLanguage, Collection<String> languages,
+           Duration phrasePause) {
         this.engineName = engineName;
         this.settings = settings;
         this.defaultLanguage = defaultLanguage;
         this.languages = List.copyOf(languages);
+        this.phrasePause = phrasePause;
     }
 
     /**
@@ -178,22 +185,23 @@ class Speech {
     }
 
     /**
-     * Starts reading the text in the given language on the speech thread, after any text started before it, and
-     * returns without waiting. Each part of the speech is {@linkplain Volume#normalize normalized}, so every voice is
-     * as loud. If the text cannot be spoken, the utterance ends without parts; if synthesis fails, it ends after the
-     * parts synthesized until then.
+     * Starts reading the phrases in the given language on the speech thread, after any phrases started before them,
+     * and returns without waiting. Each phrase is synthesized on its own, and the phrase pause is added as silence
+     * between them, so that the pause is the same whatever the engine. Each part of the speech is
+     * {@linkplain Volume#normalize normalized}, so every voice is as loud. If the phrases cannot be spoken, the
+     * utterance ends without parts; if synthesis fails, it ends after the parts synthesized until then.
      */
-    Utterance read(String language, String text) {
+    Utterance read(String language, List<String> phrases) {
         final Utterance utterance = new Utterance(PART_TIMEOUT);
         try {
-            speechExecutor.execute(() -> synthesize(language, text, utterance));
+            speechExecutor.execute(() -> synthesize(language, phrases, utterance));
         } catch (RejectedExecutionException ex) {
             utterance.end();
         }
         return utterance;
     }
 
-    private void synthesize(String language, String text, Utterance utterance) {
+    private void synthesize(String language, List<String> phrases, Utterance utterance) {
         try {
             final SpeechEngine current = engine;
             if (current == null) {
@@ -202,22 +210,40 @@ class Speech {
             final long start = System.nanoTime();
             final long[] firstPartAt = {0};
             final int[] partCount = {0};
-            final boolean supported = current.synthesize(language, text, part -> {
-                if (partCount[0]++ == 0) {
-                    firstPartAt[0] = System.nanoTime();
+            final SpeechAudio[] lastPart = {null};
+            for (String phrase : phrases) {
+                if (lastPart[0] != null && phrasePause.isPositive()) {
+                    utterance.add(silence(lastPart[0].format(), phrasePause));
                 }
-                utterance.add(Volume.normalize(part));
-            });
-            if (supported) {
+                final boolean supported = current.synthesize(language, phrase, part -> {
+                    if (partCount[0]++ == 0) {
+                        firstPartAt[0] = System.nanoTime();
+                    }
+                    lastPart[0] = part;
+                    utterance.add(Volume.normalize(part));
+                });
+                if (!supported) {
+                    return;
+                }
+            }
+            if (!phrases.isEmpty()) {
                 logger.info("Synthesized {} parts in {} ms, the first in {} ms", partCount[0],
                         (System.nanoTime() - start) / 1_000_000,
                         partCount[0] == 0 ? 0 : (firstPartAt[0] - start) / 1_000_000);
             }
         } catch (Exception | LinkageError ex) {
             logger.error("Speech engine '{}' could not synthesize text in language '{}': {}", engineName, language,
-                    text, ex);
+                    String.join(" ", phrases), ex);
         } finally {
             utterance.end();
         }
+    }
+
+    /**
+     * Returns silence of the given length in the given format, so that it can be played between the parts in it.
+     */
+    static SpeechAudio silence(AudioFormat format, Duration length) {
+        final long frames = Math.round(format.getFrameRate() * length.toNanos() / 1e9);
+        return new SpeechAudio(new byte[Math.toIntExact(frames * format.getFrameSize())], format);
     }
 }

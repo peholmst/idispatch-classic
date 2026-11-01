@@ -22,8 +22,9 @@ class AnnouncementTest {
                 "description", "Savua näkyy ikkunoista.",
                 "resources", List.of("RVS911", "PAR11")));
 
-        assertEquals("Hälytysilmoitus: P A R 1 1, R V S 9 1 1. Tehtävä: 1 0 3 Bertta. Kauppiaskatu 1, Parainen.",
-                Announcement.text(notification, notification.getLanguage()));
+        assertEquals(List.of("Hälytysilmoitus: P A R 1 1.", "R V S 9 1 1.", "Tehtävä: 1 0 3 Bertta.",
+                        "Kauppiaskatu 1, Parainen."),
+                Announcement.phrases(notification, notification.getLanguage()));
     }
 
     @Test
@@ -36,8 +37,8 @@ class AnnouncementTest {
                 "address", "Köpmansgatan 1",
                 "resources", List.of("RVS911")));
 
-        assertEquals("Larmmeddelande: R V S 9 1 1. Uppdrag: 1 0 3 Berta. Köpmansgatan 1, Pargas.",
-                Announcement.text(notification, notification.getLanguage()));
+        assertEquals(List.of("Larmmeddelande: R V S 9 1 1.", "Uppdrag: 1 0 3 Berta.", "Köpmansgatan 1, Pargas."),
+                Announcement.phrases(notification, notification.getLanguage()));
     }
 
     @Test
@@ -47,14 +48,15 @@ class AnnouncementTest {
                 "address", "Storgatan 1",
                 "resources", List.of("RVS911")));
 
-        assertEquals("R V S 9 1 1. 1 0 3. Storgatan 1.", Announcement.text(notification, notification.getLanguage()));
+        assertEquals(List.of("R V S 9 1 1.", "1 0 3.", "Storgatan 1."),
+                Announcement.phrases(notification, notification.getLanguage()));
     }
 
     @Test
     void missingParts_areLeftOut() {
         var notification = new Notification(Map.of("assignment_type_code", "103"));
 
-        assertEquals("Tehtävä: 1 0 3.", Announcement.text(notification, "fi"));
+        assertEquals(List.of("Tehtävä: 1 0 3."), Announcement.phrases(notification, "fi"));
     }
 
     @Test
@@ -70,7 +72,8 @@ class AnnouncementTest {
     }
 
     private static String urgencyText(String language, String urgency) {
-        return Announcement.text(new Notification(Map.of("assignment_type_code", "1", "urgency", urgency)), language);
+        return String.join(" ", Announcement.phrases(
+                new Notification(Map.of("assignment_type_code", "1", "urgency", urgency)), language));
     }
 
     @Test
