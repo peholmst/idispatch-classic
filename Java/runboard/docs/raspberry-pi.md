@@ -192,9 +192,11 @@ Send a test notification to the runboard's destination and watch `runboard.log` 
 
 - `Using speech engine 'piper'` and `Initialized Piper` at startup. If Piper can't load, the runboard only plays the
   alarm, and the log says why.
-- `Loaded voice ... in N ms` the first time a notification in a language arrives. Loading a voice adds to the first
-  alert's synthesis time, so the first alert after a start is the slowest.
-- The speech should start right after the alarm. If it starts late, increase `idispatch.alarm.playsBeforeSpeech` to
+- `Loaded voice ... in N ms` and `Warmed up the voice ...` for each language at startup, so that the first alert is as
+  fast as the rest.
+- The speech should start right after the alarm. For each notification, the log says
+  `Synthesized N parts in X ms, the first in Y ms`; the reading starts once the first part, the first sentence, is
+  ready. If it starts late, the log says `Speech started N ms late`: increase `idispatch.alarm.playsBeforeSpeech` to
   give Piper more time (see [speech.md](speech.md)), and check that the Pi isn't throttling:
   `vcgencmd get_throttled` should print `throttled=0x0`.
 - With the outputs connected: `Switching the amplifier through line 17 of /dev/gpiochip0` at startup, then

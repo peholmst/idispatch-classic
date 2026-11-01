@@ -13,12 +13,20 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
- * Speaks with Piper voices. The native libraries are loaded when the engine is created, and each language's voice
- * the first time it is needed.
+ * Speaks with Piper voices. The native libraries are loaded when the engine is created, and each language's voice when
+ * it is {@linkplain #prepare(String) prepared} or first needed. Piper synthesizes a sentence at a time, and each
+ * sentence is handed over as a part of its own.
  */
 class PiperSpeechEngine implements SpeechEngine {
+
+    /**
+     * Synthesized once for each voice when it is prepared. The first synthesis with a voice is slower than the ones
+     * after it, as onnxruntime sets itself up, so this makes the first notification as fast as the rest.
+     */
+    private static final String WARM_UP_TEXT = "1 2 3.";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final SpeechSettings settings;
@@ -38,15 +46,44 @@ class PiperSpeechEngine implements SpeechEngine {
     }
 
     @Override
+    public void prepare(String language) throws Exception {
+        final Optional<PiperVoice> voice = voice(language);
+        if (voice.isPresent()) {
+            final long start = System.nanoTime();
+            piper.textToAudio(voice.get(), WARM_UP_TEXT);
+            logger.info("Warmed up the voice for language '{}' in {} ms", language,
+                    (System.nanoTime() - start) / 1_000_000);
+        }
+    }
+
+    @Override
     public Optional<SpeechAudio> synthesize(String language, String text) throws Exception {
-        final Optional<PiperVoice> voice = voices.computeIfAbsent(language, this::loadVoice);
+        final Optional<PiperVoice> voice = voice(language);
         if (voice.isEmpty()) {
             return Optional.empty();
         }
-        final long start = System.nanoTime();
         final short[] samples = piper.textToAudio(voice.get(), text);
-        logger.debug("Synthesized {} samples in {} ms", samples.length, (System.nanoTime() - start) / 1_000_000);
         return Optional.of(SpeechAudio.ofMono16Bit(samples, voice.get().getSampleRate()));
+    }
+
+    @Override
+    public boolean synthesize(String language, String text, Consumer<SpeechAudio> parts) throws Exception {
+        final Optional<PiperVoice> voice = voice(language);
+        if (voice.isEmpty()) {
+            return false;
+        }
+        final int sampleRate = voice.get().getSampleRate();
+        piper.textToAudio(voice.get(), text, samples -> parts.accept(SpeechAudio.ofMono16Bit(samples, sampleRate)));
+        return true;
+    }
+
+    private Optional<PiperVoice> voice(String language) {
+        final Optional<PiperVoice> voice = voices.computeIfAbsent(language, this::loadVoice);
+        if (voice.isEmpty()) {
+            // Try again next time, in case the voice has been downloaded since.
+            voices.remove(language);
+        }
+        return voice;
     }
 
     private Optional<Path> voiceModel(String language) {

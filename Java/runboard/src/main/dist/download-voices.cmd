@@ -7,7 +7,7 @@ cd /d "%~dp0"
 set "VOICE_BASE_URL=https://huggingface.co/rhasspy/piper-voices/resolve/main"
 
 call :download fi/fi_FI/harri/medium fi_FI-harri-medium || goto failed
-call :download sv/sv_SE/nst/medium sv_SE-nst-medium || goto failed
+call :download sv/sv_SE/lisa/medium sv_SE-lisa-medium || goto failed
 pause
 exit /b 0
 

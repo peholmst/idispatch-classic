@@ -7,12 +7,18 @@ import net.pkhapps.idispatch.runboard.speech.SpeechSettings;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * The {@code fake} engine speaks the languages listed in its {@code languages} setting, producing one sample per
- * character, and fails to synthesize the text "fail".
+ * character. It hands over each sentence as a part of its own, and fails when it comes to the sentence "fail.". The
+ * languages it has been asked to prepare are in {@link #PREPARED}.
  */
 public class FakeSpeechEngineProvider implements SpeechEngineProvider {
+
+    static final Set<String> PREPARED = ConcurrentHashMap.newKeySet();
 
     @Override
     public String name() {
@@ -29,13 +35,27 @@ public class FakeSpeechEngineProvider implements SpeechEngineProvider {
             }
 
             @Override
+            public void prepare(String language) {
+                PREPARED.add(language);
+            }
+
+            @Override
             public Optional<SpeechAudio> synthesize(String language, String text) {
-                if ("fail".equals(text)) {
-                    throw new IllegalStateException("Synthesis failed");
+                throw new UnsupportedOperationException("The runboard synthesizes in parts");
+            }
+
+            @Override
+            public boolean synthesize(String language, String text, Consumer<SpeechAudio> parts) {
+                if (!supportsLanguage(language)) {
+                    return false;
                 }
-                return supportsLanguage(language)
-                        ? Optional.of(SpeechAudio.ofMono16Bit(new short[text.length()], 22050))
-                        : Optional.empty();
+                for (String sentence : text.split("(?<=\\.) ")) {
+                    if ("fail.".equals(sentence)) {
+                        throw new IllegalStateException("Synthesis failed");
+                    }
+                    parts.accept(SpeechAudio.ofMono16Bit(new short[sentence.length()], 22050));
+                }
+                return true;
             }
         };
     }

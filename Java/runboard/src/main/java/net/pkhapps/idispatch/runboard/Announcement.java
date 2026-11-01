@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,13 @@ final class Announcement {
     private static final Pattern DIGIT_BOUNDARY = Pattern.compile("(?<=\\d)(?=\\S)|(?<=\\S)(?=\\d)");
 
     private Announcement() {
+    }
+
+    /**
+     * Returns the languages that notifications are read in: the ones with words of their own around the text.
+     */
+    static Set<String> languages() {
+        return PHRASES.keySet();
     }
 
     /**
