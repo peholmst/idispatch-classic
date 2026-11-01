@@ -1,15 +1,32 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!--
+        The runboard's distribution unit, released on its own under the idispatch-runboard/v<version> tag as a zip on
+        the GitHub Release. See ../RELEASING.md. Spring Boot's parent only manages the versions of the dependencies.
+    -->
     <parent>
-        <artifactId>master</artifactId>
-        <groupId>net.pkhapps.idispatch.classic</groupId>
-        <version>1</version>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.2</version>
+        <relativePath/>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <groupId>net.pkhapps.idispatch.classic</groupId>
     <artifactId>idispatch-runboard</artifactId>
     <name>iDispatch Runboard</name>
     <version>3.0.0</version>
+
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License, Version 3.0</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.txt</url>
+        </license>
+    </licenses>
+
+    <properties>
+        <java.version>25</java.version>
+    </properties>
 
     <dependencies>
         <dependency>

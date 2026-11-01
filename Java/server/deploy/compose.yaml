@@ -3,8 +3,7 @@
 services:
   idispatch:
     build:
-      context: ../..
-      dockerfile: server/Dockerfile
+      context: ..
     restart: unless-stopped
     depends_on:
       postgres:
