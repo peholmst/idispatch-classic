@@ -1,5 +1,6 @@
 package net.pkhapps.idispatch.server.dispatch.mobile;
 
+import jakarta.servlet.DispatcherType;
 import net.pkhapps.idispatch.server.dispatch.DestinationQueries;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +31,8 @@ class MobileSecurityConfig {
             throws Exception {
         http.securityMatcher(APP_PATH, APP_PATH + "/**", API_PATH + "/**")
                 .authorizeHttpRequests(requests -> requests
+                        // The event stream ends in an async dispatch, which carries no key of its own
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers(API_PATH + "/**").authenticated()
                         .anyRequest().permitAll())
                 // Not a bean, which Spring Boot would also register as a filter for every request

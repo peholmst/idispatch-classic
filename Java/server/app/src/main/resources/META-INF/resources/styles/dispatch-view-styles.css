@@ -1,5 +1,6 @@
 /*
- * The colors of the resource states, for the state buttons and the resource status cards.
+ * The colors of the resource states, for the state buttons and the resource status cards. The mobile app
+ * (server/mobile) imports this file too, so a unit sees the same colors as the dispatcher.
  * The states use Aura's palette where it has the hue; the hues Aura lacks (lime, orange, pink and a second, darker
  * green) are toned to the palette's lightness and chroma so that they don't stand out from it.
  */

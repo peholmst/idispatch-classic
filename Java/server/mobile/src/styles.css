@@ -14,6 +14,9 @@ body {
 
 idispatch-mobile-app {
     display: block;
+    /* A phone's width, centered on a tablet */
+    max-width: 36rem;
+    margin-inline: auto;
     padding: max(1rem, env(safe-area-inset-top)) 1rem 1rem;
 }
 
@@ -33,9 +36,8 @@ idispatch-mobile-app {
 
 .unit {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .call-sign {
@@ -43,8 +45,43 @@ idispatch-mobile-app {
     font-size: 2rem;
 }
 
+/* The current state, large and in the dispatcher's colors, readable at a glance */
 .status {
     margin: 0;
+    padding: 1.25rem 1rem;
+    border-radius: var(--vaadin-radius-l);
+    font-size: 1.75rem;
+    font-weight: var(--aura-font-weight-semibold);
+    text-align: center;
+    background: var(--resource-state-background, var(--vaadin-background-container));
+    color: var(--resource-state-text-color, var(--vaadin-text-color));
+}
+
+.status-panel {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+/* Large enough to hit in a moving vehicle, with gloves */
+.status-button {
+    height: 4.5rem;
     font-size: 1.25rem;
-    color: var(--vaadin-text-color-secondary);
+}
+
+.banner,
+.error {
+    margin: 1rem 0 0;
+    padding: 0.75rem 1rem;
+    border-radius: var(--vaadin-radius-m);
+}
+
+.banner {
+    background: color-mix(in srgb, var(--aura-yellow) 20%, transparent);
+    color: var(--aura-yellow-text);
+}
+
+.error {
+    background: color-mix(in srgb, var(--aura-red) 20%, transparent);
+    color: var(--aura-red-text);
 }

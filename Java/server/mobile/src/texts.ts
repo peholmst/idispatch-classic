@@ -10,6 +10,10 @@ const texts = {
     noConnection: 'Ei yhteyttä palvelimeen',
     retry: 'Yritä uudelleen',
     noStatus: 'Ei tilaa',
+    connectionLost: 'Ei yhteyttä palvelimeen. Tilaa ei voi vaihtaa ennen kuin yhteys palaa.',
+    statusRefused: 'Tilaa ei voitu vaihtaa, koska yksikön tila oli jo muuttunut.',
+    statusFailed: 'Tilaa ei voitu vaihtaa, koska palvelimeen ei saatu yhteyttä.',
+    changeStatus: 'Vaihda tila',
   },
   sv: {
     loading: 'Laddar…',
@@ -18,6 +22,10 @@ const texts = {
     noConnection: 'Ingen anslutning till servern',
     retry: 'Försök igen',
     noStatus: 'Ingen status',
+    connectionLost: 'Ingen anslutning till servern. Statusen kan inte ändras förrän anslutningen är tillbaka.',
+    statusRefused: 'Statusen kunde inte ändras, eftersom enhetens status redan hade ändrats.',
+    statusFailed: 'Statusen kunde inte ändras, eftersom servern inte gick att nå.',
+    changeStatus: 'Ändra status',
   },
 } as const;
 
