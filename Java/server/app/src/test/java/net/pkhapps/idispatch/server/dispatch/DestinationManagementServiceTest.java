@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * What the administration view relies on the destination service for, beyond what the stories show: that two
- * administrators cannot overwrite each other's changes, that runboard keys stay unique, and that each kind of
- * destination keeps its own details.
+ * administrators cannot overwrite each other's changes, that runboard keys stay unique, that each kind of
+ * destination keeps its own details, and that only the hash of a mobile destination's key is stored.
  */
 @SpringBootTest
 @Import({TestData.class, TestcontainersConfiguration.class, TestSecurityConfiguration.class})
@@ -36,11 +36,13 @@ class DestinationManagementServiceTest {
     @Autowired
     TestData testData;
 
+    private TestData.GivenResource givenResource;
     private ResourceId resource;
 
     @BeforeEach
     void createResource() {
-        resource = new ResourceId(testData.resource(unique("CS"), ResourceState.AVAILABLE).id());
+        givenResource = testData.resource(unique("CS"), ResourceState.AVAILABLE);
+        resource = new ResourceId(givenResource.id());
     }
 
     @Test
@@ -87,6 +89,59 @@ class DestinationManagementServiceTest {
         assertThat(deleted.active()).isFalse();
         assertThat(restored.active()).isTrue();
         assertThat(restored.version()).isEqualTo(created.version() + 2);
+    }
+
+    @Test
+    void mobileDestinationIsCreatedWithAKeyOfWhichOnlyTheHashIsStored() {
+        var created = service.createMobile(mobile("Engine 1"));
+
+        assertThat(created.destination().resource()).isEqualTo(resource);
+        assertThat(testData.mobileKeyHashesFor(givenResource))
+                .containsExactly(created.key().hash().value());
+        assertThat(service.findById(created.destination().id())).contains(created.destination());
+    }
+
+    @Test
+    void mobileDestinationIsNotCreatedWithoutAKey() {
+        assertThatThrownBy(() -> service.create(mobile("Without a key")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void newKeyReplacesTheOldOne_withoutChangingTheVersion() {
+        var created = service.createMobile(mobile("Engine 2"));
+
+        var newKey = service.replaceMobileKey(created.destination().id());
+
+        assertThat(newKey).isNotEqualTo(created.key());
+        assertThat(testData.mobileKeyHashesFor(givenResource))
+                .containsExactly(newKey.hash().value());
+        assertThat(service.findById(created.destination().id()).orElseThrow().version())
+                .as("An administrator editing the destination can still save")
+                .isEqualTo(created.destination().version());
+    }
+
+    @Test
+    void onlyAMobileDestinationIsGivenANewKey() {
+        var runboard = service.create(runboard(unique("key-"), "Not mobile"));
+
+        assertThatThrownBy(() -> service.replaceMobileKey(runboard.id()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void changingAMobileDestinationKeepsItsKey() {
+        var created = service.createMobile(mobile("Engine 3"));
+
+        var changed = (MobileDestination) service.update(created.destination().withDetails(mobile("Engine 4")));
+
+        assertThat(changed.description()).isEqualTo(new DestinationDescription("Engine 4"));
+        assertThat(testData.mobileKeyHashesFor(givenResource))
+                .containsExactly(created.key().hash().value());
+    }
+
+    private MobileDestinationDetails mobile(String description) {
+        return new MobileDestinationDetails(new DestinationDescription(description), Bilingual.FINNISH, resource);
     }
 
     private RunboardDestinationDetails runboard(String key, String description) {

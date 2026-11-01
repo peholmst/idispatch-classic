@@ -25,6 +25,7 @@ import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENT_TYPES;
 import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATION_RESOURCES;
 import static net.pkhapps.idispatch.server.jooq.Tables.DISPATCH_NOTIFICATIONS;
+import static net.pkhapps.idispatch.server.jooq.Tables.MOBILE_DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.MUNICIPALITIES;
 import static net.pkhapps.idispatch.server.jooq.Tables.RECEIPTS;
 import static net.pkhapps.idispatch.server.jooq.Tables.RESOURCES;
@@ -296,6 +297,19 @@ public class TestData {
                 .and(DESTINATIONS.ACTIVE.isTrue())
                 .fetch(record -> new GivenDestination(record.value2(), toLocale(record.value3()),
                         phoneNumbersOf(record.value1())));
+    }
+
+    /**
+     * Returns the stored key hashes of the active mobile destinations of the given resource.
+     */
+    public List<String> mobileKeyHashesFor(GivenResource resource) {
+        return dsl.select(MOBILE_DESTINATIONS.KEY_HASH)
+                .from(MOBILE_DESTINATIONS)
+                .join(DESTINATIONS).on(DESTINATIONS.ID.eq(MOBILE_DESTINATIONS.ID))
+                .join(DESTINATION_RESOURCES).on(DESTINATION_RESOURCES.DESTINATION_ID.eq(DESTINATIONS.ID))
+                .where(DESTINATION_RESOURCES.RESOURCE_ID.eq(resource.id()))
+                .and(DESTINATIONS.ACTIVE.isTrue())
+                .fetch(MOBILE_DESTINATIONS.KEY_HASH);
     }
 
     private Set<String> phoneNumbersOf(long destinationId) {

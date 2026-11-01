@@ -2,3 +2,11 @@
 .management-editor .form-errors {
     color: var(--aura-red-text);
 }
+
+/* The QR code for pairing a mobile app: large enough for a phone camera across a desk, and always black on white */
+.management-editor .mobile-pairing .qr-code {
+    display: block;
+    width: 100%;
+    max-width: 16rem;
+    aspect-ratio: 1;
+}

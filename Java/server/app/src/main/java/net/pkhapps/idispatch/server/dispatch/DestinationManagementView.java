@@ -17,12 +17,16 @@ import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.requireNonNull;
+
 @Route(value = "management/destination", layout = RootLayout.class)
 @RolesAllowed(Roles.ROLE_ADMIN)
 public class DestinationManagementView
         extends RecordManagementView<DestinationListItem, Destination, DestinationDetails> {
 
     private final DestinationManagementService service;
+    // The mobile destination just created and its key, which its form shows once
+    private DestinationManagementService.@Nullable KeyedMobileDestination justCreated;
 
     public DestinationManagementView(DestinationManagementService service) {
         // Set before the base class constructor, which lists the destinations
@@ -40,8 +44,11 @@ public class DestinationManagementView
     }
 
     private String formatKind(DestinationListItem.Kind kind) {
-        return getTranslation(kind == DestinationListItem.Kind.SMS
-                ? "management.destination.type.sms" : "management.destination.type.runboard");
+        return getTranslation(switch (kind) {
+            case SMS -> "management.destination.type.sms";
+            case RUNBOARD -> "management.destination.type.runboard";
+            case MOBILE -> "management.destination.type.mobile";
+        });
     }
 
     @Override
@@ -54,6 +61,8 @@ public class DestinationManagementView
         kinds.addItem(formatKind(DestinationListItem.Kind.RUNBOARD),
                 event -> startAdding(DestinationListItem.Kind.RUNBOARD));
         kinds.addItem(formatKind(DestinationListItem.Kind.SMS), event -> startAdding(DestinationListItem.Kind.SMS));
+        kinds.addItem(formatKind(DestinationListItem.Kind.MOBILE),
+                event -> startAdding(DestinationListItem.Kind.MOBILE));
         return menuBar;
     }
 
@@ -87,24 +96,43 @@ public class DestinationManagementView
         return switch (record) {
             case SmsDestination sms -> new DestinationForm.Sms(service, sms);
             case RunboardDestination runboard -> new DestinationForm.Runboard(service, runboard);
+            case MobileDestination mobile -> new DestinationForm.Mobile(service, mobile, takeNewKey(mobile));
             case null -> throw new IllegalArgumentException("A new destination is added by its kind");
         };
     }
 
+    /**
+     * Returns the key of the mobile destination if it was just created, only once.
+     */
+    private @Nullable MobileKey takeNewKey(MobileDestination mobile) {
+        var created = justCreated;
+        justCreated = null;
+        return created != null && created.destination().id().equals(mobile.id()) ? created.key() : null;
+    }
+
     @Override
     protected RecordForm<DestinationDetails> createFormToAdd(@Nullable Object kind) {
-        return kind == DestinationListItem.Kind.SMS ? new DestinationForm.Sms(service, null)
-                : new DestinationForm.Runboard(service, null);
+        return switch ((DestinationListItem.Kind) requireNonNull(kind)) {
+            case SMS -> new DestinationForm.Sms(service, null);
+            case RUNBOARD -> new DestinationForm.Runboard(service, null);
+            case MOBILE -> new DestinationForm.Mobile(service, null, null);
+        };
     }
 
     @Override
     protected Destination save(@Nullable Destination record, DestinationDetails details) {
+        if (record == null && details instanceof MobileDestinationDetails mobileDetails) {
+            justCreated = service.createMobile(mobileDetails);
+            return justCreated.destination();
+        }
         return switch (record) {
             case null -> service.create(details);
             case SmsDestination sms when details instanceof SmsDestinationDetails smsDetails ->
                     service.update(sms.withDetails(smsDetails));
             case RunboardDestination runboard when details instanceof RunboardDestinationDetails runboardDetails ->
                     service.update(runboard.withDetails(runboardDetails));
+            case MobileDestination mobile when details instanceof MobileDestinationDetails mobileDetails ->
+                    service.update(mobile.withDetails(mobileDetails));
             default -> throw new IllegalArgumentException("The details are of another kind of destination");
         };
     }
@@ -121,13 +149,20 @@ public class DestinationManagementView
 
     @Override
     protected String getTitle(@Nullable Destination record) {
-        return getTranslation(record instanceof SmsDestination
-                ? "management.destination.edit-sms" : "management.destination.edit-runboard");
+        return getTranslation(switch (record) {
+            case SmsDestination sms -> "management.destination.edit-sms";
+            case RunboardDestination runboard -> "management.destination.edit-runboard";
+            case MobileDestination mobile -> "management.destination.edit-mobile";
+            case null -> throw new IllegalArgumentException("A new destination is added by its kind");
+        });
     }
 
     @Override
     protected String getTitleToAdd(@Nullable Object kind) {
-        return getTranslation(kind == DestinationListItem.Kind.SMS
-                ? "management.destination.add-sms" : "management.destination.add-runboard");
+        return getTranslation(switch ((DestinationListItem.Kind) requireNonNull(kind)) {
+            case SMS -> "management.destination.add-sms";
+            case RUNBOARD -> "management.destination.add-runboard";
+            case MOBILE -> "management.destination.add-mobile";
+        });
     }
 }

@@ -20,15 +20,17 @@ import java.util.stream.Collectors;
 import static net.pkhapps.idispatch.server.jooq.Sequences.DESTINATIONS_SEQ;
 import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.DESTINATION_RESOURCES;
+import static net.pkhapps.idispatch.server.jooq.Tables.MOBILE_DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.RUNBOARD_DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.SMS_DESTINATIONS;
 import static net.pkhapps.idispatch.server.jooq.Tables.SMS_DESTINATION_PHONE_NUMBERS;
 
 /**
  * Stores the {@link Destination}s in the {@code destinations} table, with the runboard keys in
- * {@code runboard_destinations}, the phone numbers in {@code sms_destination_phone_numbers} and the resources in
- * {@code destination_resources}. A runboard key that is already in use is refused by the table's unique constraint,
- * which reaches the caller as a {@link org.springframework.dao.DataIntegrityViolationException}.
+ * {@code runboard_destinations}, the phone numbers in {@code sms_destination_phone_numbers}, the hashes of the mobile
+ * keys in {@code mobile_destinations} and the resources in {@code destination_resources}. A runboard key that is
+ * already in use is refused by the table's unique constraint, which reaches the caller as a
+ * {@link org.springframework.dao.DataIntegrityViolationException}.
  */
 @Repository
 class DestinationRepository {
@@ -64,13 +66,16 @@ class DestinationRepository {
                                     matchingResources.stream().map(ResourceId::value).toList())))));
         }
         return dsl.select(DESTINATIONS.ID, DESTINATIONS.DESCRIPTION, DESTINATIONS.LOCALE, DESTINATIONS.ACTIVE,
-                        RUNBOARD_DESTINATIONS.ID)
+                        RUNBOARD_DESTINATIONS.ID, MOBILE_DESTINATIONS.ID)
                 .from(DESTINATIONS)
                 .leftJoin(RUNBOARD_DESTINATIONS).on(RUNBOARD_DESTINATIONS.ID.eq(DESTINATIONS.ID))
+                .leftJoin(MOBILE_DESTINATIONS).on(MOBILE_DESTINATIONS.ID.eq(DESTINATIONS.ID))
                 .where(DSL.and(conditions))
                 .orderBy(DESTINATIONS.ID)
                 .fetch(row -> new ListEntry(new DestinationId(row.value1()),
-                        row.value5() == null ? DestinationListItem.Kind.SMS : DestinationListItem.Kind.RUNBOARD,
+                        row.value5() != null ? DestinationListItem.Kind.RUNBOARD
+                                : row.value6() != null ? DestinationListItem.Kind.MOBILE
+                                : DestinationListItem.Kind.SMS,
                         row.value2(), toLocale(row.value3()), resourcesOf(row.value1()), row.value4()));
     }
 
@@ -95,15 +100,15 @@ class DestinationRepository {
                 .fetch(this::toDestination);
     }
 
+    /**
+     * Inserts a runboard or SMS destination; a mobile destination is inserted with
+     * {@link #insertMobile(MobileDestinationDetails, MobileKeyHash)}, as it needs its key.
+     */
     Destination insert(DestinationDetails details) {
-        var id = new DestinationId(dsl.nextval(DESTINATIONS_SEQ));
-        dsl.insertInto(DESTINATIONS)
-                .set(DESTINATIONS.ID, id.value())
-                .set(DESTINATIONS.VERSION, 0L)
-                .set(DESTINATIONS.ACTIVE, true)
-                .set(DESTINATIONS.DESCRIPTION, description(details))
-                .set(DESTINATIONS.LOCALE, details.locale().toString())
-                .execute();
+        if (details instanceof MobileDestinationDetails) {
+            throw new IllegalArgumentException("A mobile destination is inserted with the hash of its key");
+        }
+        var id = insertDestination(details);
         switch (details) {
             case SmsDestinationDetails sms -> {
                 dsl.insertInto(SMS_DESTINATIONS).set(SMS_DESTINATIONS.ID, id.value()).execute();
@@ -113,9 +118,45 @@ class DestinationRepository {
                     .set(RUNBOARD_DESTINATIONS.ID, id.value())
                     .set(RUNBOARD_DESTINATIONS.RUNBOARD_KEY, runboard.runboardKey().value())
                     .execute();
+            case MobileDestinationDetails mobile -> throw new AssertionError("Refused above");
         }
         insertResources(id, details);
         return findById(id).orElseThrow();
+    }
+
+    MobileDestination insertMobile(MobileDestinationDetails details, MobileKeyHash keyHash) {
+        var id = insertDestination(details);
+        dsl.insertInto(MOBILE_DESTINATIONS)
+                .set(MOBILE_DESTINATIONS.ID, id.value())
+                .set(MOBILE_DESTINATIONS.KEY_HASH, keyHash.value())
+                .execute();
+        insertResources(id, details);
+        return (MobileDestination) findById(id).orElseThrow();
+    }
+
+    /**
+     * Replaces the hash of the mobile destination's key. This is not a change of the destination's details, so its
+     * version stays, and an administrator editing the destination at the same time can still save.
+     *
+     * @return whether there is such a mobile destination
+     */
+    boolean replaceMobileKeyHash(DestinationId id, MobileKeyHash keyHash) {
+        return dsl.update(MOBILE_DESTINATIONS)
+                .set(MOBILE_DESTINATIONS.KEY_HASH, keyHash.value())
+                .where(MOBILE_DESTINATIONS.ID.eq(id.value()))
+                .execute() > 0;
+    }
+
+    private DestinationId insertDestination(DestinationDetails details) {
+        var id = new DestinationId(dsl.nextval(DESTINATIONS_SEQ));
+        dsl.insertInto(DESTINATIONS)
+                .set(DESTINATIONS.ID, id.value())
+                .set(DESTINATIONS.VERSION, 0L)
+                .set(DESTINATIONS.ACTIVE, true)
+                .set(DESTINATIONS.DESCRIPTION, description(details))
+                .set(DESTINATIONS.LOCALE, details.locale().toString())
+                .execute();
+        return id;
     }
 
     /**
@@ -150,6 +191,9 @@ class DestinationRepository {
                     .set(RUNBOARD_DESTINATIONS.RUNBOARD_KEY, runboard.runboardKey().value())
                     .where(RUNBOARD_DESTINATIONS.ID.eq(id.value()))
                     .execute();
+            case MobileDestinationDetails mobile -> {
+                // The key is replaced on its own, with replaceMobileKeyHash
+            }
         }
         dsl.deleteFrom(DESTINATION_RESOURCES).where(DESTINATION_RESOURCES.DESTINATION_ID.eq(id.value())).execute();
         insertResources(id, details);
@@ -197,6 +241,10 @@ class DestinationRepository {
         if (runboardKey.isPresent()) {
             return new RunboardDestination(id, row.getVersion(), new RunboardDestinationDetails(description, locale,
                     resources, new RunboardKey(runboardKey.get())), row.getActive());
+        }
+        if (dsl.fetchExists(MOBILE_DESTINATIONS, MOBILE_DESTINATIONS.ID.eq(row.getId()))) {
+            return new MobileDestination(id, row.getVersion(), new MobileDestinationDetails(description, locale,
+                    resources.iterator().next()), row.getActive());
         }
         var phoneNumbers = dsl.select(SMS_DESTINATION_PHONE_NUMBERS.PHONE_NUMBERS)
                 .from(SMS_DESTINATION_PHONE_NUMBERS)
