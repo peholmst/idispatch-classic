@@ -3,6 +3,7 @@ package net.pkhapps.idispatch.runboard;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalTime;
+import java.util.concurrent.CompletableFuture;
 
 class ClockView extends JComponent {
 
@@ -12,9 +13,25 @@ class ClockView extends JComponent {
         scheduleRepaint();
     });
 
+    // The address can change (DHCP, a cable plugged into another network), so look it up again now and then. The lookup
+    // goes through the network interfaces, so it runs off the event dispatch thread.
+    private final Timer addressTimer = new Timer(30_000, e -> lookUpAddress());
+    private volatile String address = "";
+
     public ClockView() {
         repaintTimer.setRepeats(false);
+        addressTimer.setInitialDelay(0);
         scheduleRepaint();
+        addressTimer.start();
+    }
+
+    private void lookUpAddress() {
+        CompletableFuture.supplyAsync(LocalAddresses::lookup).thenAccept(found -> SwingUtilities.invokeLater(() -> {
+            if (!found.equals(address)) {
+                address = found;
+                repaint();
+            }
+        }));
     }
 
     private void scheduleRepaint() {
@@ -27,8 +44,10 @@ class ClockView extends JComponent {
         super.setVisible(visible);
         if (visible) {
             scheduleRepaint();
+            addressTimer.restart();
         } else {
             repaintTimer.stop();
+            addressTimer.stop();
         }
     }
 
@@ -109,6 +128,15 @@ class ClockView extends JComponent {
             var x2 = (int) (origo_x + secondLength * sin);
             var y2 = (int) (origo_y - secondLength * cos);
             g2.drawLine(origo_x, origo_y, x2, y2);
+        }
+
+        // Show the IP address in the bottom left corner, for whoever needs to log in over SSH for maintenance
+        {
+            var text = address.isEmpty() ? "No IP address" : address;
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2.setFont(getFont().deriveFont(Font.PLAIN, 14f));
+            g2.setColor(Color.GRAY);
+            g2.drawString(text, 10, getHeight() - 10 - g2.getFontMetrics().getDescent());
         }
     }
 }
