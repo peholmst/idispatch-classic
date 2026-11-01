@@ -188,6 +188,23 @@ class DispatchingTest extends UseCaseTest {
     }
 
     @Test
+    void dispatcherFiltersTheAvailableResourcesByCallSign() {
+        var prefix = unique("CS");
+        var wanted = given.resource(prefix + "A", ResourceState.AVAILABLE);
+        var other = given.resource(unique("CS"), ResourceState.AVAILABLE);
+        var dispatcher = dispatcherAtWork();
+        dispatcher.opensANewAssignment();
+
+        dispatcher.filtersAvailableResourcesBy(prefix.substring(2).toLowerCase());
+
+        assertThat(dispatcher.availableResources()).containsExactly(wanted.callSign());
+
+        dispatcher.filtersAvailableResourcesBy("");
+
+        assertThat(dispatcher.availableResources()).contains(wanted.callSign(), other.callSign());
+    }
+
+    @Test
     void deletedResourcesAreNeitherListedNorOffered() {
         var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
         given.deleteResource(resource);

@@ -217,6 +217,10 @@ public class Dispatcher {
         return page.canDispatchSelected();
     }
 
+    public void filtersAvailableResourcesBy(String text) {
+        page.filterAvailableResources(text);
+    }
+
     public void filtersResourcesBy(String text) {
         page.filterResources(text);
     }

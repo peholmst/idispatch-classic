@@ -21,6 +21,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.function.SerializableRunnable;
 import com.vaadin.flow.signals.Signal;
@@ -109,31 +110,12 @@ class AssignmentPanel extends VerticalLayout {
         description.bindValue(viewModel.description(), viewModel::setDescription);
 
         assignmentLayout.add(new H4(getTranslation("dispatch.resources")));
-        var availableResource = new ComboBox<ResourceListItem>();
-        availableResource.setWidthFull();
-        availableResource.setItemLabelGenerator(ResourceListItem::callSign);
-        availableResource.setAriaLabel(getTranslation("dispatch.available-resource"));
-        Signal.effect(availableResource, () -> availableResource.setItems(viewModel.availableResources().get()));
-        availableResource.bindValue(viewModel.resourceToAdd(), viewModel::chooseResourceToAdd);
-        var addToAssignment = new Button(VaadinIcon.PLUS_CIRCLE.create(), event -> viewModel.addResource());
-        addToAssignment.setAriaLabel(getTranslation("dispatch.add-resource"));
-        var assignmentActions = new HorizontalLayout(availableResource, addToAssignment);
-        assignmentActions.setFlexGrow(1.0, availableResource);
-        assignmentActions.setWidthFull();
-        assignmentLayout.add(assignmentActions);
-
-        var assignedResourcesGrid = new Grid<ResourceRow>();
-        assignedResourcesGrid.addThemeVariants(GridVariant.ROW_STRIPES);
-        assignedResourcesGrid.setSizeFull();
-        assignedResourcesGrid.addColumn(ResourceRow::callSign).setHeader(getTranslation("dispatch.resource"));
-        assignedResourcesGrid.addColumn(new ComponentRenderer<>(
-                        row -> createStatusCell(row, () -> viewModel.removeResource(row.resourceId()))))
-                .setHeader(getTranslation("dispatch.state"));
-        assignedResourcesGrid.setSelectionMode(Grid.SelectionMode.MULTI);
-        assignedResourcesGrid.setAriaLabel(getTranslation("dispatch.assigned-resources"));
-        bindItems(assignedResourcesGrid, viewModel.assignedResources()).setIdentifierProvider(ResourceRow::resourceId);
-        assignedResourcesGrid.asMultiSelect().bindValue(viewModel.selectedResources(), viewModel::selectResources);
-        assignmentLayout.add(assignedResourcesGrid);
+        var assignedResources = createAssignedResourcesGrid(viewModel);
+        var resources = new HorizontalLayout(createAvailableResources(viewModel), assignedResources);
+        resources.setWidthFull();
+        resources.setFlexGrow(1.0, assignedResources);
+        resources.setMinHeight(300, Unit.PIXELS);
+        assignmentLayout.addAndExpand(resources);
 
         var dispatchAll = new Button(getTranslation("dispatch.dispatch-all"),
                 event -> showWhatIsMissing(viewModel.dispatchAll()));
@@ -156,6 +138,60 @@ class AssignmentPanel extends VerticalLayout {
 
         add(noAssignmentSelected);
         add(assignmentForm);
+    }
+
+    /**
+     * The resources that can be put on the assignment, filtered by call sign, each with a button that puts it there.
+     */
+    private Component createAvailableResources(AssignmentViewModel viewModel) {
+        var filterField = new TextField();
+        filterField.setPlaceholder(getTranslation("dispatch.filter-resources"));
+        filterField.setAriaLabel(getTranslation("dispatch.filter-available-resources-label"));
+        filterField.setPrefixComponent(VaadinIcon.SEARCH.create());
+        filterField.setClearButtonVisible(true);
+        filterField.setValueChangeMode(ValueChangeMode.LAZY);
+        filterField.setWidthFull();
+        filterField.bindValue(viewModel.availableResourceFilter(), viewModel::filterAvailableResources);
+
+        var availableResourcesGrid = new Grid<ResourceListItem>();
+        availableResourcesGrid.addThemeVariants(GridVariant.ROW_STRIPES);
+        availableResourcesGrid.setSizeFull();
+        availableResourcesGrid.addColumn(ResourceListItem::callSign).setHeader(getTranslation("dispatch.resource"));
+        availableResourcesGrid.addColumn(new ComponentRenderer<>(
+                        resource -> createReserveButton(resource, () -> viewModel.addResource(resource.id()))))
+                .setAutoWidth(true).setFlexGrow(0);
+        availableResourcesGrid.setAriaLabel(getTranslation("dispatch.available-resources"));
+        bindItems(availableResourcesGrid, viewModel.availableResources())
+                .setIdentifierProvider(ResourceListItem::id);
+
+        var layout = new VerticalLayout(filterField, availableResourcesGrid);
+        layout.setPadding(false);
+        layout.setFlexGrow(1.0, availableResourcesGrid);
+        layout.setHeightFull();
+        layout.setWidth(40, Unit.PERCENTAGE);
+        return layout;
+    }
+
+    private Button createReserveButton(ResourceListItem resource, SerializableRunnable addToAssignment) {
+        var reserve = new Button(getTranslation("dispatch.reserve-resource"), event -> addToAssignment.run());
+        reserve.addThemeVariants(ButtonVariant.SMALL);
+        reserve.setAriaLabel(getTranslation("dispatch.reserve-resource-label", resource.callSign()));
+        return reserve;
+    }
+
+    private Component createAssignedResourcesGrid(AssignmentViewModel viewModel) {
+        var assignedResourcesGrid = new Grid<ResourceRow>();
+        assignedResourcesGrid.addThemeVariants(GridVariant.ROW_STRIPES);
+        assignedResourcesGrid.setHeightFull();
+        assignedResourcesGrid.addColumn(ResourceRow::callSign).setHeader(getTranslation("dispatch.resource"));
+        assignedResourcesGrid.addColumn(new ComponentRenderer<>(
+                        row -> createStatusCell(row, () -> viewModel.removeResource(row.resourceId()))))
+                .setHeader(getTranslation("dispatch.state"));
+        assignedResourcesGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+        assignedResourcesGrid.setAriaLabel(getTranslation("dispatch.assigned-resources"));
+        bindItems(assignedResourcesGrid, viewModel.assignedResources()).setIdentifierProvider(ResourceRow::resourceId);
+        assignedResourcesGrid.asMultiSelect().bindValue(viewModel.selectedResources(), viewModel::selectResources);
+        return assignedResourcesGrid;
     }
 
     private Component createNoAssignmentSelectedComponent() {
