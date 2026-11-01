@@ -9,7 +9,9 @@ the pairing link `…/mobile/#pair=<key>`; the app stores the key in IndexedDB, 
 with every API call in an `Authorization: Bearer` header. The server stores only the key's hash.
 
 The app keeps the event stream `…/api/mobile/events` open, which tells it the unit and every change of its status,
-whoever made it. It reads the stream with `fetch`, since `EventSource` can't send the key in a header, and connects
+whoever made it, and every dispatch notification for the unit. The server sends a notification again on every connect
+until the app confirms it, which the app does once it has stored it in IndexedDB; an alert stays there until the user
+deletes it. It reads the stream with `fetch`, since `EventSource` can't send the key in a header, and connects
 again whenever the stream ends, ever more slowly while the server can't be reached. The status buttons work only while
 the stream is open: a change is never queued to be sent later. The state colors are the dispatcher's, imported from the
 server's `styles/dispatch-view-styles.css`.

@@ -1,14 +1,17 @@
 import { html, LitElement, nothing } from 'lit';
 import '@vaadin/button';
-import { apiBase, changeStatus, type Unit } from './api';
+import { apiBase, changeStatus, confirmNotification, type Notification, type Unit } from './api';
 import { type ConnectionState, UnitConnection } from './events';
+import { formatTime } from './format';
+import { MessageStore } from './messages';
 import { indexedDbKeyStore, pair } from './pairing';
 import { type Texts, textsFor } from './texts';
 
 /**
  * The app: pairs with the key in the address, if there is one, keeps the unit's event stream open, and shows the
- * unit's status with a button for each state it may set next. The buttons work only while the stream is open, that is
- * while the server is reachable: a change is never queued to be sent later.
+ * unit's status with a button for each state it may set next, and the alerts it has received. The buttons work only
+ * while the stream is open, that is while the server is reachable: a change is never queued to be sent later. An alert
+ * is stored before the app confirms it to the server, and stays until the user deletes it.
  */
 export class MobileApp extends LitElement {
 
@@ -18,6 +21,8 @@ export class MobileApp extends LitElement {
     unit: { state: true },
     changing: { state: true },
     error: { state: true },
+    messages: { state: true },
+    deleting: { state: true },
   };
 
   declare paired: boolean | null;
@@ -26,6 +31,12 @@ export class MobileApp extends LitElement {
   /** Whether a status change is on its way, during which the buttons are disabled. */
   declare changing: boolean;
   declare error: keyof Texts | null;
+  /** The stored alerts, newest first. */
+  declare messages: Notification[];
+  /** The alert whose deletion the user is asked to confirm. */
+  declare deleting: number | null;
+
+  private readonly store = new MessageStore();
 
   private key: string | null = null;
   private stream: UnitConnection | null = null;
@@ -43,6 +54,8 @@ export class MobileApp extends LitElement {
     this.unit = null;
     this.changing = false;
     this.error = null;
+    this.messages = [];
+    this.deleting = null;
   }
 
   // Rendered without shadow DOM, so that the Aura theme's document styles reach the Vaadin components
@@ -56,12 +69,15 @@ export class MobileApp extends LitElement {
     document.addEventListener('visibilitychange', this.reconnectWhenVisible);
     this.key = await pair(window.location, url => window.history.replaceState(null, '', url), indexedDbKeyStore());
     this.paired = this.key !== null;
+    await this.store.forgetOldDeleted();
+    this.messages = await this.store.list();
     if (this.key !== null) {
       this.stream = new UnitConnection(this.key, apiBase() + 'events', {
         unit: unit => {
           this.unit = unit;
           document.documentElement.lang = unit.locale;
         },
+        notification: notification => void this.receive(notification),
         state: state => {
           this.connection = state;
           if (state === 'not-paired') {
@@ -78,6 +94,25 @@ export class MobileApp extends LitElement {
     window.removeEventListener('online', this.reconnect);
     document.removeEventListener('visibilitychange', this.reconnectWhenVisible);
     this.stream?.stop();
+  }
+
+  /**
+   * Stores the alert, then confirms it to the server. An alert that comes again, because the confirmation was lost, is
+   * confirmed again but not stored twice, nor brought back after the user deleted it.
+   */
+  private async receive(notification: Notification) {
+    if (await this.store.add(notification)) {
+      this.messages = await this.store.list();
+    }
+    if (this.key !== null) {
+      await confirmNotification(this.key, notification.id);
+    }
+  }
+
+  private async deleteMessage(id: number) {
+    this.deleting = null;
+    await this.store.delete(id);
+    this.messages = await this.store.list();
   }
 
   private async change(state: string) {
@@ -141,7 +176,40 @@ export class MobileApp extends LitElement {
         ${unit.nextStates.map(next => html`
           <vaadin-button class="status-button ${stateClass(next.state)}" data-state=${next.state} ?disabled=${!online || this.changing}
                          @click=${() => this.change(next.state)}>${next.label}</vaadin-button>`)}
+      </section>
+      <section class="messages">
+        <h2>${t.messages}</h2>
+        ${this.messages.length === 0
+          ? html`<p class="no-messages">${t.noMessages}</p>`
+          : this.messages.map(message => this.renderMessage(message, t, unit.locale))}
       </section>`;
+  }
+
+  private renderMessage(message: Notification, t: Texts, locale: string) {
+    return html`
+      <article class="message-card" data-id=${message.id}>
+        <header>
+          <span class="urgency">${message.urgency}</span>
+          <span class="type">${message.typeCode} ${message.type}</span>
+          <time datetime=${message.timestamp}>${formatTime(message.timestamp, locale)}</time>
+        </header>
+        <p class="address">${message.address}, ${message.municipality}</p>
+        ${message.description ? html`<p class="description">${message.description}</p>` : nothing}
+        <p class="resources">${t.resources}: ${message.resources.join(', ')}</p>
+        ${this.deleting === message.id
+          ? html`
+            <div class="confirm-delete" role="group" aria-label=${t.confirmDelete}>
+              <span>${t.confirmDelete}</span>
+              <vaadin-button theme="error primary" @click=${() => this.deleteMessage(message.id)}>
+                ${t.delete}
+              </vaadin-button>
+              <vaadin-button @click=${() => (this.deleting = null)}>${t.cancel}</vaadin-button>
+            </div>`
+          : html`
+            <vaadin-button theme="tertiary" class="delete" @click=${() => (this.deleting = message.id)}>
+              ${t.delete}
+            </vaadin-button>`}
+      </article>`;
   }
 }
 

@@ -20,6 +20,22 @@ export interface Unit {
   nextStates: State[];
 }
 
+/** A dispatch notification, in the destination's language. */
+export interface Notification {
+  /** What the app confirms receiving it with. */
+  id: number;
+  /** When it was sent, as an ISO 8601 instant. */
+  timestamp: string;
+  urgency: string;
+  typeCode: string;
+  type: string;
+  municipality: string;
+  address: string;
+  description: string;
+  /** The call signs of every resource on the assignment. */
+  resources: string[];
+}
+
 export type StatusChangeResult =
   | { kind: 'changed'; unit: Unit }
   /** The state may not follow the current one, which `unit` has. */
@@ -64,5 +80,25 @@ export async function changeStatus(key: string, state: string, base: string = ap
       return { kind: 'not-paired' };
     default:
       return { kind: 'no-connection' };
+  }
+}
+
+/**
+ * Confirms that the app has stored the notification, so that the server stops sending it again.
+ *
+ * @return whether the server took the confirmation; if not, the server sends the notification again later and the app
+ * confirms it then
+ */
+export async function confirmNotification(key: string, id: number, base: string = apiBase(),
+                                          fetchFn: typeof fetch = fetch): Promise<boolean> {
+  try {
+    const response = await fetchFn(`${base}notifications/${id}/receipt`, {
+      method: 'PUT',
+      headers: authorization(key),
+      cache: 'no-store',
+    });
+    return response.ok;
+  } catch {
+    return false;
   }
 }
