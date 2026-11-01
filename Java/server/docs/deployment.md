@@ -38,9 +38,14 @@ Copy the client secret from the client's **Credentials** tab.
 
 ## 2. Configure and start the containers
 
-On the Docker host, in a checkout of the repository:
+On the Docker host, check out the release to run. Releases are tagged `idispatch-server/v<version>`; the
+[releases page](https://github.com/peholmst/idispatch-classic/releases) lists them, with what changed and which
+runboard versions they work with. Use a tag rather than `main`, which holds unreleased work.
 
 ```shell
+git clone https://github.com/peholmst/idispatch-classic.git
+cd idispatch-classic
+git checkout idispatch-server/v3.0.0
 cd Java/server/deploy
 cp .env.example .env
 ```
@@ -191,9 +196,10 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## 4. Point the runboards at the server
 
-Build the runboard package with `mvn -pl runboard -Passemble package` in this directory. It is
-`runboard/target/iDispatchRunboard-<version>.zip`, for Windows, macOS and Linux, and needs Java 25 on the runboard
-computer. The `README.txt` inside it explains how to install it.
+Download the runboard package, `iDispatchRunboard-<version>.zip`, from the
+[releases page](https://github.com/peholmst/idispatch-classic/releases) (the `idispatch-runboard/v<version>` releases).
+It is for Windows, macOS and Linux, and needs Java 25 on the runboard computer. The `README.txt` inside it explains how
+to install it.
 
 In each runboard's `runboard.properties`, use `wss://` and the context path:
 
@@ -228,3 +234,21 @@ See [keycloak.md](keycloak.md), "Troubleshooting", for login problems. Problems 
 | The server stays in `health: starting` and uses all the CPU | It fails to start and Docker restarts it at once, again and again: each restart starts a new JVM and resets the health status. `docker compose logs idispatch` shows why it fails, usually one of the errors below. |
 | The server restarts over and over, and the log says *Unable to resolve the Configuration with the provided Issuer* | The container can't reach Keycloak at `KEYCLOAK_ISSUER_URI`: check the URL for typos, and see "Reaching Keycloak from the container". |
 | The log says *PKIX path building failed* | The JVM doesn't trust Keycloak's certificate; see "Reaching Keycloak from the container". |
+
+## Upgrading
+
+Read the release notes of every release between the one you run and the new one, then, in the checkout:
+
+```shell
+git fetch --tags
+git checkout idispatch-server/v<version>
+cd Java/server/deploy
+docker compose up -d --build
+```
+
+Compose rebuilds the server image from the checked-out sources and replaces the container; the database stays in
+its volume. The server migrates the database to the new version with Flyway when it starts, so going back to an older
+release afterwards is not supported: back up the database first, for example with
+`docker compose exec postgres pg_dump -U idispatch idispatch > idispatch-backup.sql`.
+
+The version that runs is shown next to the name in the drawer.

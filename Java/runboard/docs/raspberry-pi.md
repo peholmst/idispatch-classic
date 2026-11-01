@@ -46,8 +46,10 @@ sudo apt install -y cage xwayland
 
 ## 3. Install the runboard
 
-Copy the package (`iDispatchRunboard-<version>.zip`, see the README in it) to the Pi, for example with
-`scp iDispatchRunboard-3.0.0.zip <user>@<pi>:`, and then on the Pi:
+Download the package, `iDispatchRunboard-<version>.zip`, from the `idispatch-runboard/v<version>` release on the
+[releases page](https://github.com/peholmst/idispatch-classic/releases) (see the README in it), and copy it to the Pi,
+for example with `scp iDispatchRunboard-3.0.0.zip <user>@<pi>:`, or download it there with `curl -LO` and the zip's
+link. Then on the Pi:
 
 ```bash
 unzip iDispatchRunboard-3.0.0.zip     # creates ~/iDispatchRunboard
