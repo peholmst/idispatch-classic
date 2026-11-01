@@ -1,0 +1,28 @@
+/* The resource status view: a card per resource, colored by its state */
+.resource-status-content {
+    overflow: auto;
+    padding: var(--vaadin-padding-m);
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.resource-status-state-filter {
+    min-width: 16rem;
+}
+
+vaadin-card.resource-status-card {
+    --vaadin-card-background: var(--resource-state-background);
+    --vaadin-card-title-color: var(--resource-state-text-color);
+    --vaadin-card-subtitle-color: var(--resource-state-text-color);
+    --vaadin-card-title-font-size: var(--aura-font-size-l);
+    --vaadin-card-title-font-weight: var(--aura-font-weight-semibold);
+    color: var(--resource-state-text-color);
+}
+
+.resource-status-assignment {
+    font-size: var(--aura-font-size-s);
+}
+
+.resource-status-empty {
+    color: var(--vaadin-text-color-secondary);
+}

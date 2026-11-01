@@ -21,6 +21,7 @@ import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeManagementView;
 import net.pkhapps.idispatch.server.dashboard.DashboardView;
 import net.pkhapps.idispatch.server.dispatch.DestinationManagementView;
 import net.pkhapps.idispatch.server.dispatcher.DispatchView;
+import net.pkhapps.idispatch.server.dispatcher.ResourceStatusView;
 import net.pkhapps.idispatch.server.municipality.MunicipalityManagementView;
 import net.pkhapps.idispatch.server.report.ReportsView;
 import net.pkhapps.idispatch.server.resource.ResourceManagementView;
@@ -101,6 +102,8 @@ public class RootLayout extends AppLayout implements RouterLayout {
         nav.addItem(new SideNavItem(getTranslation("nav.home"), DashboardView.class, VaadinIcon.HOME.create()));
         if (isUserInRole(Roles.ROLE_DISPATCHER)) {
             nav.addItem(new SideNavItem(getTranslation("nav.dispatcher"), DispatchView.class, VaadinIcon.HEADSET.create()));
+            nav.addItem(new SideNavItem(getTranslation("nav.resource-status"), ResourceStatusView.class,
+                    VaadinIcon.GRID_SMALL.create()));
         }
         if (isUserInRole(Roles.ROLE_REPORT_READER) || isUserInRole(Roles.ROLE_REPORT_WRITER)
                 || isUserInRole(Roles.ROLE_REPORT_REVIEWER)) {

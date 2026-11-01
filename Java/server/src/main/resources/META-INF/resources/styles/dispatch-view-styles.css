@@ -1,34 +1,40 @@
+/* The colors of the resource states, for the state buttons and the resource status cards */
 .resource-state-at_station {
-    --vaadin-button-background: darkgreen;
-    --vaadin-button-text-color: white;
+    --resource-state-background: darkgreen;
+    --resource-state-text-color: white;
 }
 
 .resource-state-available {
-    --vaadin-button-background: greenyellow;
-    --vaadin-button-text-color: black;
+    --resource-state-background: greenyellow;
+    --resource-state-text-color: black;
 }
 
 .resource-state-out_of_service {
-    --vaadin-button-background: orange;
-    --vaadin-button-text-color: black;
+    --resource-state-background: orange;
+    --resource-state-text-color: black;
 }
 
 .resource-state-reserved {
-    --vaadin-button-background: deeppink;
-    --vaadin-button-text-color: black;
+    --resource-state-background: deeppink;
+    --resource-state-text-color: black;
 }
 
 .resource-state-dispatched {
-    --vaadin-button-background: orangered;
-    --vaadin-button-text-color: white;
+    --resource-state-background: orangered;
+    --resource-state-text-color: white;
 }
 
 .resource-state-en_route {
-    --vaadin-button-background: yellow;
-    --vaadin-button-text-color: black;
+    --resource-state-background: yellow;
+    --resource-state-text-color: black;
 }
 
 .resource-state-on_scene {
-    --vaadin-button-background: dodgerblue;
-    --vaadin-button-text-color: white;
+    --resource-state-background: dodgerblue;
+    --resource-state-text-color: white;
+}
+
+vaadin-button[class*="resource-state-"] {
+    --vaadin-button-background: var(--resource-state-background);
+    --vaadin-button-text-color: var(--resource-state-text-color);
 }

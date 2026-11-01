@@ -13,6 +13,7 @@ import java.util.Map;
 public class Dispatcher {
 
     private final DispatcherPage page;
+    private final ResourceStatusPage statusPage;
 
     /**
      * Logs in as the given user and opens the dispatcher view.
@@ -25,7 +26,9 @@ public class Dispatcher {
      * Logs in as the given user, whose user interface is in the given language, and opens the dispatcher view.
      */
     public Dispatcher(BrowserlessUserContext user, DispatcherPage.Language language) {
-        page = new DispatcherPage(user.newWindow(), language);
+        var window = user.newWindow();
+        page = new DispatcherPage(window, language);
+        statusPage = new ResourceStatusPage(window);
         page.open();
     }
 
@@ -129,7 +132,45 @@ public class Dispatcher {
         page.receiveUpdates();
     }
 
+    /**
+     * Opens the view with a card for every resource.
+     */
+    public void opensResourceStatus() {
+        statusPage.open();
+    }
+
+    public void filtersResourceStatusByCallSign(String text) {
+        statusPage.filterByCallSign(text);
+    }
+
+    public void filtersResourceStatusByStates(String... states) {
+        statusPage.filterByStates(states);
+    }
+
+    public void clearsTheStateFilter() {
+        statusPage.clearStateFilter();
+    }
+
     // --- What the dispatcher sees ---
+
+    /**
+     * The call signs on the resource status cards, in the order they are shown.
+     */
+    public List<String> resourceCards() {
+        return statusPage.callSigns();
+    }
+
+    public String stateOnCardOf(String callSign) {
+        return statusPage.stateOf(callSign);
+    }
+
+    public String assignmentOnCardOf(String callSign) {
+        return statusPage.assignmentOf(callSign);
+    }
+
+    public boolean isToldNoResourcesMatch() {
+        return statusPage.showsNoResources();
+    }
 
     public List<String> openAssignments() {
         return page.assignmentNumbers();

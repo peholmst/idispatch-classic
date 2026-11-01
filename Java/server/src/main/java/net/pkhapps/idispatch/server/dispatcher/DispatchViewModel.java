@@ -9,15 +9,11 @@ import net.pkhapps.idispatch.server.dispatch.DispatchService;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.resource.ResourceState;
-import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import org.jspecify.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * What the dispatcher view knows and can do: the open assignments, the one the dispatcher has selected, which the
@@ -161,17 +157,6 @@ class DispatchViewModel {
     }
 
     private void loadResources() {
-        var statuses = resourceStatusService.getStatusOfAllResources();
-        var callSigns = resourceQueries.findCallSigns(statuses.stream().map(ResourceStatus::resourceId).toList());
-        var assignments = new HashMap<AssignmentId, AssignmentListItem>();
-        assignmentService.findOpenAssignments().forEach(item -> assignments.put(item.id(), item));
-        // Resources can still refer to an assignment that has been closed
-        var others = statuses.stream().map(ResourceStatus::assignment).filter(Objects::nonNull)
-                .filter(id -> !assignments.containsKey(id)).collect(Collectors.toSet());
-        assignmentService.findAssignments(others).forEach(item -> assignments.put(item.id(), item));
-        allResources.set(statuses.stream()
-                .map(status -> new ResourceRow(status, callSigns.get(status.resourceId()),
-                        status.assignment() == null ? null : assignments.get(status.assignment())))
-                .toList());
+        allResources.set(ResourceRows.load(resourceStatusService, resourceQueries, assignmentService));
     }
 }

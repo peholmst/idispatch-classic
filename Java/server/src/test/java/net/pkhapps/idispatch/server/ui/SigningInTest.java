@@ -61,7 +61,7 @@ class SigningInTest extends UseCaseTest {
 
         user.openHome();
 
-        assertThat(user.navigationItems()).containsExactly("Home", "Dispatcher", "My Account", "Log Out");
+        assertThat(user.navigationItems()).containsExactly("Home", "Dispatcher", "Resource Status", "My Account", "Log Out");
         assertThat(user.linkOf("My Account")).isEqualTo(KEYCLOAK_REALM + "/account");
         assertThat(user.opensInNewTab("My Account")).isTrue();
     }
