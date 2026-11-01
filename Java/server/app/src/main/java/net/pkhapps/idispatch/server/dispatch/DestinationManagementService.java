@@ -27,6 +27,13 @@ import java.util.Optional;
 @PreAuthorize(Roles.HAS_ADMIN)
 class DestinationManagementService {
 
+    /**
+     * A mobile destination with the key just generated for it. Only the key's hash is stored, so this is the only time
+     * the key can be shown.
+     */
+    record KeyedMobileDestination(MobileDestination destination, MobileKey key) {
+    }
+
     private static final Logger log = LoggerFactory.getLogger(DestinationManagementService.class);
 
     private final DestinationRepository repository;
@@ -63,10 +70,40 @@ class DestinationManagementService {
         return repository.findById(id);
     }
 
+    /**
+     * Creates a runboard or SMS destination; a mobile one is created with
+     * {@link #createMobile(MobileDestinationDetails)}.
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Destination create(DestinationDetails details) {
         log.debug("Creating destination for resources {}", details.resources());
         return repository.insert(details);
+    }
+
+    /**
+     * Creates a mobile destination with a new key.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public KeyedMobileDestination createMobile(MobileDestinationDetails details) {
+        log.debug("Creating mobile destination for resource {}", details.resource());
+        var key = MobileKey.random();
+        return new KeyedMobileDestination(repository.insertMobile(details, key.hash()), key);
+    }
+
+    /**
+     * Gives the mobile destination a new key, after which the app paired with the old one is no longer let in.
+     *
+     * @return the new key
+     * @throws IllegalArgumentException if there is no such mobile destination
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public MobileKey replaceMobileKey(DestinationId id) {
+        log.debug("Replacing the key of mobile destination {}", id.value());
+        var key = MobileKey.random();
+        if (!repository.replaceMobileKeyHash(id, key.hash())) {
+            throw new IllegalArgumentException("No mobile destination " + id.value());
+        }
+        return key;
     }
 
     /**

@@ -1,20 +1,31 @@
 package net.pkhapps.idispatch.server.dispatch;
 
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.i18n.I18NProvider;
+import com.vaadin.flow.server.VaadinServletRequest;
 import com.vaadin.flow.signals.Signal;
+import com.vaadin.flow.signals.local.ValueSignal;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.shared.Bilingual;
+import net.pkhapps.idispatch.server.ui.QrCode;
 import net.pkhapps.idispatch.server.ui.management.RecordForm;
 import org.jspecify.annotations.Nullable;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,18 +73,13 @@ abstract sealed class DestinationForm extends RecordForm<DestinationDetails> {
      * Adds the resources last, as the subclass's own fields go between them and the language.
      */
     protected void addResourcesField(DestinationManagementService service, @Nullable Destination destination) {
-        // The call signs of the resources offered, and of any deleted ones that the destination still has
-        var callSigns = new HashMap<ResourceId, String>();
-        var applicable = service.findApplicableResources();
-        applicable.forEach(resource -> callSigns.put(resource.id(), resource.callSign()));
         var initial = destination == null ? Set.<ResourceId>of() : destination.resources();
-        service.findResources(initial).forEach(resource -> callSigns.put(resource.id(), resource.callSign()));
-
+        var choices = new ResourceChoices(service, initial);
         var resources = new MultiSelectComboBox<ResourceId>(getTranslation("management.resources"));
         resources.setRequiredIndicatorVisible(true);
-        resources.setItemLabelGenerator(id -> callSigns.getOrDefault(id, ""));
+        resources.setItemLabelGenerator(choices::callSign);
         // Set the items before binding, since setting them clears the value
-        resources.setItems(applicable.stream().map(ResourceListItem::id).toList());
+        resources.setItems(choices.ids());
         getContent().add(resources);
 
         var touched = touchedSignal();
@@ -83,6 +89,53 @@ abstract sealed class DestinationForm extends RecordForm<DestinationDetails> {
         showError(resources, error, touched);
         resourcesValue = value;
         resourcesError = error;
+    }
+
+    /**
+     * Adds a field for exactly one resource last, for a destination that has only one.
+     */
+    protected void addResourceField(DestinationManagementService service, @Nullable Destination destination) {
+        var initial = destination == null ? Set.<ResourceId>of() : destination.resources();
+        var choices = new ResourceChoices(service, initial);
+        var resource = new ComboBox<ResourceId>(getTranslation("management.destination.resource"));
+        resource.setRequiredIndicatorVisible(true);
+        resource.setItemLabelGenerator(choices::callSign);
+        // Set the items before binding, since setting them clears the value
+        resource.setItems(choices.ids());
+        getContent().add(resource);
+
+        var touched = touchedSignal();
+        var value = bind(resource, initial.stream().findFirst().orElse(null), touched);
+        var error = value.map(chosen -> chosen == null
+                ? getTranslation("management.destination.resource-required") : null);
+        showError(resource, error, touched);
+        resourcesValue = value.map(chosen -> chosen == null ? Set.of() : Set.of(chosen));
+        resourcesError = error;
+    }
+
+    /**
+     * The resources that can be chosen, which are the ones not deleted, with the call signs of those and of any deleted
+     * ones that the destination still has.
+     */
+    private static final class ResourceChoices {
+
+        private final Map<ResourceId, String> callSigns = new HashMap<>();
+        private final List<ResourceId> ids;
+
+        ResourceChoices(DestinationManagementService service, Set<ResourceId> chosen) {
+            var applicable = service.findApplicableResources();
+            applicable.forEach(resource -> callSigns.put(resource.id(), resource.callSign()));
+            service.findResources(chosen).forEach(resource -> callSigns.put(resource.id(), resource.callSign()));
+            ids = applicable.stream().map(ResourceListItem::id).toList();
+        }
+
+        List<ResourceId> ids() {
+            return ids;
+        }
+
+        String callSign(ResourceId id) {
+            return callSigns.getOrDefault(id, "");
+        }
     }
 
     /**
@@ -171,6 +224,96 @@ abstract sealed class DestinationForm extends RecordForm<DestinationDetails> {
                     ? Optional.of(new RunboardDestinationDetails(descriptionValue(), localeValue(), resourcesValue(),
                     new RunboardKey(key.get())))
                     : Optional.empty());
+        }
+
+        @Override
+        protected Signal<Optional<DestinationDetails>> draft() {
+            return draft;
+        }
+    }
+
+    /**
+     * A mobile destination: one resource, and the pairing of the app below it. The key is shown as a QR code for the
+     * pairing link only right after it was generated, when the destination was created or when the administrator
+     * generates a new one, since only its hash is stored.
+     */
+    static final class Mobile extends DestinationForm {
+
+        private final Signal<Optional<DestinationDetails>> draft;
+        private final ValueSignal<Boolean> editable = new ValueSignal<>(true);
+
+        /**
+         * @param newKey the key just generated for the destination, to show, or {@code null} if there is none
+         */
+        Mobile(DestinationManagementService service, @Nullable MobileDestination destination,
+               @Nullable MobileKey newKey) {
+            super(destination);
+            addResourceField(service, destination);
+            getContent().add(destination == null ? new Paragraph(getTranslation(
+                    "management.destination.pairing.after-saving"))
+                    : createPairing(service, destination.id(), newKey));
+
+            draft = Signal.computed(() -> commonFieldsValid()
+                    ? Optional.of(new MobileDestinationDetails(descriptionValue(), localeValue(),
+                    resourcesValue().iterator().next()))
+                    : Optional.empty());
+        }
+
+        private Component createPairing(DestinationManagementService service, DestinationId id,
+                                        @Nullable MobileKey newKey) {
+            var key = new ValueSignal<@Nullable MobileKey>(newKey);
+            var pairing = new Div();
+            pairing.addClassName("mobile-pairing");
+            Signal.effect(pairing, () -> {
+                pairing.removeAll();
+                pairing.add(new H4(getTranslation("management.destination.pairing")));
+                var shown = key.get();
+                if (shown == null) {
+                    pairing.add(new Paragraph(getTranslation("management.destination.pairing.not-shown")));
+                } else {
+                    var link = pairingLink(shown);
+                    var linkField = new TextField(getTranslation("management.destination.pairing.link"));
+                    linkField.setValue(link);
+                    linkField.setReadOnly(true);
+                    linkField.setWidthFull();
+                    pairing.add(new QrCode(link, getTranslation("management.destination.pairing.qr-code")),
+                            new Paragraph(getTranslation("management.destination.pairing.scan-now")), linkField);
+                }
+                var newKeyButton = new Button(getTranslation("management.destination.pairing.new-key"),
+                        event -> confirmNewKey(() -> key.set(service.replaceMobileKey(id))));
+                newKeyButton.bindVisible(editable);
+                pairing.add(newKeyButton);
+            });
+            return pairing;
+        }
+
+        private void confirmNewKey(Runnable onConfirm) {
+            var dialog = new ConfirmDialog();
+            dialog.setHeader(getTranslation("management.destination.pairing.new-key.header"));
+            dialog.setText(getTranslation("management.destination.pairing.new-key.text"));
+            dialog.setCancelable(true);
+            dialog.setCancelText(getTranslation("common.cancel"));
+            dialog.setConfirmText(getTranslation("management.destination.pairing.new-key.confirm"));
+            dialog.setConfirmButtonTheme("error primary");
+            dialog.addConfirmListener(event -> onConfirm.run());
+            dialog.open();
+        }
+
+        /**
+         * The link that pairs the app with the key: the app's address on this server, as the browser reaches it, with
+         * the key in the fragment, which browsers never send to the server.
+         */
+        static String pairingLink(MobileKey key) {
+            var request = VaadinServletRequest.getCurrent();
+            var base = request == null ? ""
+                    : ServletUriComponentsBuilder.fromContextPath(request.getHttpServletRequest()).toUriString();
+            return base + "/mobile/#pair=" + key.value();
+        }
+
+        @Override
+        public void setReadOnly(boolean readOnly) {
+            super.setReadOnly(readOnly);
+            editable.set(!readOnly);
         }
 
         @Override

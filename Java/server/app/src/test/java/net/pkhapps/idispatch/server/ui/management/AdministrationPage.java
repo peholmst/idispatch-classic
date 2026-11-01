@@ -7,6 +7,7 @@ import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.textfield.TextField;
 import net.pkhapps.idispatch.server.ui.AppShell;
 import net.pkhapps.idispatch.server.ui.GridRows;
+import net.pkhapps.idispatch.server.ui.QrCode;
 
 import java.util.List;
 import java.util.Map;
@@ -192,6 +193,17 @@ public class AdministrationPage extends AppShell {
 
     public void clickEditorButton(String text) {
         window.findButton().withText(text).click();
+    }
+
+    /**
+     * The text of the QR code shown in the editor with the given description, or empty if there is none.
+     */
+    public java.util.Optional<String> qrCode(String description) {
+        return window.find(QrCode.class).withAriaLabel(description).all().stream().findFirst().map(QrCode::getText);
+    }
+
+    public boolean showsField(String label) {
+        return window.findTextField().withLabel(label).exists();
     }
 
     private TextField field(String label) {

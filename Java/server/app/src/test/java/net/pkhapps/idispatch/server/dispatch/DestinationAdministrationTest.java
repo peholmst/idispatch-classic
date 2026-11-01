@@ -32,7 +32,7 @@ class DestinationAdministrationTest extends UseCaseTest {
     void administratorChoosesWhichKindOfDestinationToAdd() {
         var admin = administratorAtWork();
 
-        assertThat(admin.addChoices()).containsExactly(RUNBOARD, SMS);
+        assertThat(admin.addChoices()).containsExactly(RUNBOARD, SMS, "Mobile Destination");
 
         admin.startsAdding(SMS);
         assertThat(admin.editorTitle()).isEqualTo("Add SMS Destination");

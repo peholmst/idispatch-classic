@@ -13,6 +13,7 @@ import net.pkhapps.idispatch.server.jooq.tables.Destinations;
 import net.pkhapps.idispatch.server.jooq.tables.DispatchNotificationAssignedResources;
 import net.pkhapps.idispatch.server.jooq.tables.DispatchNotificationDestinations;
 import net.pkhapps.idispatch.server.jooq.tables.DispatchNotifications;
+import net.pkhapps.idispatch.server.jooq.tables.MobileDestinations;
 import net.pkhapps.idispatch.server.jooq.tables.Municipalities;
 import net.pkhapps.idispatch.server.jooq.tables.Receipts;
 import net.pkhapps.idispatch.server.jooq.tables.ResourceStatus;
@@ -74,6 +75,11 @@ public class Tables {
      * The table <code>public.dispatch_notifications</code>.
      */
     public static final DispatchNotifications DISPATCH_NOTIFICATIONS = DispatchNotifications.DISPATCH_NOTIFICATIONS;
+
+    /**
+     * The table <code>public.mobile_destinations</code>.
+     */
+    public static final MobileDestinations MOBILE_DESTINATIONS = MobileDestinations.MOBILE_DESTINATIONS;
 
     /**
      * The table <code>public.municipalities</code>.

@@ -11,6 +11,7 @@ import net.pkhapps.idispatch.server.jooq.Public;
 import net.pkhapps.idispatch.server.jooq.tables.DestinationResources.DestinationResourcesPath;
 import net.pkhapps.idispatch.server.jooq.tables.DispatchNotificationDestinations.DispatchNotificationDestinationsPath;
 import net.pkhapps.idispatch.server.jooq.tables.DispatchNotifications.DispatchNotificationsPath;
+import net.pkhapps.idispatch.server.jooq.tables.MobileDestinations.MobileDestinationsPath;
 import net.pkhapps.idispatch.server.jooq.tables.Receipts.ReceiptsPath;
 import net.pkhapps.idispatch.server.jooq.tables.Resources.ResourcesPath;
 import net.pkhapps.idispatch.server.jooq.tables.RunboardDestinations.RunboardDestinationsPath;
@@ -182,6 +183,19 @@ public class Destinations extends TableImpl<DestinationsRecord> {
             _dispatchNotificationDestinations = new DispatchNotificationDestinationsPath(this, null, Keys.DISPATCH_NOTIFICATION_DESTINATIONS__DISPATCH_NOTIFICATION_DESTINATIONS_DESTINATION_FK.getInverseKey());
 
         return _dispatchNotificationDestinations;
+    }
+
+    private transient MobileDestinationsPath _mobileDestinations;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.mobile_destinations</code> table
+     */
+    public MobileDestinationsPath mobileDestinations() {
+        if (_mobileDestinations == null)
+            _mobileDestinations = new MobileDestinationsPath(this, null, Keys.MOBILE_DESTINATIONS__MOBILE_DESTINATIONS_DESTINATION_FK.getInverseKey());
+
+        return _mobileDestinations;
     }
 
     private transient ReceiptsPath _receipts;

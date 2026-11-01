@@ -102,6 +102,17 @@ public class Administrator {
         page.answerCancel();
     }
 
+    /**
+     * Clicks a button in the editor other than saving, cancelling, deleting and restoring.
+     */
+    public void clicks(String button) {
+        page.clickEditorButton(button);
+    }
+
+    public void confirms() {
+        page.answerConfirm();
+    }
+
     // --- What the administrator sees ---
 
     /**
@@ -168,6 +179,17 @@ public class Administrator {
 
     public boolean seesItAsRequired(String field) {
         return page.isMarkedRequired(field);
+    }
+
+    /**
+     * The text of the QR code with the given description, or empty if none is shown.
+     */
+    public java.util.Optional<String> qrCode(String description) {
+        return page.qrCode(description);
+    }
+
+    public boolean seesField(String field) {
+        return page.showsField(field);
     }
 
     public boolean canChange(String field) {

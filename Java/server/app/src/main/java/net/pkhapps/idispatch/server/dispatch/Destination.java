@@ -7,9 +7,10 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Where the dispatch notifications of some resources go: a runboard at the station, or phone numbers by SMS.
+ * Where the dispatch notifications of some resources go: a runboard at the station, phone numbers by SMS, or the
+ * mobile app of a unit.
  */
-sealed interface Destination permits SmsDestination, RunboardDestination {
+sealed interface Destination permits SmsDestination, RunboardDestination, MobileDestination {
 
     DestinationId id();
 

@@ -30,6 +30,7 @@
         <java.version>25</java.version>
         <vaadin.version>25.3.4</vaadin.version>
         <guava.version>33.7.2-jre</guava.version>
+        <qrcodegen.version>1.8.0</qrcodegen.version>
     </properties>
 
     <modules>

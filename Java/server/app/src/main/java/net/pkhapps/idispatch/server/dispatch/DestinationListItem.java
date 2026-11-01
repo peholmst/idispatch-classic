@@ -13,6 +13,6 @@ record DestinationListItem(DestinationId id, Kind kind, @Nullable String descrip
                                   List<String> callSigns, boolean active) {
 
     public enum Kind {
-        RUNBOARD, SMS
+        RUNBOARD, SMS, MOBILE
     }
 }
