@@ -67,8 +67,7 @@ class AssignmentPanel extends VerticalLayout {
         assignmentForm.addClassName("content");
         assignmentForm.bindVisible(viewModel.showing());
 
-        assignmentLayout.setSizeUndefined();
-        assignmentLayout.setWidthFull();
+        assignmentLayout.setSizeFull();
         assignmentLayout.setMargin(false);
         assignmentLayout.setSpacing(true);
         assignmentLayout.setPadding(true);
@@ -127,8 +126,7 @@ class AssignmentPanel extends VerticalLayout {
 
         var assignedResourcesGrid = new Grid<ResourceRow>();
         assignedResourcesGrid.addThemeVariants(GridVariant.ROW_STRIPES);
-        assignedResourcesGrid.setWidthFull();
-        assignedResourcesGrid.setHeight(200, Unit.PIXELS);
+        assignedResourcesGrid.setSizeFull();
         assignedResourcesGrid.addColumn(ResourceRow::callSign).setHeader(getTranslation("dispatch.resource"));
         assignedResourcesGrid.addColumn(new ComponentRenderer<>(this::createStatusButton))
                 .setHeader(getTranslation("dispatch.state"));
@@ -148,14 +146,14 @@ class AssignmentPanel extends VerticalLayout {
         var dispatchReserved = new Button(getTranslation("dispatch.dispatch-reserved"),
                 event -> showWhatIsMissing(viewModel.dispatchReserved()));
         dispatchReserved.addThemeVariants(ButtonVariant.PRIMARY, ButtonVariant.ERROR);
-
-        var dispatchActions = new HorizontalLayout(dispatchAll, dispatchSelected, dispatchReserved);
-        assignmentLayout.add(dispatchActions);
-
         var closeAssignment = new Button(getTranslation("dispatch.close-assignment"),
                 event -> viewModel.closeAssignment());
         closeAssignment.addThemeVariants(ButtonVariant.TERTIARY);
-        assignmentLayout.add(closeAssignment);
+
+        var dispatchActions = new HorizontalLayout(dispatchAll, dispatchSelected, dispatchReserved);
+        dispatchActions.addToEnd(closeAssignment);
+        dispatchActions.setWidthFull();
+        assignmentLayout.add(dispatchActions);
 
         add(noAssignmentSelected);
         add(assignmentForm);
