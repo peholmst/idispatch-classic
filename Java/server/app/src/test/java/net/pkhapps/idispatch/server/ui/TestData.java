@@ -77,6 +77,12 @@ public class TestData {
     }
 
     /**
+     * A mobile destination, whose app authenticates with the key; only the key's hash is stored.
+     */
+    public record GivenMobile(long id, String key) {
+    }
+
+    /**
      * A dispatch notification as stored, with the address it was sent with.
      */
     public record GivenNotification(long id, String address) {
@@ -342,6 +348,65 @@ public class TestData {
                 .set(DESTINATION_RESOURCES.RESOURCE_ID, resource.id())
                 .execute();
         return new GivenRunboard(id, key);
+    }
+
+    /**
+     * An active mobile destination for the given resource in the given language, with a new key.
+     */
+    public GivenMobile mobile(GivenResource resource, Locale locale) {
+        var id = dsl.nextval(DESTINATIONS_SEQ);
+        var key = newMobileKey();
+        dsl.insertInto(DESTINATIONS)
+                .set(DESTINATIONS.ID, id)
+                .set(DESTINATIONS.VERSION, 0L)
+                .set(DESTINATIONS.ACTIVE, true)
+                .set(DESTINATIONS.LOCALE, locale.toString())
+                .execute();
+        dsl.insertInto(MOBILE_DESTINATIONS)
+                .set(MOBILE_DESTINATIONS.ID, id)
+                .set(MOBILE_DESTINATIONS.KEY_HASH, sha256(key))
+                .execute();
+        dsl.insertInto(DESTINATION_RESOURCES)
+                .set(DESTINATION_RESOURCES.DESTINATION_ID, id)
+                .set(DESTINATION_RESOURCES.RESOURCE_ID, resource.id())
+                .execute();
+        return new GivenMobile(id, key);
+    }
+
+    /**
+     * Gives the mobile destination a new key, as an administrator does, and returns it with that key.
+     */
+    public GivenMobile newKeyFor(GivenMobile mobile) {
+        var key = newMobileKey();
+        dsl.update(MOBILE_DESTINATIONS)
+                .set(MOBILE_DESTINATIONS.KEY_HASH, sha256(key))
+                .where(MOBILE_DESTINATIONS.ID.eq(mobile.id()))
+                .execute();
+        return new GivenMobile(mobile.id(), key);
+    }
+
+    public void deleteDestination(long id) {
+        dsl.update(DESTINATIONS).set(DESTINATIONS.ACTIVE, false)
+                .set(DESTINATIONS.VERSION, DESTINATIONS.VERSION.plus(1))
+                .where(DESTINATIONS.ID.eq(id)).execute();
+    }
+
+    /**
+     * A key as the server generates them: 256 random bits, base64url without padding.
+     */
+    private static String newMobileKey() {
+        var bytes = new byte[32];
+        new java.security.SecureRandom().nextBytes(bytes);
+        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private static String sha256(String text) {
+        try {
+            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(text.getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
+        } catch (java.security.NoSuchAlgorithmException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     /**

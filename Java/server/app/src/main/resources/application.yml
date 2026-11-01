@@ -3,7 +3,8 @@ server:
     context-path: /idispatch
 
 vaadin:
-  exclude-urls: /ws/**
+  # The runboard WebSocket, and the mobile app and its API, are not Vaadin's
+  exclude-urls: /ws/**, /api/**, /mobile/**
   frontend:
     hotdeploy: false
   allowed-packages: net.pkhapps, com.vaadin

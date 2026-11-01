@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Looks up resources for the features that refer to them by ID, such as the destinations, the dispatch notifications
@@ -46,6 +47,13 @@ public class ResourceQueries {
      */
     public List<ResourceListItem> findByCallSignContaining(String searchTerm) {
         return resourceRepository.findListItems(true, searchTerm);
+    }
+
+    /**
+     * Finds the current status of the resource, or empty if it is deleted or does not exist.
+     */
+    public Optional<ResourceStatus> findCurrentStatus(ResourceId resource) {
+        return resourceStatusRepository.findOfActiveResource(resource);
     }
 
     /**

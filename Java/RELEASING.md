@@ -4,7 +4,7 @@ The repository holds two products that are released separately, each with its ow
 
 | | Server | Runboard |
 |---|---|---|
-| Directory | `server/` (the application in `server/app` and the ASPSMS client in `server/aspsms-integration`, which share its version) | `runboard/` |
+| Directory | `server/` (the application in `server/app`, the ASPSMS client in `server/aspsms-integration` and the mobile app in `server/mobile`, which share its version) | `runboard/` |
 | Tag | `idispatch-server/v<version>` | `idispatch-runboard/v<version>` |
 | Distributed as | Its sources at the tag. An organisation checks out the tag and builds and runs it with Docker Compose (`docs/deployment.md`). | `iDispatchRunboard-<version>.zip`, attached to the GitHub Release, unzipped on the runboard computer. |
 

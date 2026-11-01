@@ -1,0 +1,28 @@
+{
+  "name": "idispatch-mobile",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The mobile app of an iDispatch unit",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vaadin/aura": "25.3.5",
+    "@vaadin/button": "25.3.5",
+    "lit": "3.3.3"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "6.2.7",
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  },
+  "allowScripts": {
+    "@vaadin/vaadin-usage-statistics@2.1.3": true,
+    "fsevents@2.3.3": true
+  }
+}

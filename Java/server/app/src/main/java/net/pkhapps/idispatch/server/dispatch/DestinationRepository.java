@@ -101,6 +101,19 @@ class DestinationRepository {
     }
 
     /**
+     * Finds the mobile destination, not deleted, whose key has the given hash.
+     */
+    Optional<MobileDestination> findActiveMobileByKeyHash(MobileKeyHash keyHash) {
+        return dsl.selectFrom(DESTINATIONS)
+                .where(DESTINATIONS.ACTIVE.isTrue())
+                .and(DESTINATIONS.ID.in(DSL.select(MOBILE_DESTINATIONS.ID)
+                        .from(MOBILE_DESTINATIONS)
+                        .where(MOBILE_DESTINATIONS.KEY_HASH.eq(keyHash.value()))))
+                .fetchOptional()
+                .map(row -> (MobileDestination) toDestination(row));
+    }
+
+    /**
      * Inserts a runboard or SMS destination; a mobile destination is inserted with
      * {@link #insertMobile(MobileDestinationDetails, MobileKeyHash)}, as it needs its key.
      */
