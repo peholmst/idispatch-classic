@@ -3,6 +3,7 @@
 @import "styles/management-view-grid-styles.css";
 @import "styles/management-editor-styles.css";
 @import "styles/dashboard-view-styles.css";
+@import "styles/resource-status-view-styles.css";
 
 /* Dense layout for the dispatch, reports and management screens (replaces Lumo's compact preset) */
 html {

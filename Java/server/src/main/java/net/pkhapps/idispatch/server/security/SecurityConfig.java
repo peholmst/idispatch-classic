@@ -24,9 +24,12 @@ class SecurityConfig {
 
     @Bean
     SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) throws Exception {
+        // Vaadin permits only the static resources it knows of, such as styles.css, and refuses the rest even to a
+        // logged-in user, so the stylesheets that styles.css imports must be permitted here
         http.authorizeHttpRequests(r -> r.requestMatchers(
                         "/ws/**",
-                        "/actuator/**"
+                        "/actuator/**",
+                        "/styles/**"
                 )
                 .permitAll());
         // Logging out also ends the Keycloak session, and then returns to the application, which sends the user

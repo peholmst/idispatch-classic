@@ -19,6 +19,7 @@ class NavigationTest extends UseCaseTest {
         assertThat(user.viewTitle()).contains("Home");
         assertThat(cannotOpen(user, "dispatcher")).isTrue();
         assertThat(cannotOpen(user, "reports")).isTrue();
+        assertThat(cannotOpen(user, "resource-status")).isTrue();
     }
 
     @Test
@@ -27,9 +28,11 @@ class NavigationTest extends UseCaseTest {
 
         dispatcher.openHome();
 
-        assertThat(dispatcher.navigationItems()).containsExactly("Home", "Dispatcher", "Log Out");
+        assertThat(dispatcher.navigationItems()).containsExactly("Home", "Dispatcher", "Resource Status", "Log Out");
         dispatcher.goTo("Dispatcher");
         assertThat(dispatcher.viewTitle()).contains("Dispatcher");
+        dispatcher.goTo("Resource Status");
+        assertThat(dispatcher.viewTitle()).contains("Resource Status");
         assertThat(cannotOpen(dispatcher, "reports")).isTrue();
         assertThat(cannotOpen(dispatcher, "management/municipality")).isTrue();
     }
@@ -60,6 +63,7 @@ class NavigationTest extends UseCaseTest {
         admin.goTo("Municipalities");
         assertThat(admin.viewTitle()).contains("Municipalities");
         assertThat(cannotOpen(admin, "dispatcher")).isTrue();
+        assertThat(cannotOpen(admin, "resource-status")).isTrue();
         assertThat(cannotOpen(admin, "reports")).isTrue();
     }
 
@@ -69,7 +73,7 @@ class NavigationTest extends UseCaseTest {
 
         user.openHome();
 
-        assertThat(user.navigationItems()).containsExactly("Home", "Dispatcher", "Reports", "Municipalities",
+        assertThat(user.navigationItems()).containsExactly("Home", "Dispatcher", "Resource Status", "Reports", "Municipalities",
                 "Assignment Types", "Resources", "Resource Types", "Destinations", "Log Out");
         user.goTo("Dispatcher");
         assertThat(user.viewTitle()).contains("Dispatcher");
@@ -84,6 +88,7 @@ class NavigationTest extends UseCaseTest {
         user.goTo("Reports");
         assertThat(user.viewTitle()).contains("Reports");
         assertThat(cannotOpen(user, "dispatcher")).isTrue();
+        assertThat(cannotOpen(user, "resource-status")).isTrue();
         assertThat(cannotOpen(user, "management/resource")).isTrue();
     }
 
