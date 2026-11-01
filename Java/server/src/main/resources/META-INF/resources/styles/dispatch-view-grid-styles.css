@@ -1,21 +1,26 @@
+/* The urgency badges, filled with Aura's palette colors so that the urgency can be read at a glance */
 vaadin-badge.urgency-a {
-    --vaadin-badge-background: orangered;
-    --vaadin-badge-text-color: white;
+    --urgency-background: var(--aura-red);
 }
 
 vaadin-badge.urgency-b {
-    --vaadin-badge-background: salmon;
-    --vaadin-badge-text-color: black;
+    --urgency-background: oklch(from var(--aura-red) 0.74 0.12 40);
 }
 
 vaadin-badge.urgency-c {
-    --vaadin-badge-background: yellow;
-    --vaadin-badge-text-color: black;
+    --urgency-background: oklch(from var(--aura-yellow) 0.86 0.16 h);
 }
 
 vaadin-badge.urgency-d {
-    --vaadin-badge-background: lightgreen;
-    --vaadin-badge-text-color: black;
+    --urgency-background: var(--aura-green);
+}
+
+/* White on dark backgrounds and a near-black on light ones, computed the way Aura computes its accent contrast color */
+vaadin-badge[class*="urgency-"] {
+    --vaadin-badge-background: var(--urgency-background);
+    --vaadin-badge-text-color: oklch(from var(--urgency-background)
+        clamp(0.26, (0.62 - l) * 1000, 1) min(clamp(0, (l - 0.62) * 1000, 0.05), c) h);
+    --vaadin-badge-border-color: transparent;
 }
 
 vaadin-grid::part(header-cell) {

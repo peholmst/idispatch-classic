@@ -1,3 +1,4 @@
+/* Deleted (inactive) records: a red tint over the row instead of a solid fill */
 vaadin-grid::part(deleted) {
-    background-color: indianred;
+    background-color: color-mix(in srgb, var(--aura-red) 25%, transparent);
 }
