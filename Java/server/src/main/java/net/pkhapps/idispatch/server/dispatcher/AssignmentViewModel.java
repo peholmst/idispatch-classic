@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -56,7 +57,7 @@ class AssignmentViewModel {
     private final ValueSignal<Map<AssignmentTypeId, AssignmentTypeListItem>> types = new ValueSignal<>(Map.of());
     private final ValueSignal<Map<MunicipalityId, MunicipalityListItem>> municipalities = new ValueSignal<>(Map.of());
     private final ValueSignal<List<ResourceListItem>> availableResources = new ValueSignal<>(List.of());
-    private final ValueSignal<@Nullable ResourceListItem> resourceToAdd = new ValueSignal<>(null);
+    private final ValueSignal<String> availableResourceFilter = new ValueSignal<>("");
     private final ValueSignal<List<ResourceRow>> assignedResources = new ValueSignal<>(List.of());
     private final ValueSignal<Set<ResourceId>> selectedResourceIds = new ValueSignal<>(Set.of());
 
@@ -69,6 +70,17 @@ class AssignmentViewModel {
         var current = assignment.get();
         var byId = municipalities.get();
         return current == null || current.municipalityId() == null ? null : byId.get(current.municipalityId());
+    });
+    // The available resources whose call sign contains the filter
+    private final Signal<List<ResourceListItem>> filteredAvailableResources = Signal.computed(() -> {
+        var filter = availableResourceFilter.get().strip().toLowerCase(Locale.ROOT);
+        var resources = availableResources.get();
+        if (filter.isEmpty()) {
+            return resources;
+        }
+        return resources.stream()
+                .filter(resource -> resource.callSign().toLowerCase(Locale.ROOT).contains(filter))
+                .toList();
     });
     // The selected resources that are still on the assignment, with their latest status
     private final Signal<Set<ResourceRow>> selectedResources = Signal.computed(() -> {
@@ -128,14 +140,15 @@ class AssignmentViewModel {
     }
 
     /**
-     * The resources that can be added to the assignment.
+     * The resources that can be added to the assignment, whose call sign contains the
+     * {@linkplain #availableResourceFilter() filter}.
      */
     Signal<List<ResourceListItem>> availableResources() {
-        return availableResources.asReadonly();
+        return filteredAvailableResources;
     }
 
-    Signal<@Nullable ResourceListItem> resourceToAdd() {
-        return resourceToAdd.asReadonly();
+    Signal<String> availableResourceFilter() {
+        return availableResourceFilter.asReadonly();
     }
 
     Signal<List<ResourceRow>> assignedResources() {
@@ -175,8 +188,8 @@ class AssignmentViewModel {
         save(current -> current.withDescription(description));
     }
 
-    void chooseResourceToAdd(@Nullable ResourceListItem resource) {
-        resourceToAdd.set(resource);
+    void filterAvailableResources(String text) {
+        availableResourceFilter.set(text);
     }
 
     void selectResources(Set<ResourceRow> rows) {
@@ -184,18 +197,20 @@ class AssignmentViewModel {
     }
 
     /**
-     * Puts the chosen resource on the assignment.
+     * Puts the resource on the assignment.
      */
-    void addResource() {
-        var resource = resourceToAdd.peek();
+    void addResource(ResourceId resource) {
         var current = assignment.peek();
-        if (resource != null && current != null) {
-            resourceStatusService.setResourceAssignment(resource.id(), current.id());
+        if (current != null) {
+            resourceStatusService.setResourceAssignment(resource, current.id());
         }
     }
 
-    void removeSelectedResources() {
-        selectedResourceIds().forEach(resourceStatusService::clearResourceAssignment);
+    /**
+     * Takes the resource off the assignment.
+     */
+    void removeResource(ResourceId resource) {
+        resourceStatusService.clearResourceAssignment(resource);
     }
 
     /**
