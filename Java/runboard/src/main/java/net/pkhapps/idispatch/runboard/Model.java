@@ -108,7 +108,8 @@ class Model extends Observable implements ServerConnection.Callback {
     }
 
     public synchronized List<Notification> getVisibleNotifications() {
-        return Collections.unmodifiableList(notifications);
+        // A copy, since the list changes on other threads while the caller goes through it
+        return List.copyOf(notifications);
     }
 
     @Override
