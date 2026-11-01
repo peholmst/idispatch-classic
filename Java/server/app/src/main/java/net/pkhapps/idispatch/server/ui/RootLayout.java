@@ -27,6 +27,8 @@ import net.pkhapps.idispatch.server.report.ReportsView;
 import net.pkhapps.idispatch.server.resource.ResourceManagementView;
 import net.pkhapps.idispatch.server.resource.ResourceTypeManagementView;
 import net.pkhapps.idispatch.server.security.Roles;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
@@ -36,7 +38,7 @@ import java.util.stream.Stream;
 @PermitAll
 public class RootLayout extends AppLayout implements RouterLayout {
 
-    public RootLayout(AuthenticationContext authenticationContext) {
+    public RootLayout(AuthenticationContext authenticationContext, ObjectProvider<BuildProperties> buildProperties) {
         var navigation = new VerticalLayout(createViewNavigation());
         navigation.setPadding(false);
         navigation.setMinWidth(200, Unit.PIXELS);
@@ -47,12 +49,15 @@ public class RootLayout extends AppLayout implements RouterLayout {
         var drawer = new Scroller(navigation);
         drawer.addThemeVariants(ScrollerVariant.OVERFLOW_INDICATORS);
 
-        addToDrawer(createApplicationHeader(), drawer, createUserFooter(getDisplayName(authenticationContext)));
+        addToDrawer(createApplicationHeader(buildProperties.getIfAvailable()), drawer, createUserFooter(getDisplayName(authenticationContext)));
 
         setPrimarySection(Section.DRAWER);
     }
 
-    private static Component createApplicationHeader() {
+    /**
+     * The logo, the name and, when the build recorded it, the version, so that a user can tell which release runs.
+     */
+    private static Component createApplicationHeader(BuildProperties buildProperties) {
         var logo = new Avatar("iDispatch");
         logo.setAbbreviation("iD");
         logo.addClassName("app-logo");
@@ -62,6 +67,11 @@ public class RootLayout extends AppLayout implements RouterLayout {
         name.addClassName("app-name");
 
         var header = new HorizontalLayout(logo, name);
+        if (buildProperties != null && buildProperties.getVersion() != null) {
+            var version = new Span(buildProperties.getVersion());
+            version.addClassName("app-version");
+            header.add(version);
+        }
         header.setAlignItems(FlexComponent.Alignment.CENTER);
         header.setPadding(true);
         return header;

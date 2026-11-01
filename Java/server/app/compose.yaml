@@ -1,3 +1,7 @@
+# Development services. The project keeps the name it had before the application moved to server/app, so that the
+# containers and the postgres-data volume (server_postgres-data) stay the same.
+name: server
+
 services:
   postgres:
     image: postgres:18

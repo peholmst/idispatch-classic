@@ -3,15 +3,14 @@
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>master</artifactId>
         <groupId>net.pkhapps.idispatch.classic</groupId>
-        <version>1</version>
+        <artifactId>idispatch-server-parent</artifactId>
+        <version>3.0.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>idispatch-aspsms-integration</artifactId>
     <name>iDispatch ASPSMS.COM Integration</name>
-    <version>3.0.0</version>
 
     <dependencies>
         <dependency>

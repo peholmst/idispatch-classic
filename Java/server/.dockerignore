@@ -4,6 +4,5 @@
 **/.idea
 **/.DS_Store
 **/*.iml
-.git
-server/deploy
-server/src/main/frontend/generated
+deploy
+app/src/main/frontend/generated
