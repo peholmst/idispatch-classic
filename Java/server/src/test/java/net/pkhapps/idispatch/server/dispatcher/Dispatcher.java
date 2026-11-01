@@ -86,8 +86,7 @@ public class Dispatcher {
     }
 
     public void removesResource(String callSign) {
-        page.selectResourceOnAssignment(callSign);
-        page.clickRemoveResources();
+        page.clickRemoveResource(callSign);
     }
 
     public void dispatchesAll() {
@@ -212,10 +211,6 @@ public class Dispatcher {
      */
     public boolean seesAllResourcesOnAssignmentSelected() {
         return page.allResourcesOnAssignmentTicked();
-    }
-
-    public boolean canRemoveResources() {
-        return page.canRemoveResources();
     }
 
     public boolean canDispatchSelected() {

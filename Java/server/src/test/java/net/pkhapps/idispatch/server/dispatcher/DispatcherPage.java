@@ -191,12 +191,9 @@ public class DispatcherPage extends AppShell {
                 .orElse(false);
     }
 
-    public boolean canRemoveResources() {
-        return window.findButton().withAriaLabel("Remove selected resources from the assignment").component().isEnabled();
-    }
-
-    public void clickRemoveResources() {
-        window.findButton().withAriaLabel("Remove selected resources from the assignment").click();
+    public void clickRemoveResource(String callSign) {
+        assigned().clickButtonInCellWhere(t("Resource"), callSign, t("State"),
+                "Remove " + callSign + " from the assignment");
     }
 
     public void clickDispatchAll() {

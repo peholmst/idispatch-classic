@@ -194,8 +194,11 @@ class AssignmentViewModel {
         }
     }
 
-    void removeSelectedResources() {
-        selectedResourceIds().forEach(resourceStatusService::clearResourceAssignment);
+    /**
+     * Takes the resource off the assignment.
+     */
+    void removeResource(ResourceId resource) {
+        resourceStatusService.clearResourceAssignment(resource);
     }
 
     /**

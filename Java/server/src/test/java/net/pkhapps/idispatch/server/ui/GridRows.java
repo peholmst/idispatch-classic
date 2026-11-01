@@ -1,15 +1,20 @@
 package net.pkhapps.idispatch.server.ui;
 
 import com.vaadin.browserless.BrowserlessUIContext;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridLocator;
+import com.vaadin.flow.component.grid.GridTester;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Reads and works a grid the way the user sees it: rows of cell texts under the column headers. Page objects use it so
@@ -92,19 +97,38 @@ public final class GridRows {
     }
 
     /**
-     * Clicks the component the cell under the given header renders, such as a button.
+     * Clicks the first button in the cell under the given header, such as a button the cell renders.
      */
     public void clickCellWhere(String header, String text, String clickedColumnHeader) {
+        clickButtonInCellWhere(header, text, clickedColumnHeader, button -> true,
+                "The " + clickedColumnHeader + " cell has no button");
+    }
+
+    /**
+     * Clicks the button with the given accessible name in the cell under the given header, such as an icon-only button
+     * next to another one.
+     */
+    public void clickButtonInCellWhere(String header, String text, String clickedColumnHeader, String ariaLabel) {
+        clickButtonInCellWhere(header, text, clickedColumnHeader,
+                button -> button.getAriaLabel().filter(ariaLabel::equals).isPresent(),
+                "The " + clickedColumnHeader + " cell has no button " + ariaLabel);
+    }
+
+    private void clickButtonInCellWhere(String header, String text, String clickedColumnHeader,
+                                        Predicate<Button> which, String notFound) {
         var row = indexOfRowWhere(header, text);
-        var component = grid.getComponent();
-        var cell = new com.vaadin.flow.component.grid.GridTester<>(component)
-                .getCellComponent(row, columnIndex(clickedColumnHeader));
-        if (cell instanceof com.vaadin.flow.component.button.Button button) {
-            // A component that a renderer makes is not in the component tree that locators search
-            window.test(button).click();
-        } else {
-            throw new AssertionError("The " + clickedColumnHeader + " cell is not a button but " + cell);
-        }
+        var cell = new GridTester<>(grid.getComponent()).getCellComponent(row, columnIndex(clickedColumnHeader));
+        var button = Stream.of(cell).flatMap(GridRows::withDescendants)
+                .filter(Button.class::isInstance).map(Button.class::cast)
+                .filter(which)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(notFound));
+        // A component that a renderer makes is not in the component tree that locators search
+        window.test(button).click();
+    }
+
+    private static Stream<Component> withDescendants(Component component) {
+        return Stream.concat(Stream.of(component), component.getChildren().flatMap(GridRows::withDescendants));
     }
 
     public void sortBy(String header, com.vaadin.flow.data.provider.SortDirection direction) {

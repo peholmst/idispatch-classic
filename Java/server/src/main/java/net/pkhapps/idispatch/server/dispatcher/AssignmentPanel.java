@@ -14,6 +14,7 @@ import com.vaadin.flow.component.html.UnorderedList;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -21,6 +22,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.function.SerializableBiConsumer;
+import com.vaadin.flow.function.SerializableRunnable;
 import com.vaadin.flow.signals.Signal;
 import net.pkhapps.idispatch.server.assignment.AssignmentUrgency;
 import net.pkhapps.idispatch.server.assignment.MissingForDispatch;
@@ -114,12 +116,8 @@ class AssignmentPanel extends VerticalLayout {
         Signal.effect(availableResource, () -> availableResource.setItems(viewModel.availableResources().get()));
         availableResource.bindValue(viewModel.resourceToAdd(), viewModel::chooseResourceToAdd);
         var addToAssignment = new Button(VaadinIcon.PLUS_CIRCLE.create(), event -> viewModel.addResource());
-        var removeFromAssignment = new Button(VaadinIcon.MINUS_CIRCLE.create(),
-                event -> viewModel.removeSelectedResources());
         addToAssignment.setAriaLabel(getTranslation("dispatch.add-resource"));
-        removeFromAssignment.setAriaLabel(getTranslation("dispatch.remove-resources"));
-        removeFromAssignment.bindEnabled(viewModel.anyResourceSelected());
-        var assignmentActions = new HorizontalLayout(availableResource, addToAssignment, removeFromAssignment);
+        var assignmentActions = new HorizontalLayout(availableResource, addToAssignment);
         assignmentActions.setFlexGrow(1.0, availableResource);
         assignmentActions.setWidthFull();
         assignmentLayout.add(assignmentActions);
@@ -128,7 +126,8 @@ class AssignmentPanel extends VerticalLayout {
         assignedResourcesGrid.addThemeVariants(GridVariant.ROW_STRIPES);
         assignedResourcesGrid.setSizeFull();
         assignedResourcesGrid.addColumn(ResourceRow::callSign).setHeader(getTranslation("dispatch.resource"));
-        assignedResourcesGrid.addColumn(new ComponentRenderer<>(this::createStatusButton))
+        assignedResourcesGrid.addColumn(new ComponentRenderer<>(
+                        row -> createStatusCell(row, () -> viewModel.removeResource(row.resourceId()))))
                 .setHeader(getTranslation("dispatch.state"));
         assignedResourcesGrid.setSelectionMode(Grid.SelectionMode.MULTI);
         assignedResourcesGrid.setAriaLabel(getTranslation("dispatch.assigned-resources"));
@@ -167,6 +166,15 @@ class AssignmentPanel extends VerticalLayout {
         noAssignmentSelected.setSpacing(false);
         noAssignmentSelected.setPadding(true);
         return noAssignmentSelected;
+    }
+
+    private Component createStatusCell(ResourceRow row, SerializableRunnable removeFromAssignment) {
+        var remove = new Button(VaadinIcon.MINUS_CIRCLE.create(), event -> removeFromAssignment.run());
+        remove.addThemeVariants(ButtonVariant.SMALL, ButtonVariant.TERTIARY);
+        remove.setAriaLabel(getTranslation("dispatch.remove-resource", row.callSign()));
+        var cell = new HorizontalLayout(createStatusButton(row), remove);
+        cell.setAlignItems(FlexComponent.Alignment.CENTER);
+        return cell;
     }
 
     private Button createStatusButton(ResourceRow row) {

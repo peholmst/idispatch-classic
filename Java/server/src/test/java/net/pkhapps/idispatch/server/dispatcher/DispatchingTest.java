@@ -259,7 +259,6 @@ class DispatchingTest extends UseCaseTest {
         var dispatcher = dispatcherAtWork();
         dispatcher.opensANewAssignment();
         dispatcher.addsResource(resource.callSign());
-        assertThat(dispatcher.canRemoveResources()).as("Nothing selected yet").isFalse();
 
         dispatcher.removesResource(resource.callSign());
 
