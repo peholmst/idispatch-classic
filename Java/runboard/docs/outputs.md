@@ -6,7 +6,8 @@ The runboard switches two outputs:
   sound has played. After switching it on, the runboard waits `idispatch.output.amplifierWarmUp` milliseconds before
   playing, so that the start isn't lost.
 - **The flashing light** is on while notifications are shown on the screen. It goes off when the last one leaves the
-  screen, `idispatch.notification.shownFor` seconds (default 180) after it was sent.
+  screen, `idispatch.notification.shownFor` seconds (default 180) after it was sent, or when its announcement ends, if
+  that is later.
 
 Both are off when the runboard starts and when it exits. The outputs are switched by an *output driver*, plugged in
 through a small service provider interface (SPI) in `net.pkhapps.idispatch.runboard.output`, in the same way as the

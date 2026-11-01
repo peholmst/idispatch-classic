@@ -124,7 +124,9 @@ class Alarm implements Observer {
                         return speech.read(language, Announcement.text(n, language));
                     })
                     .toList();
-            audioExecutor.execute(() -> alert(newNotifications, utterances));
+            // Keep the notifications on the screen, and the light on, until they have been read out loud.
+            newNotifications.forEach(model::hold);
+            audioExecutor.execute(() -> alert(model, newNotifications, utterances));
         }
         if (model.hasError()) {
             soundBeep();
@@ -132,9 +134,11 @@ class Alarm implements Observer {
     }
 
     /**
+     * Plays the alert and then {@linkplain Model#release releases} each notification once it has been read out loud.
+     *
      * @param utterances the speech for each notification, already being synthesized
      */
-    private void alert(List<Notification> notifications, List<Utterance> utterances) {
+    private void alert(Model model, List<Notification> notifications, List<Utterance> utterances) {
         try {
             outputs.switchOnAmplifier();
             final boolean speechExpected = notifications.stream()
@@ -144,9 +148,10 @@ class Alarm implements Observer {
             alarm.await();
             long silentSince = System.nanoTime();
             boolean spoken = false;
-            for (Utterance utterance : utterances) {
-                final Optional<SpeechAudio> reading = readFirstTime(utterance, silentSince);
+            for (int n = 0; n < utterances.size(); n++) {
+                final Optional<SpeechAudio> reading = readFirstTime(utterances.get(n), silentSince);
                 if (reading.isEmpty()) {
+                    model.release(notifications.get(n));
                     continue;
                 }
                 spoken = true;
@@ -156,6 +161,7 @@ class Alarm implements Observer {
                     play(reading.get());
                     silentSince = System.nanoTime();
                 }
+                model.release(notifications.get(n));
             }
             if (!spoken && alarmPlays < timings.alarmPlays()) {
                 startAlarm(timings.alarmPlays() - alarmPlays).await();
@@ -165,6 +171,7 @@ class Alarm implements Observer {
         } catch (Exception ex) {
             logger.error("Error playing alert", ex);
         } finally {
+            notifications.forEach(model::release);
             outputs.switchOffAmplifier();
         }
     }
