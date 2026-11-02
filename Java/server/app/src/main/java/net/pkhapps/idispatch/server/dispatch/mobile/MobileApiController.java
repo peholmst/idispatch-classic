@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,12 +40,14 @@ class MobileApiController {
     private final UnitResponses unitResponses;
     private final ResourceStatusService resourceStatusService;
     private final MobileEventStreams eventStreams;
+    private final MobileDispatcher dispatcher;
 
     MobileApiController(UnitResponses unitResponses, ResourceStatusService resourceStatusService,
-                        MobileEventStreams eventStreams) {
+                        MobileEventStreams eventStreams, MobileDispatcher dispatcher) {
         this.unitResponses = unitResponses;
         this.resourceStatusService = resourceStatusService;
         this.eventStreams = eventStreams;
+        this.dispatcher = dispatcher;
     }
 
     /**
@@ -106,6 +110,20 @@ class MobileApiController {
                 .cacheControl(CacheControl.noStore())
                 // Tells NGINX to pass each event on right away instead of buffering the response
                 .header("X-Accel-Buffering", "no")
-                .body(eventStreams.open(app.getPrincipal(), app.keyHash()));
+                .body(eventStreams.open(app.getPrincipal(), app.keyHash(),
+                        () -> dispatcher.waitingFor(app.getPrincipal())));
+    }
+
+    /**
+     * Confirms that the app has received and stored the notification, which stores a receipt and stops it from being
+     * sent again. Confirming it again does nothing.
+     *
+     * @return 204, or 404 if the notification was not sent to the app's destination
+     */
+    @PutMapping("/notifications/{id}/receipt")
+    ResponseEntity<Void> confirm(@AuthenticationPrincipal MobileDestination destination, @PathVariable long id) {
+        return dispatcher.confirm(destination, id)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
     }
 }

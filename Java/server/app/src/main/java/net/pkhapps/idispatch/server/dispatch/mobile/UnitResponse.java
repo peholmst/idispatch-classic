@@ -9,10 +9,13 @@ import java.util.List;
  *
  * @param locale     the language of the destination, {@code fi} or {@code sv}, which the app speaks
  * @param status     the unit's current state, or {@code null} if it has none, as when the unit has been deleted
- * @param nextStates the states the unit may set next, in the order the dispatcher's buttons show them; empty without a
- *                   status
+ * @param nextStates   the states the unit may set next, in the order the dispatcher's buttons show them; empty without
+ *                     a status
+ * @param assignmentId the assignment the unit is on now, or {@code null} if it is on none; a unit that is available
+ *                     again or out of service is no longer on its last assignment
  */
-record UnitResponse(String callSign, String locale, @Nullable State status, List<State> nextStates) {
+record UnitResponse(String callSign, String locale, @Nullable State status, List<State> nextStates,
+                    @Nullable Long assignmentId) {
 
     /**
      * @param state the {@link net.pkhapps.idispatch.server.resource.ResourceState}

@@ -1,6 +1,7 @@
 package net.pkhapps.idispatch.server.dispatch.mobile;
 
 import jakarta.annotation.PreDestroy;
+import net.pkhapps.idispatch.server.dispatch.DestinationId;
 import net.pkhapps.idispatch.server.dispatch.DestinationQueries;
 import net.pkhapps.idispatch.server.dispatch.MobileDestination;
 import net.pkhapps.idispatch.server.dispatch.MobileKeyHash;
@@ -16,15 +17,19 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 /**
  * The open event streams of the mobile apps. A stream starts with a {@value #UNIT_EVENT} event of the unit's current
- * status, and gets another whenever the unit's status changes, whoever changed it. The app treats an open stream as
- * the server being reachable.
+ * status and a {@value #NOTIFICATION_EVENT} event for each notification waiting for the app, and then gets a
+ * {@value #UNIT_EVENT} event whenever the unit's status changes, whoever changed it, and a
+ * {@value #NOTIFICATION_EVENT} event for each new notification (see {@link MobileDispatcher}). The app treats an open
+ * stream as the server being reachable.
  * <p>
  * Every {@code idispatch.mobile.heartbeat-interval} each stream gets a comment, which keeps proxies from closing it and
  * shows when the app is gone, and is checked against the destination: a stream whose destination has been deleted or
@@ -41,6 +46,7 @@ import java.util.concurrent.Executors;
 class MobileEventStreams implements SmartLifecycle {
 
     static final String UNIT_EVENT = "unit";
+    static final String NOTIFICATION_EVENT = "notification";
 
     private static final Logger log = LoggerFactory.getLogger(MobileEventStreams.class);
 
@@ -76,8 +82,12 @@ class MobileEventStreams implements SmartLifecycle {
 
     /**
      * Opens a stream for the app of the destination, which authenticated with the key of the given hash.
+     *
+     * @param waiting the notifications waiting for the app, looked up once the stream is open, so that a notification
+     *                sent meanwhile is not missed; one sent at that very moment may come twice, which the app expects
      */
-    SseEmitter open(MobileDestination destination, MobileKeyHash keyHash) {
+    SseEmitter open(MobileDestination destination, MobileKeyHash keyHash,
+                    Supplier<List<NotificationResponse>> waiting) {
         var stream = new Stream(new SseEmitter(timeout.toMillis()), keyHash, destination);
         streams.add(stream);
         stream.emitter.onCompletion(() -> streams.remove(stream));
@@ -85,7 +95,22 @@ class MobileEventStreams implements SmartLifecycle {
         stream.emitter.onError(error -> streams.remove(stream));
         log.debug("Mobile destination {} opened an event stream", destination.id().value());
         sendUnit(stream, unitResponses.of(destination));
+        waiting.get().forEach(notification -> sendNotification(stream, notification));
         return stream.emitter;
+    }
+
+    /**
+     * Sends the notification to every open stream of the destination.
+     */
+    void sendNotification(DestinationId destination, NotificationResponse notification) {
+        streams.stream()
+                .filter(stream -> stream.destination.id().equals(destination))
+                .forEach(stream -> sendNotification(stream, notification));
+    }
+
+    private void sendNotification(Stream stream, NotificationResponse notification) {
+        send(stream, SseEmitter.event().name(NOTIFICATION_EVENT).id(String.valueOf(notification.id()))
+                .data(notification));
     }
 
     @EventListener

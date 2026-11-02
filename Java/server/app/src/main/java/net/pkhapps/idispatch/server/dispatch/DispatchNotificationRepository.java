@@ -8,12 +8,14 @@ import net.pkhapps.idispatch.server.jooq.tables.records.DispatchNotificationsRec
 import net.pkhapps.idispatch.server.municipality.MunicipalityId;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,6 +81,42 @@ class DispatchNotificationRepository {
                 .where(DISPATCH_NOTIFICATIONS.ASSIGNMENT_ID.eq(assignment.value()))
                 .orderBy(DISPATCH_NOTIFICATIONS.TS, DISPATCH_NOTIFICATIONS.ID)
                 .fetch(this::toNotification);
+    }
+
+    /**
+     * Finds the notifications sent to the destination since the given moment that it has not confirmed, oldest first.
+     */
+    List<DispatchNotification> findUnconfirmed(DestinationId destination, Instant since) {
+        return dsl.selectFrom(DISPATCH_NOTIFICATIONS)
+                .where(DISPATCH_NOTIFICATIONS.TS.ge(toDatabase(since)))
+                .and(DISPATCH_NOTIFICATIONS.ID.in(DSL.select(DISPATCH_NOTIFICATION_DESTINATIONS.DISPATCH_NOTIFICATION_ID)
+                        .from(DISPATCH_NOTIFICATION_DESTINATIONS)
+                        .where(DISPATCH_NOTIFICATION_DESTINATIONS.DESTINATION_ID.eq(destination.value()))))
+                .andNotExists(DSL.selectOne().from(RECEIPTS)
+                        .where(RECEIPTS.NOTIFICATION_ID.eq(DISPATCH_NOTIFICATIONS.ID))
+                        .and(RECEIPTS.DESTINATION_ID.eq(destination.value())))
+                .orderBy(DISPATCH_NOTIFICATIONS.TS, DISPATCH_NOTIFICATIONS.ID)
+                .fetch(this::toNotification);
+    }
+
+    /**
+     * Finds the notification, if it was sent to the destination.
+     */
+    Optional<DispatchNotification> findSentTo(DestinationId destination, DispatchNotificationId notification) {
+        return dsl.selectFrom(DISPATCH_NOTIFICATIONS)
+                .where(DISPATCH_NOTIFICATIONS.ID.eq(notification.value()))
+                .and(DISPATCH_NOTIFICATIONS.ID.in(DSL.select(DISPATCH_NOTIFICATION_DESTINATIONS.DISPATCH_NOTIFICATION_ID)
+                        .from(DISPATCH_NOTIFICATION_DESTINATIONS)
+                        .where(DISPATCH_NOTIFICATION_DESTINATIONS.DESTINATION_ID.eq(destination.value()))))
+                .fetchOptional(this::toNotification);
+    }
+
+    /**
+     * Whether the destination has confirmed the notification.
+     */
+    boolean hasReceipt(DestinationId destination, DispatchNotificationId notification) {
+        return dsl.fetchExists(RECEIPTS, RECEIPTS.DESTINATION_ID.eq(destination.value())
+                .and(RECEIPTS.NOTIFICATION_ID.eq(notification.value())));
     }
 
     /**

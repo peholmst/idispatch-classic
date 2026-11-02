@@ -40,10 +40,12 @@ class UnitResponses {
         var locale = destination.locale();
         var callSign = requireNonNullElse(resourceQueries.findCallSigns(List.of(resource)).get(resource), "");
         if (status == null) {
-            return new UnitResponse(callSign, locale.getLanguage(), null, List.of());
+            return new UnitResponse(callSign, locale.getLanguage(), null, List.of(), null);
         }
+        var assignment = status.isAssigned() && status.assignment() != null ? status.assignment().value() : null;
         return new UnitResponse(callSign, locale.getLanguage(), state(status.state(), locale),
-                status.manualValidNextStates().stream().sorted().map(state -> state(state, locale)).toList());
+                status.manualValidNextStates().stream().sorted().map(state -> state(state, locale)).toList(),
+                assignment);
     }
 
     private static UnitResponse.State state(ResourceState state, Locale locale) {
