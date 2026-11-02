@@ -429,6 +429,15 @@ public class TestData {
     }
 
     /**
+     * The assignment the notification was sent for.
+     */
+    public long assignmentOf(GivenNotification notification) {
+        return dsl.select(DISPATCH_NOTIFICATIONS.ASSIGNMENT_ID).from(DISPATCH_NOTIFICATIONS)
+                .where(DISPATCH_NOTIFICATIONS.ID.eq(notification.id()))
+                .fetchSingle(DISPATCH_NOTIFICATIONS.ASSIGNMENT_ID);
+    }
+
+    /**
      * Moves the moment the notification was sent back by the given amount, as if it had been sent that long ago.
      */
     public void sentEarlier(GivenNotification notification, java.time.Duration ago) {

@@ -76,7 +76,8 @@ class MobileDispatcher extends AbstractDispatcher {
 
     private NotificationResponse response(DispatchNotification notification, Locale locale) {
         var type = assignmentTypeQueries.findById(notification.assignmentTypeId());
-        return new NotificationResponse(notification.id().value(), notification.timestamp(),
+        return new NotificationResponse(notification.id().value(), notification.assignmentId().value(),
+                notification.timestamp(),
                 notification.urgency().name(),
                 type.map(AssignmentTypeListItem::code).orElse("?"),
                 type.map(it -> it.description(locale)).orElse("?"),

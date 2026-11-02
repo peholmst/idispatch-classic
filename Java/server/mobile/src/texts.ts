@@ -20,6 +20,8 @@ const texts = {
     confirmDelete: 'Poistetaanko hälytys?',
     cancel: 'Peruuta',
     resources: 'Yksiköt',
+    replaced: 'Päivitetty',
+    obsolete: 'Ei enää ajankohtainen',
   },
   sv: {
     loading: 'Laddar…',
@@ -38,6 +40,8 @@ const texts = {
     confirmDelete: 'Ta bort larmet?',
     cancel: 'Avbryt',
     resources: 'Enheter',
+    replaced: 'Uppdaterat',
+    obsolete: 'Inte längre aktuellt',
   },
 } as const;
 

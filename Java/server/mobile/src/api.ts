@@ -18,12 +18,16 @@ export interface Unit {
   status: State | null;
   /** The states the unit may set next, in the order to show them. */
   nextStates: State[];
+  /** The assignment the unit is on now, or `null` if it is on none. */
+  assignmentId: number | null;
 }
 
 /** A dispatch notification, in the destination's language. */
 export interface Notification {
-  /** What the app confirms receiving it with. */
+  /** What the app confirms receiving it with. A new one for every dispatch, also to the same assignment again. */
   id: number;
+  /** The assignment it was sent for. Alerts stored by an earlier version of the app have none. */
+  assignmentId?: number;
   /** When it was sent, as an ISO 8601 instant. */
   timestamp: string;
   urgency: string;

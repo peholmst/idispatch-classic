@@ -164,6 +164,41 @@ class MobileEventStreamTest {
         assertThat(notification.get("urgency").asString()).isEqualTo("A");
         assertThat(notification.get("resources").get(0).asString()).isEqualTo(resource.callSign());
         assertThat(notification.get("timestamp").asString()).isNotBlank();
+        var assignment = notification.get("assignmentId").asLong();
+        assertThat(assignment).isEqualTo(given.assignmentOf(sent));
+        assertThat(nextUnitOnAssignment(stream, assignment).get("status").get("state").asString())
+                .as("The unit is on the assignment it was dispatched to").isEqualTo("DISPATCHED");
+    }
+
+    @Test
+    void unitIsOnNoAssignmentOnceItIsAvailableAgain() throws Exception {
+        var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
+        var stream = open(given.mobile(resource, Bilingual.FINNISH).key());
+        assertThat(nextUnit(stream).get("assignmentId").isNull()).isTrue();
+        dispatch(resource);
+        nextNotification(stream);
+
+        RunAs.dispatcher(() -> resourceStatusService.setResourceStateManually(new ResourceId(resource.id()),
+                ResourceState.AVAILABLE));
+
+        assertThat(nextUnitWhere(stream, unit -> unit.get("status").get("state").asString().equals("AVAILABLE"))
+                .get("assignmentId").isNull()).as("Still remembered on the server, but no longer on it").isTrue();
+    }
+
+    @Test
+    void dispatchingTheUnitToTheSameAssignmentAgainSendsANewNotification() throws Exception {
+        var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
+        var stream = open(given.mobile(resource, Bilingual.FINNISH).key());
+        nextUnit(stream);
+        var first = dispatch(resource);
+        var assignment = given.assignmentOf(first);
+
+        var again = dispatchAgain(assignment);
+
+        assertThat(nextNotification(stream).get("id").asLong()).isEqualTo(first.id());
+        var second = nextNotification(stream);
+        assertThat(second.get("id").asLong()).isEqualTo(again.id()).isNotEqualTo(first.id());
+        assertThat(second.get("assignmentId").asLong()).isEqualTo(assignment);
     }
 
     @Test
@@ -272,6 +307,36 @@ class MobileEventStreamTest {
         var notifications = given.notificationsFor(assignmentId);
         assertThat(notifications).as("The notification of the dispatch").hasSize(1);
         return notifications.getFirst();
+    }
+
+    /**
+     * Dispatches the resources on the assignment again, as a dispatcher does after changing its address.
+     */
+    private GivenNotification dispatchAgain(long assignmentId) {
+        RunAs.dispatcher(() -> {
+            try {
+                return dispatchService.dispatchAllResources(
+                        assignmentQueries.findById(new AssignmentId(assignmentId)).orElseThrow());
+            } catch (AssignmentNotReadyForDispatchException ex) {
+                throw new AssertionError("The assignment could not be dispatched", ex);
+            }
+        });
+        return given.notificationsFor(assignmentId).getLast();
+    }
+
+    private JsonNode nextUnitOnAssignment(BlockingQueue<String> stream, long assignment) throws InterruptedException {
+        return nextUnitWhere(stream, unit -> unit.get("assignmentId").isNumber()
+                && unit.get("assignmentId").asLong() == assignment);
+    }
+
+    private JsonNode nextUnitWhere(BlockingQueue<String> stream, java.util.function.Predicate<JsonNode> wanted)
+            throws InterruptedException {
+        while (true) {
+            var unit = nextUnit(stream);
+            if (wanted.test(unit)) {
+                return unit;
+            }
+        }
     }
 
     /**

@@ -5,7 +5,7 @@ const BASE = 'https://example.com/idispatch/api/mobile/';
 const KEY = 'k'.repeat(43);
 const UNIT: Unit = {
   callSign: 'RVS911', locale: 'fi', status: { state: 'AVAILABLE', label: 'Vapaa' },
-  nextStates: [{ state: 'AT_STATION', label: 'Asemalla' }],
+  nextStates: [{ state: 'AT_STATION', label: 'Asemalla' }], assignmentId: null,
 };
 
 function responding(status: number, body: unknown = {}) {

@@ -156,3 +156,17 @@ idispatch-mobile-app {
     justify-content: flex-end;
     gap: 0.5rem;
 }
+
+/* An alert that no longer tells the unit where to go is dimmed, with the reason above it */
+.message-card.replaced,
+.message-card.obsolete {
+    opacity: 0.55;
+}
+
+.message-card .alert-state {
+    font-size: 0.875rem;
+    font-weight: var(--aura-font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--vaadin-text-color-secondary);
+}

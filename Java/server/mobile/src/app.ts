@@ -2,6 +2,7 @@ import { html, LitElement, nothing } from 'lit';
 import '@vaadin/button';
 import { apiBase, changeStatus, confirmNotification, type Notification, type Unit } from './api';
 import { type ConnectionState, UnitConnection } from './events';
+import { alertState } from './alerts';
 import { formatTime } from './format';
 import { MessageStore } from './messages';
 import { indexedDbKeyStore, pair } from './pairing';
@@ -186,8 +187,10 @@ export class MobileApp extends LitElement {
   }
 
   private renderMessage(message: Notification, t: Texts, locale: string) {
+    const state = alertState(message, this.messages, this.unit);
     return html`
-      <article class="message-card" data-id=${message.id}>
+      <article class="message-card ${state}" data-id=${message.id}>
+        ${state === 'current' ? nothing : html`<p class="alert-state">${t[state]}</p>`}
         <header>
           <span class="urgency">${message.urgency}</span>
           <span class="type">${message.typeCode} ${message.type}</span>

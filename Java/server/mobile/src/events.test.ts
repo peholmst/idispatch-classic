@@ -4,7 +4,7 @@ import { type ConnectionState, EventParser, RETRY_DELAYS_MS, UnitConnection } fr
 
 const KEY = 'k'.repeat(43);
 const URL = 'https://example.com/idispatch/api/mobile/events';
-const UNIT: Unit = { callSign: 'RVS911', locale: 'fi', status: null, nextStates: [] };
+const UNIT: Unit = { callSign: 'RVS911', locale: 'fi', status: null, nextStates: [], assignmentId: null };
 const NOTIFICATION: Notification = {
   id: 1, timestamp: '2026-11-01T12:00:00Z', urgency: 'A', typeCode: '402', type: 'Rakennuspalo',
   municipality: 'Parainen', address: 'Rantatie 1', description: '', resources: ['RVS911'],
