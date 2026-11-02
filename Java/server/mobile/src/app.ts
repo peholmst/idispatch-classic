@@ -6,6 +6,7 @@ import { alertState } from './alerts';
 import { formatTime } from './format';
 import { MessageStore } from './messages';
 import { indexedDbKeyStore, pair } from './pairing';
+import { UnitCache } from './unit-cache';
 import { type Texts, textsFor } from './texts';
 
 /**
@@ -38,6 +39,7 @@ export class MobileApp extends LitElement {
   declare deleting: number | null;
 
   private readonly store = new MessageStore();
+  private readonly unitCache = new UnitCache();
 
   private key: string | null = null;
   private stream: UnitConnection | null = null;
@@ -73,10 +75,16 @@ export class MobileApp extends LitElement {
     await this.store.forgetOldDeleted();
     this.messages = await this.store.list();
     if (this.key !== null) {
+      // The last known unit, shown until the server answers, also when it can't be reached
+      this.unit = await this.unitCache.get();
+      if (this.unit !== null) {
+        document.documentElement.lang = this.unit.locale;
+      }
       this.stream = new UnitConnection(this.key, apiBase() + 'events', {
         unit: unit => {
           this.unit = unit;
           document.documentElement.lang = unit.locale;
+          void this.unitCache.set(unit);
         },
         notification: notification => void this.receive(notification),
         state: state => {
