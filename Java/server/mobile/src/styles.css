@@ -262,7 +262,8 @@ idispatch-mobile-app {
 
 /*
  * The buttons of a dialog are in a <div slot="footer">, not slotted as footer themselves: vaadin-dialog gives whatever
- * is slotted as its footer display: contents, which takes a button's background and size away.
+ * is slotted as its footer display: contents, which takes a button's background and size away
+ * (https://github.com/vaadin/web-components/issues/13349).
  */
 .dialog-footer {
     display: flex;
