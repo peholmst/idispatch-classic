@@ -17,7 +17,81 @@ idispatch-mobile-app {
     /* A phone's width, centered on a tablet */
     max-width: 36rem;
     margin-inline: auto;
-    padding: max(1rem, env(safe-area-inset-top)) 1rem 1rem;
+    /* Room at the bottom for the status in the corner, so that it never covers the last alert */
+    padding: max(1rem, env(safe-area-inset-top)) 1rem 7rem;
+}
+
+/* The unit's status, always in the bottom right corner, in the dispatcher's colors; it opens the status buttons */
+.status-corner {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 1;
+    min-width: 8rem;
+    height: 4.5rem;
+    border-radius: 2.25rem;
+    font-size: 1.25rem;
+    font-weight: var(--aura-font-weight-semibold);
+    box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 0.5);
+}
+
+.status-dialog .status-panel {
+    margin-top: 0;
+}
+
+.status-label {
+    margin: 1rem 0 0.5rem;
+    font-size: 0.875rem;
+    font-weight: var(--aura-font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--vaadin-text-color-secondary);
+}
+
+.status-label:first-child {
+    margin-top: 0;
+}
+
+.status-dialog {
+    --vaadin-dialog-min-width: min(24rem, 90vw);
+}
+
+/* A new alert fills most of the screen, readable at a glance */
+.new-alert {
+    --vaadin-dialog-min-width: min(32rem, 92vw);
+    --vaadin-dialog-title-font-size: 1.5rem;
+}
+
+.new-alert p {
+    margin: 0 0 0.75rem;
+}
+
+.new-alert-type {
+    font-size: 1.25rem;
+    font-weight: var(--aura-font-weight-semibold);
+}
+
+.new-alert-address {
+    font-size: 2rem;
+    font-weight: var(--aura-font-weight-semibold);
+    line-height: 1.2;
+}
+
+.new-alert-municipality {
+    font-size: 1.5rem;
+}
+
+.new-alert .urgency {
+    padding: 0 0.5rem;
+    border-radius: var(--vaadin-radius-s);
+    background: var(--aura-red);
+    color: white;
+}
+
+.new-alert .acknowledge {
+    min-width: 10rem;
+    height: 3.5rem;
+    font-size: 1.25rem;
 }
 
 .message {
@@ -34,10 +108,25 @@ idispatch-mobile-app {
     margin: 0;
 }
 
-.unit {
+.top-bar {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 0.75rem;
+}
+
+.top-bar .call-sign {
+    flex: 1;
+}
+
+.duty-on {
+    font-weight: var(--aura-font-weight-semibold);
+    color: var(--aura-green-text);
+}
+
+.duty-note {
+    margin: 0.75rem 0 0;
+    color: var(--vaadin-text-color-secondary);
 }
 
 .call-sign {
@@ -45,7 +134,7 @@ idispatch-mobile-app {
     font-size: 2rem;
 }
 
-/* The current state, large and in the dispatcher's colors, readable at a glance */
+/* The current state in the status dialog, large and in the dispatcher's colors */
 .status {
     margin: 0;
     padding: 1.25rem 1rem;
@@ -169,4 +258,16 @@ idispatch-mobile-app {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--vaadin-text-color-secondary);
+}
+
+/*
+ * The buttons of a dialog are in a <div slot="footer">, not slotted as footer themselves: vaadin-dialog gives whatever
+ * is slotted as its footer display: contents, which takes a button's background and size away.
+ */
+.dialog-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    width: 100%;
 }
