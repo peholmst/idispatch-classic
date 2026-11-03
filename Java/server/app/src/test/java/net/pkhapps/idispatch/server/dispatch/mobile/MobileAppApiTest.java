@@ -205,6 +205,26 @@ class MobileAppApiTest {
     }
 
     @Test
+    void appCanBeInstalled_withoutLoggingIn() throws Exception {
+        var manifest = send(request("mobile/manifest.webmanifest").GET().build());
+        assertThat(manifest.statusCode()).isEqualTo(200);
+        assertThat(manifest.headers().firstValue("Content-Type")).hasValueSatisfying(type ->
+                assertThat(type).startsWith("application/manifest+json"));
+        var json = jsonMapper.readTree(manifest.body());
+        assertThat(json.get("display").asString()).isEqualTo("standalone");
+        assertThat(json.get("start_url").asString()).isEqualTo("./");
+        for (var icon : json.get("icons")) {
+            var path = icon.get("src").asString();
+            assertThat(send(request("mobile/" + path).GET().build()).statusCode()).as(path).isEqualTo(200);
+        }
+
+        var serviceWorker = send(request("mobile/sw.js").GET().build());
+        assertThat(serviceWorker.statusCode()).isEqualTo(200);
+        assertThat(serviceWorker.headers().firstValue("Content-Type")).hasValueSatisfying(type ->
+                assertThat(type).contains("javascript"));
+    }
+
+    @Test
     void restOfTheApplicationStillNeedsTheLogin() throws Exception {
         var response = send(request("").GET().build());
 

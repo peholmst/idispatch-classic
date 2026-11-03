@@ -3,3 +3,6 @@ import '@vaadin/aura/aura.css';
 import '../../app/src/main/resources/META-INF/resources/styles/dispatch-view-styles.css';
 import './styles.css';
 import './app';
+import { registerServiceWorker } from './updates';
+
+registerServiceWorker();
