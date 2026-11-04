@@ -15,8 +15,7 @@ export default defineConfig({
   },
   plugins: [
     VitePWA({
-      // A new version activates as soon as it is downloaded, and the page reloads into it (see src/updates.ts). The
-      // app keeps everything that matters in IndexedDB, so a reload loses nothing.
+      // The app registers the service worker itself, and decides when to reload into a new version (src/updates.ts)
       registerType: 'autoUpdate',
       injectRegister: false,
       manifest: {
@@ -42,8 +41,9 @@ export default defineConfig({
         globPatterns: ['**/*.{html,js,css,woff2,png,svg}'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
-        // A new version takes over the open app at once, and the first one takes over the page that installed it, so
-        // that the app opens offline from the start
+        // A new version takes over at once, so that it also reaches apps installed before the app decided when to
+        // reload, and the first one takes over the page that installed it, so that the app opens offline from the start.
+        // The page goes on with the files it has loaded until it reloads.
         skipWaiting: true,
         clientsClaim: true,
       },

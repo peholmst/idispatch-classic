@@ -16,6 +16,18 @@ again whenever the stream ends, ever more slowly while the server can't be reach
 the stream is open: a change is never queued to be sent later. The state colors are the dispatcher's, imported from the
 server's `styles/dispatch-view-styles.css`.
 
+## Using the app
+
+The unit's call sign and the on-call duty stay at the top, and the alerts below them scroll. The unit's status is
+always in the bottom right corner; tapping it opens the buttons for the states the unit may set next. A new alert
+takes over the screen until someone taps "Kuittaa" / "Kvittera".
+
+"Aloita päivystys" / "Starta beredskap" starts the on-call duty, the vehicle mode for a device mounted in the vehicle:
+while it is on, a new alert sounds an alarm until it is acknowledged (for a minute at most), and the screen is kept on
+where the browser can. It is ended from the menu (⋮) beside "Päivystys käynnissä" / "Beredskap pågår". Browsers play sound only after a tap, which starting the duty is. The device's own volume still
+applies. If the app is reloaded during the duty, it asks for a tap to resume it, so that the alarm doesn't stay silent
+without anyone noticing, and a new version of the app waits until the duty ends.
+
 ## Installing and updates
 
 The app is an installable web app (PWA): Chrome on Android offers to add it to the home screen, and it then opens on
@@ -25,7 +37,7 @@ unit, with the status buttons disabled until the server answers. Pairing in the 
 the browser and the installed app share storage.
 
 When the server is updated, the app finds the new version the next time it opens, or within an hour while it stays
-open, and reloads into it; nothing needs reinstalling.
+open, and reloads into it, or once the on-call duty ends; nothing needs reinstalling.
 
 Browsers allow service workers, and so installing, only over HTTPS or on `localhost`. Production has HTTPS through
 NGINX. To try it on a phone against the dev server, connect the phone by USB and forward the port with
