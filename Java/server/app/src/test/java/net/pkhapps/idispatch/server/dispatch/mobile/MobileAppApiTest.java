@@ -2,6 +2,8 @@ package net.pkhapps.idispatch.server.dispatch.mobile;
 
 import net.pkhapps.idispatch.server.TestSecurityConfiguration;
 import net.pkhapps.idispatch.server.TestcontainersConfiguration;
+import net.pkhapps.idispatch.server.dispatch.DestinationId;
+import net.pkhapps.idispatch.server.dispatch.MobilePushSubscriptions;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import net.pkhapps.idispatch.server.ui.TestData;
@@ -28,9 +30,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The mobile app and its API, over HTTP the way a phone reaches them: the app loads without logging in, and the API
  * answers only a request with the key of a mobile destination, about that destination's unit.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "idispatch.mobile.push.public-key=" + MobileAppApiTest.VAPID_PUBLIC_KEY,
+        "idispatch.mobile.push.private-key=6YHQ81O_4YW2T0_K4aqq3RoqJ9KcsjP0Z652m52QvFA"})
 @Import({TestData.class, TestcontainersConfiguration.class, TestSecurityConfiguration.class})
 class MobileAppApiTest {
+
+    static final String VAPID_PUBLIC_KEY =
+            "BMqJtpGzQVU3IkBBkjYR6ph-Ef6c_z0Ivdhvp21wQSJd2-YLW4SWghn-GSebt5a_0t9M7dKd1zU2fJy8oWobvqE";
+    private static final String SUBSCRIPTION = """
+            {"endpoint":"https://push.example.com/send/%s","expirationTime":null,
+             "keys":{"p256dh":"BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+                     "auth":"BTBZMqHH6r4Tts7J_aSIgg"}}""";
 
     private static final Pattern ASSET = Pattern.compile("(?:src|href)=\"\\./(assets/[^\"]+)\"");
 
@@ -40,6 +51,8 @@ class MobileAppApiTest {
     TestData given;
     @Autowired
     JsonMapper jsonMapper;
+    @Autowired
+    MobilePushSubscriptions pushSubscriptions;
 
     private final HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
 
@@ -225,12 +238,71 @@ class MobileAppApiTest {
     }
 
     @Test
+    void appGetsTheKeyToSubscribeToPushWith() throws Exception {
+        var mobile = given.mobile(given.resource(unique("CS"), ResourceState.AVAILABLE), Bilingual.FINNISH);
+
+        var response = send(request("api/mobile/push/key").header("Authorization", "Bearer " + mobile.key())
+                .GET().build());
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(json(response).get("publicKey").asString()).isEqualTo(VAPID_PUBLIC_KEY);
+    }
+
+    @Test
+    void appRegistersItsPushSubscription_andRemovesIt() throws Exception {
+        var mobile = given.mobile(given.resource(unique("CS"), ResourceState.AVAILABLE), Bilingual.FINNISH);
+        var endpoint = unique("device");
+
+        var subscribed = putSubscription(mobile.key(), SUBSCRIPTION.formatted(endpoint));
+
+        assertThat(subscribed.statusCode()).isEqualTo(204);
+        assertThat(pushSubscriptions.find(new DestinationId(mobile.id())))
+                .hasValueSatisfying(subscription -> assertThat(subscription.endpoint().toString())
+                        .isEqualTo("https://push.example.com/send/" + endpoint));
+
+        var removed = send(request("api/mobile/push/subscription").header("Authorization", "Bearer " + mobile.key())
+                .DELETE().build());
+
+        assertThat(removed.statusCode()).isEqualTo(204);
+        assertThat(pushSubscriptions.find(new DestinationId(mobile.id()))).isEmpty();
+    }
+
+    @Test
+    void subscriptionThatIsNotOneIsRefused() throws Exception {
+        var mobile = given.mobile(given.resource(unique("CS"), ResourceState.AVAILABLE), Bilingual.FINNISH);
+
+        var notHttps = putSubscription(mobile.key(),
+                SUBSCRIPTION.formatted("x").replace("https://", "http://"));
+        var withoutKeys = putSubscription(mobile.key(), "{\"endpoint\":\"https://push.example.com/x\"}");
+
+        assertThat(notHttps.statusCode()).isEqualTo(400);
+        assertThat(withoutKeys.statusCode()).isEqualTo(400);
+        assertThat(pushSubscriptions.find(new DestinationId(mobile.id()))).isEmpty();
+    }
+
+    @Test
+    void subscriptionWithoutAKeyIsRefused() throws Exception {
+        var response = send(request("api/mobile/push/subscription").header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(SUBSCRIPTION.formatted("x"))).build());
+
+        assertThat(response.statusCode()).isEqualTo(401);
+    }
+
+    @Test
     void restOfTheApplicationStillNeedsTheLogin() throws Exception {
         var response = send(request("").GET().build());
 
         assertThat(response.statusCode()).isEqualTo(302);
         assertThat(response.headers().firstValue("Location")).hasValueSatisfying(location ->
                 assertThat(location).contains("/oauth2/authorization/keycloak"));
+    }
+
+    private HttpResponse<String> putSubscription(String key, String body) throws IOException, InterruptedException {
+        return send(request("api/mobile/push/subscription")
+                .header("Authorization", "Bearer " + key)
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(body))
+                .build());
     }
 
     private HttpResponse<String> postStatus(String key, String state) throws IOException, InterruptedException {

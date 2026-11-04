@@ -62,6 +62,8 @@ Fill in `.env`:
 | `KEYCLOAK_CLIENT_ID` | `idispatch`, unless you named the client differently. |
 | `KEYCLOAK_CLIENT_SECRET` | The client secret from step 1. |
 | `ASPSMS_USER_KEY`, `ASPSMS_PASSWORD`, `ASPSMS_ORIGINATOR` | ASPSMS credentials for sending dispatch SMS. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | The server's key pair for Web Push to the mobile apps; see "Web Push for the mobile apps" below. Leave them out and the mobile apps get alerts only while they are open. |
+| `VAPID_SUBJECT` | Who runs the server, as `mailto:` and an address (`mailto:admin@example.com`) or an `https://` URL. Push services use it to get in touch if the server's pushes cause trouble. Optional, but some push services expect it. |
 
 `.env` holds secrets: keep it readable only by the user that runs Docker (`chmod 600 .env`).
 
@@ -80,6 +82,36 @@ The server is healthy once it has migrated the database and read the realm's Ope
 
 To upgrade, pull the new version and run `docker compose up -d --build` again. Flyway migrates the database when
 the server starts. `docker compose down` keeps the database; `docker compose down -v` deletes it.
+
+### Web Push for the mobile apps
+
+The mobile app gets alerts over a live connection while it is open. To get them also when it is in the background or
+closed, as a notification on the phone, the server sends them by Web Push, through the push service of the phone's
+browser (Google's, for Chrome on Android). No Firebase project or other account is needed: the server identifies
+itself to the push services with a key pair of its own (VAPID). Make one with OpenSSL, on any computer:
+
+```shell
+openssl ecparam -name prime256v1 -genkey -noout -out vapid.pem
+echo "VAPID_PUBLIC_KEY=$(openssl ec -in vapid.pem -pubout -outform DER | tail -c 65 | base64 | tr '/+' '_-' | tr -d '=\n')"
+echo "VAPID_PRIVATE_KEY=$(openssl ec -in vapid.pem -outform DER | tail -c +8 | head -c 32 | base64 | tr '/+' '_-' | tr -d '=\n')"
+rm vapid.pem
+```
+
+Put the two lines it prints in `.env`, with `VAPID_SUBJECT`. Keys made with `npx web-push generate-vapid-keys` work as
+well. The private key is a secret like the others in `.env`. The server refuses to start if only one of the keys is
+set, or if they are not a pair; without either, it starts and logs a warning that Web Push is off.
+
+Keep the same keys from then on. The apps subscribe with the public key, so with new keys the server's pushes don't
+reach them until each app has been opened once, which subscribes it again.
+
+Each app asks for permission to show notifications ("Salli ilmoitukset" / "Tillåt aviseringar"), and once it has it,
+gives the server its subscription. Giving a mobile destination a new key removes its subscription, so a lost phone
+gets no more alerts. The server must reach the push services, such as `https://fcm.googleapis.com`, over HTTPS:
+if outgoing traffic is limited, allow it. A push that a push service doesn't deliver within an hour is dropped
+(`IDISPATCH_MOBILE_PUSH_TIME_TO_LIVE`, such as `30m`); the app gets the alert when it next opens.
+
+Web notifications can't play the app's alarm sound or sound in silent mode. For that, the app must be open, with the
+on-call duty started.
 
 ### Reaching Keycloak from the container
 
@@ -221,7 +253,10 @@ alarm.
 2. Log in as a user with the `DISPATCHER` role and open the dispatcher view. In the browser's developer tools,
    the **Network** tab shows a WebSocket request to `/idispatch/VAADIN/push` with status 101.
 3. Start a runboard. `docker compose logs idispatch` shows *Runboard … connected from …*.
-4. Log out. The browser returns to the Keycloak login page.
+4. Pair a phone with a mobile destination, allow notifications in the app, close the app and dispatch its unit. The
+   phone shows the alert as a notification, and with `LOGGING_LEVEL_NET_PKHAPPS: debug` the log says *Pushed
+   notification … to mobile destination …*.
+5. Log out. The browser returns to the Keycloak login page.
 
 See [keycloak.md](keycloak.md), "Troubleshooting", for login problems. Problems specific to this setup:
 
@@ -233,6 +268,8 @@ See [keycloak.md](keycloak.md), "Troubleshooting", for login problems. Problems 
 | 404 for everything, or redirect loops | `IDISPATCH_CONTEXT_PATH` doesn't match the path in the NGINX `location`, or `proxy_pass` has a URI after the upstream name, which makes NGINX rewrite the path. |
 | The server stays in `health: starting` and uses all the CPU | It fails to start and Docker restarts it at once, again and again: each restart starts a new JVM and resets the health status. `docker compose logs idispatch` shows why it fails, usually one of the errors below. |
 | The server restarts over and over, and the log says *Unable to resolve the Configuration with the provided Issuer* | The container can't reach Keycloak at `KEYCLOAK_ISSUER_URI`: check the URL for typos, and see "Reaching Keycloak from the container". |
+| The log says *Web Push is off* | `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are not set; see "Web Push for the mobile apps". |
+| The log says *Could not reach the push service* | The server can't make outgoing HTTPS connections to the push services. |
 | The log says *PKIX path building failed* | The JVM doesn't trust Keycloak's certificate; see "Reaching Keycloak from the container". |
 
 ## Upgrading

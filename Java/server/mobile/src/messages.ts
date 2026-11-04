@@ -31,19 +31,23 @@ export class MessageStore {
   }
 
   /**
-   * Stores the alert, unless it is already stored or was deleted, as when the server sends it again.
+   * Stores the alert, unless it is already stored or was deleted, as when the server sends it again, or when it comes
+   * both over the event stream and by push. Checked and stored in one transaction, so that the app and its service
+   * worker storing the same alert at once find it new only once.
    *
    * @return whether it was new
    */
   async add(notification: Notification): Promise<boolean> {
-    const existing = await run<StoredMessage | undefined>(this.factory, MESSAGES, 'readonly',
-      store => store.get(notification.id));
-    if (existing !== undefined) {
-      return false;
+    try {
+      await run(this.factory, MESSAGES, 'readwrite',
+        store => store.add({ ...notification, deleted: false, deletedAt: 0 } satisfies StoredMessage));
+      return true;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'ConstraintError') {
+        return false;
+      }
+      throw error;
     }
-    await run(this.factory, MESSAGES, 'readwrite',
-      store => store.put({ ...notification, deleted: false, deletedAt: 0 } satisfies StoredMessage));
-    return true;
   }
 
   async delete(id: number): Promise<void> {

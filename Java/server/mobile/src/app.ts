@@ -13,6 +13,8 @@ import { Duty, indexedDbDutyStore } from './duty';
 import { formatTime } from './format';
 import { MessageStore } from './messages';
 import { indexedDbKeyStore, pair } from './pairing';
+import { isAlertMessage } from './push';
+import { PushSetup, type PushState } from './push-subscription';
 import { UnitCache } from './unit-cache';
 import { type Texts, textsFor } from './texts';
 import { Updates } from './updates';
@@ -33,6 +35,10 @@ const MORE_ICON = svg`<svg viewBox="0 0 16 16"><path d="M10 2c0 1.105-0.895 2-2 
  * <p>
  * A new alert takes over the screen until someone acknowledges it. While the unit is on call (see {@link Duty}), it
  * also sounds the alarm and the screen is kept on.
+ * <p>
+ * Once the user lets the app show notifications, the alerts also come by Web Push, which the service worker receives
+ * while the app is in the background or closed (`push.ts`): it stores and confirms each one, and tells the app about
+ * it, which takes an alert that it stored first as new.
  */
 export class MobileApp extends LitElement {
 
@@ -46,6 +52,7 @@ export class MobileApp extends LitElement {
     deleting: { state: true },
     statusOpen: { state: true },
     newAlert: { state: true },
+    push: { state: true },
   };
 
   declare paired: boolean | null;
@@ -62,6 +69,8 @@ export class MobileApp extends LitElement {
   declare statusOpen: boolean;
   /** The alert that has taken over the screen until someone acknowledges it. */
   declare newAlert: Notification | null;
+  /** Whether the alerts come by push when the app is closed; `null` until the app knows. */
+  declare push: PushState | null;
 
   private readonly duty = new Duty(new WebAudioAlarm(), new WakeLockScreenLock(), indexedDbDutyStore(),
     () => this.dutyChanged());
@@ -72,6 +81,13 @@ export class MobileApp extends LitElement {
 
   private key: string | null = null;
   private stream: UnitConnection | null = null;
+  private pushSetup: PushSetup | null = null;
+  /** An alert that the service worker received by push. */
+  private readonly receivedByPush = (event: MessageEvent) => {
+    if (isAlertMessage(event.data)) {
+      void this.arrived(event.data.notification, event.data.isNew);
+    }
+  };
   private readonly reconnect = () => this.stream?.reconnectNow();
   private readonly reconnectWhenVisible = () => {
     if (document.visibilityState === 'visible') {
@@ -91,6 +107,7 @@ export class MobileApp extends LitElement {
     this.deleting = null;
     this.statusOpen = false;
     this.newAlert = null;
+    this.push = null;
   }
 
   // Rendered without shadow DOM, so that the Aura theme's document styles reach the Vaadin components
@@ -102,6 +119,7 @@ export class MobileApp extends LitElement {
     super.connectedCallback();
     window.addEventListener('online', this.reconnect);
     document.addEventListener('visibilitychange', this.reconnectWhenVisible);
+    navigator.serviceWorker?.addEventListener('message', this.receivedByPush);
     this.updates.register();
     await this.duty.restore();
     this.key = await pair(window.location, url => window.history.replaceState(null, '', url), indexedDbKeyStore());
@@ -125,17 +143,31 @@ export class MobileApp extends LitElement {
           this.connection = state;
           if (state === 'not-paired') {
             this.paired = false;
+          } else if (state === 'connected' && this.push === 'failed') {
+            // Telling the server failed, as when it couldn't be reached; it can now
+            void this.refreshPush();
           }
         },
       });
       this.stream.start();
+      this.pushSetup = new PushSetup(this.key);
+      void this.refreshPush();
     }
+  }
+
+  private async refreshPush() {
+    this.push = await this.pushSetup?.refresh() ?? null;
+  }
+
+  private async enablePush() {
+    this.push = await this.pushSetup?.enable() ?? null;
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('online', this.reconnect);
     document.removeEventListener('visibilitychange', this.reconnectWhenVisible);
+    navigator.serviceWorker?.removeEventListener('message', this.receivedByPush);
     this.stream?.stop();
   }
 
@@ -145,16 +177,25 @@ export class MobileApp extends LitElement {
    * screen, replacing one shown before it, and sounds the alarm while the unit is on call.
    */
   private async receive(notification: Notification) {
-    if (await this.store.add(notification)) {
-      this.messages = await this.store.list();
-      if (this.newAlert === null || notification.timestamp >= this.newAlert.timestamp) {
-        this.newAlert = notification;
-      }
-      this.duty.alert();
-    }
+    await this.arrived(notification, await this.store.add(notification));
     if (this.key !== null) {
       await confirmNotification(this.key, notification.id);
     }
+  }
+
+  /**
+   * Shows an alert just stored, by the app or by its service worker, if it was new. One that came both over the event
+   * stream and by push is new only to whichever stored it first.
+   */
+  private async arrived(notification: Notification, isNew: boolean) {
+    if (!isNew) {
+      return;
+    }
+    this.messages = await this.store.list();
+    if (this.newAlert === null || notification.timestamp >= this.newAlert.timestamp) {
+      this.newAlert = notification;
+    }
+    this.duty.alert();
   }
 
   /** Silences the alarm and lets the new alert go back to the list. */
@@ -233,6 +274,7 @@ export class MobileApp extends LitElement {
       </header>
       ${online ? nothing : html`<p class="banner" role="status">${t.connectionLost}</p>`}
       ${this.renderDutyNote(t)}
+      ${this.renderPushNote(t)}
       <section class="messages">
         <h2>${t.messages}</h2>
         <div class="message-list">
@@ -293,6 +335,24 @@ export class MobileApp extends LitElement {
         ${this.updates.waiting ? html`<p class="duty-note" role="status">${t.updateWaiting}</p>` : nothing}`;
     }
     return nothing;
+  }
+
+  /** Asks for notifications, or tells that alerts come only while the app is open. */
+  private renderPushNote(t: Texts) {
+    switch (this.push) {
+      case 'ask':
+        return html`
+          <div class="duty-note push-note" role="status">
+            <span>${t.pushAsk}</span>
+            <vaadin-button theme="primary" @click=${() => this.enablePush()}>${t.enablePush}</vaadin-button>
+          </div>`;
+      case 'denied':
+        return html`<p class="duty-note" role="status">${t.pushDenied}</p>`;
+      case 'failed':
+        return html`<p class="duty-note" role="status">${t.pushFailed}</p>`;
+      default:
+        return nothing;
+    }
   }
 
   /** The states the unit may set next, as large buttons in the dispatcher's colors. */

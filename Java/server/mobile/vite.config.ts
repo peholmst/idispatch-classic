@@ -18,6 +18,8 @@ export default defineConfig({
       // The app registers the service worker itself, and decides when to reload into a new version (src/updates.ts)
       registerType: 'autoUpdate',
       injectRegister: false,
+      // The icons are in the app shell's files already
+      includeManifestIcons: false,
       manifest: {
         name: 'iDispatch',
         short_name: 'iDispatch',
@@ -36,16 +38,14 @@ export default defineConfig({
           { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
+      // The service worker is the app's own (src/sw.ts), as it also receives the alerts by Web Push; Workbox puts the
+      // list of files of the app shell in it
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
         // The app shell: the page, its script, styles and font, and the icons
         globPatterns: ['**/*.{html,js,css,woff2,png,svg}'],
-        navigateFallback: 'index.html',
-        cleanupOutdatedCaches: true,
-        // A new version takes over at once, so that it also reaches apps installed before the app decided when to
-        // reload, and the first one takes over the page that installed it, so that the app opens offline from the start.
-        // The page goes on with the files it has loaded until it reloads.
-        skipWaiting: true,
-        clientsClaim: true,
       },
     }),
   ],

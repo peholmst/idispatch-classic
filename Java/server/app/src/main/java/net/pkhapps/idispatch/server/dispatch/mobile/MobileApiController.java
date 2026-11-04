@@ -1,6 +1,8 @@
 package net.pkhapps.idispatch.server.dispatch.mobile;
 
 import net.pkhapps.idispatch.server.dispatch.MobileDestination;
+import net.pkhapps.idispatch.server.dispatch.MobilePushSubscriptions;
+import net.pkhapps.idispatch.server.dispatch.PushSubscription;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import org.slf4j.Logger;
@@ -15,6 +17,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,13 +44,18 @@ class MobileApiController {
     private final ResourceStatusService resourceStatusService;
     private final MobileEventStreams eventStreams;
     private final MobileDispatcher dispatcher;
+    private final MobilePush push;
+    private final MobilePushSubscriptions pushSubscriptions;
 
     MobileApiController(UnitResponses unitResponses, ResourceStatusService resourceStatusService,
-                        MobileEventStreams eventStreams, MobileDispatcher dispatcher) {
+                        MobileEventStreams eventStreams, MobileDispatcher dispatcher, MobilePush push,
+                        MobilePushSubscriptions pushSubscriptions) {
         this.unitResponses = unitResponses;
         this.resourceStatusService = resourceStatusService;
         this.eventStreams = eventStreams;
         this.dispatcher = dispatcher;
+        this.push = push;
+        this.pushSubscriptions = pushSubscriptions;
     }
 
     /**
@@ -125,5 +133,62 @@ class MobileApiController {
         return dispatcher.confirm(destination, id)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
+    }
+
+    /**
+     * The server's public VAPID key, which the app subscribes to Web Push with.
+     */
+    record PushKey(String publicKey) {
+    }
+
+    /**
+     * The public key the app subscribes to Web Push with.
+     *
+     * @return the key, or 404 if the server has no VAPID keys, and so sends no pushes
+     */
+    @GetMapping("/push/key")
+    ResponseEntity<PushKey> pushKey() {
+        return push.publicKey()
+                .map(key -> ResponseEntity.ok(new PushKey(key)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * A push subscription as the browser's {@code PushSubscription.toJSON()} gives it.
+     */
+    record PushSubscriptionRequest(String endpoint, Keys keys) {
+
+        record Keys(String p256dh, String auth) {
+        }
+    }
+
+    /**
+     * Stores the app's push subscription, replacing any earlier one of the destination. The subscription belongs to
+     * the key the app sent, and a new key for the destination removes it.
+     *
+     * @return 204, or 400 if it is not a valid subscription
+     */
+    @PutMapping("/push/subscription")
+    ResponseEntity<Void> subscribe(Authentication authentication, @RequestBody PushSubscriptionRequest request) {
+        var app = (MobileAppAuthentication) authentication;
+        var keys = request.keys();
+        if (keys == null || !PushSubscription.isValid(request.endpoint(), keys.p256dh(), keys.auth())) {
+            return ResponseEntity.badRequest().build();
+        }
+        var subscription = PushSubscription.of(request.endpoint(), keys.p256dh(), keys.auth());
+        log.debug("Mobile destination {} subscribes to Web Push", app.getPrincipal().id().value());
+        return pushSubscriptions.subscribe(app.keyHash(), subscription)
+                ? ResponseEntity.noContent().build()
+                // The key was replaced after the request was authenticated
+                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    /**
+     * Removes the app's push subscription, if it has one.
+     */
+    @DeleteMapping("/push/subscription")
+    ResponseEntity<Void> unsubscribe(Authentication authentication) {
+        pushSubscriptions.unsubscribe(((MobileAppAuthentication) authentication).keyHash());
+        return ResponseEntity.noContent().build();
     }
 }

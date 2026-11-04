@@ -35,6 +35,8 @@ class DestinationManagementServiceTest {
     DestinationManagementService service;
     @Autowired
     TestData testData;
+    @Autowired
+    MobilePushSubscriptions pushSubscriptions;
 
     private TestData.GivenResource givenResource;
     private ResourceId resource;
@@ -119,6 +121,24 @@ class DestinationManagementServiceTest {
         assertThat(service.findById(created.destination().id()).orElseThrow().version())
                 .as("An administrator editing the destination can still save")
                 .isEqualTo(created.destination().version());
+    }
+
+    @Test
+    void newKeyRemovesThePushSubscriptionOfTheOldDevice() {
+        var created = service.createMobile(mobile("Engine 5"));
+        var subscription = PushSubscription.of("https://push.example.com/" + unique("old-device"),
+                "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+                "BTBZMqHH6r4Tts7J_aSIgg");
+        assertThat(pushSubscriptions.subscribe(created.key().hash(), subscription)).isTrue();
+        assertThat(pushSubscriptions.find(created.destination().id())).contains(subscription);
+
+        var newKey = service.replaceMobileKey(created.destination().id());
+
+        assertThat(pushSubscriptions.find(created.destination().id())).isEmpty();
+        assertThat(pushSubscriptions.subscribe(created.key().hash(), subscription))
+                .as("The old device can't subscribe again").isFalse();
+        assertThat(pushSubscriptions.find(created.destination().id())).isEmpty();
+        assertThat(pushSubscriptions.subscribe(newKey.hash(), subscription)).isTrue();
     }
 
     @Test

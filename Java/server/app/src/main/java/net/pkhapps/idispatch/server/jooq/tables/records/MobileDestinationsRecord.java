@@ -46,6 +46,48 @@ public class MobileDestinationsRecord extends UpdatableRecordImpl<MobileDestinat
         return (String) get(1);
     }
 
+    /**
+     * Setter for <code>public.mobile_destinations.push_endpoint</code>.
+     */
+    public void setPushEndpoint(String value) {
+        set(2, value);
+    }
+
+    /**
+     * Getter for <code>public.mobile_destinations.push_endpoint</code>.
+     */
+    public String getPushEndpoint() {
+        return (String) get(2);
+    }
+
+    /**
+     * Setter for <code>public.mobile_destinations.push_p256dh</code>.
+     */
+    public void setPushP256dh(String value) {
+        set(3, value);
+    }
+
+    /**
+     * Getter for <code>public.mobile_destinations.push_p256dh</code>.
+     */
+    public String getPushP256dh() {
+        return (String) get(3);
+    }
+
+    /**
+     * Setter for <code>public.mobile_destinations.push_auth</code>.
+     */
+    public void setPushAuth(String value) {
+        set(4, value);
+    }
+
+    /**
+     * Getter for <code>public.mobile_destinations.push_auth</code>.
+     */
+    public String getPushAuth() {
+        return (String) get(4);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -69,11 +111,14 @@ public class MobileDestinationsRecord extends UpdatableRecordImpl<MobileDestinat
     /**
      * Create a detached, initialised MobileDestinationsRecord
      */
-    public MobileDestinationsRecord(Long id, String keyHash) {
+    public MobileDestinationsRecord(Long id, String keyHash, String pushEndpoint, String pushP256dh, String pushAuth) {
         super(MobileDestinations.MOBILE_DESTINATIONS);
 
         setId(id);
         setKeyHash(keyHash);
+        setPushEndpoint(pushEndpoint);
+        setPushP256dh(pushP256dh);
+        setPushAuth(pushAuth);
         resetTouchedOnNotNull();
     }
 }

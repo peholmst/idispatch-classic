@@ -13,6 +13,7 @@ import net.pkhapps.idispatch.server.jooq.Public;
 import net.pkhapps.idispatch.server.jooq.tables.Destinations.DestinationsPath;
 import net.pkhapps.idispatch.server.jooq.tables.records.MobileDestinationsRecord;
 
+import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
@@ -66,6 +67,21 @@ public class MobileDestinations extends TableImpl<MobileDestinationsRecord> {
      * The column <code>public.mobile_destinations.key_hash</code>.
      */
     public final TableField<MobileDestinationsRecord, String> KEY_HASH = createField(DSL.name("key_hash"), SQLDataType.VARCHAR(64).nullable(false), this, "");
+
+    /**
+     * The column <code>public.mobile_destinations.push_endpoint</code>.
+     */
+    public final TableField<MobileDestinationsRecord, String> PUSH_ENDPOINT = createField(DSL.name("push_endpoint"), SQLDataType.VARCHAR(2048), this, "");
+
+    /**
+     * The column <code>public.mobile_destinations.push_p256dh</code>.
+     */
+    public final TableField<MobileDestinationsRecord, String> PUSH_P256DH = createField(DSL.name("push_p256dh"), SQLDataType.VARCHAR(100), this, "");
+
+    /**
+     * The column <code>public.mobile_destinations.push_auth</code>.
+     */
+    public final TableField<MobileDestinationsRecord, String> PUSH_AUTH = createField(DSL.name("push_auth"), SQLDataType.VARCHAR(50), this, "");
 
     private MobileDestinations(Name alias, Table<MobileDestinationsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -159,6 +175,13 @@ public class MobileDestinations extends TableImpl<MobileDestinationsRecord> {
             _destinations = new DestinationsPath(this, Keys.MOBILE_DESTINATIONS__MOBILE_DESTINATIONS_DESTINATION_FK, null);
 
         return _destinations;
+    }
+
+    @Override
+    public List<Check<MobileDestinationsRecord>> getChecks() {
+        return Arrays.asList(
+            Internal.createCheck(this, DSL.name("mobile_destinations_push_ck"), "((((push_endpoint IS NULL) AND (push_p256dh IS NULL) AND (push_auth IS NULL)) OR ((push_endpoint IS NOT NULL) AND (push_p256dh IS NOT NULL) AND (push_auth IS NOT NULL))))", true)
+        );
     }
 
     @Override

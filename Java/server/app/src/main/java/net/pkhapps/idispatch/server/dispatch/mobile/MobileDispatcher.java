@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Delivers the dispatch notifications to the mobile apps, over their event streams (see {@link MobileEventStreams}).
+ * Delivers the dispatch notifications to the mobile apps, over their event streams (see {@link MobileEventStreams}),
+ * and by Web Push to the apps that have subscribed (see {@link MobilePush}), which reaches them also when they are
+ * closed.
  * <p>
  * Unlike the runboards' queue, which is kept in memory, the notifications waiting for an app are those sent to its
  * destination that it has not confirmed, as stored: a phone that was out of reach, or a server restart, loses none.
@@ -30,15 +32,17 @@ import java.util.Locale;
 class MobileDispatcher extends AbstractDispatcher {
 
     private final MobileEventStreams eventStreams;
+    private final MobilePush push;
     private final AssignmentTypeQueries assignmentTypeQueries;
     private final MunicipalityQueries municipalityQueries;
     private final ResourceQueries resourceQueries;
     private final Duration redeliveryWindow;
 
-    MobileDispatcher(MobileEventStreams eventStreams, AssignmentTypeQueries assignmentTypeQueries,
+    MobileDispatcher(MobileEventStreams eventStreams, MobilePush push, AssignmentTypeQueries assignmentTypeQueries,
                      MunicipalityQueries municipalityQueries, ResourceQueries resourceQueries,
                      @Value("${idispatch.mobile.redelivery-window:24h}") Duration redeliveryWindow) {
         this.eventStreams = eventStreams;
+        this.push = push;
         this.assignmentTypeQueries = assignmentTypeQueries;
         this.municipalityQueries = municipalityQueries;
         this.resourceQueries = resourceQueries;
@@ -51,7 +55,9 @@ class MobileDispatcher extends AbstractDispatcher {
         event.getDestinationsOfType(MobileDestination.class).forEach(destination -> {
             logger.debug("Sending dispatch notification {} to mobile destination {}", notification.id(),
                     destination.id());
-            eventStreams.sendNotification(destination.id(), response(notification, destination.locale()));
+            var response = response(notification, destination.locale());
+            eventStreams.sendNotification(destination.id(), response);
+            push.send(destination, response);
         });
     }
 

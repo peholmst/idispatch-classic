@@ -37,6 +37,10 @@ const texts = {
     menu: 'Valikko',
     currentStatus: 'Nykyinen tila',
     changeTo: 'Vaihda tilaksi',
+    pushAsk: 'Salli ilmoitukset, niin hälytykset tulevat myös, kun sovellus on suljettu.',
+    enablePush: 'Salli ilmoitukset',
+    pushDenied: 'Ilmoitukset on estetty: hälytykset tulevat vain, kun sovellus on auki. Salli ilmoitukset selaimen asetuksista.',
+    pushFailed: 'Ilmoituksia ei saatu käyttöön: hälytykset tulevat vain, kun sovellus on auki.',
   },
   sv: {
     loading: 'Laddar…',
@@ -72,6 +76,10 @@ const texts = {
     menu: 'Meny',
     currentStatus: 'Nuvarande status',
     changeTo: 'Byt till',
+    pushAsk: 'Tillåt aviseringar, så kommer larmen också när appen är stängd.',
+    enablePush: 'Tillåt aviseringar',
+    pushDenied: 'Aviseringar är blockerade: larmen kommer bara när appen är öppen. Tillåt aviseringar i webbläsarens inställningar.',
+    pushFailed: 'Aviseringar kunde inte tas i bruk: larmen kommer bara när appen är öppen.',
   },
 } as const;
 
