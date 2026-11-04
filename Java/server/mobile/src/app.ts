@@ -1,6 +1,10 @@
-import { html, LitElement, nothing } from 'lit';
+import { html, LitElement, nothing, svg } from 'lit';
 import '@vaadin/button';
 import '@vaadin/dialog';
+import '@vaadin/icon';
+import type { Icon } from '@vaadin/icon';
+import '@vaadin/menu-bar';
+import type { MenuBarItem, MenuBarItemSelectedEvent } from '@vaadin/menu-bar';
 import { WebAudioAlarm } from './alarm';
 import { apiBase, changeStatus, confirmNotification, type Notification, type Unit } from './api';
 import { type ConnectionState, UnitConnection } from './events';
@@ -13,6 +17,12 @@ import { UnitCache } from './unit-cache';
 import { type Texts, textsFor } from './texts';
 import { Updates } from './updates';
 import { WakeLockScreenLock } from './wake-lock';
+
+/**
+ * Vaadin Icons' `ellipsis-dots-v` (Apache License 2.0), on its own, so that the app doesn't load the whole icon set,
+ * which is larger than the app, for one icon.
+ */
+const MORE_ICON = svg`<svg viewBox="0 0 16 16"><path d="M10 2c0 1.105-0.895 2-2 2s-2-0.895-2-2c0-1.105 0.895-2 2-2s2 0.895 2 2z"></path><path d="M10 8c0 1.105-0.895 2-2 2s-2-0.895-2-2c0-1.105 0.895-2 2-2s2 0.895 2 2z"></path><path d="M10 14c0 1.105-0.895 2-2 2s-2-0.895-2-2c0-1.105 0.895-2 2-2s2 0.895 2 2z"></path></svg>`;
 
 /**
  * The app: pairs with the key in the address, if there is one, keeps the unit's event stream open, and shows the
@@ -151,7 +161,8 @@ export class MobileApp extends LitElement {
   private acknowledge() {
     this.duty.acknowledge();
     this.newAlert = null;
-    window.scrollTo({ top: 0 });
+    // The new alert is at the top of the list
+    this.querySelector('.message-list')?.scrollTo({ top: 0 });
   }
 
   private dutyChanged() {
@@ -224,9 +235,11 @@ export class MobileApp extends LitElement {
       ${this.renderDutyNote(t)}
       <section class="messages">
         <h2>${t.messages}</h2>
-        ${this.messages.length === 0
-          ? html`<p class="no-messages">${t.noMessages}</p>`
-          : this.messages.map(message => this.renderMessage(message, t, unit.locale))}
+        <div class="message-list">
+          ${this.messages.length === 0
+            ? html`<p class="no-messages">${t.noMessages}</p>`
+            : this.messages.map(message => this.renderMessage(message, t, unit.locale))}
+        </div>
       </section>
       <vaadin-button class="status-corner ${stateClass(unit.status?.state)}" data-state=${unit.status?.state ?? ''}
                      aria-label=${`${t.changeStatus}: ${unit.status?.label ?? t.noStatus}`}
@@ -238,13 +251,36 @@ export class MobileApp extends LitElement {
       ${this.renderResumeDuty(t)}`;
   }
 
-  /** Starts or ends the duty; while it is off, the app says that alerts make no sound. */
+  /**
+   * Starts the duty, or, while it is on, says so with a menu that ends it, so that ending it takes two taps and the top
+   * bar stays on one line on a phone.
+   */
   private renderDutyButton(t: Texts) {
     return this.duty.state === 'on'
       ? html`
         <span class="duty-on">${t.onDuty}</span>
-        <vaadin-button theme="tertiary" @click=${() => this.duty.end()}>${t.endDuty}</vaadin-button>`
+        <vaadin-menu-bar class="duty-menu" theme="tertiary icon" .items=${this.dutyMenu(t)}
+                         @item-selected=${(event: MenuBarItemSelectedEvent) => {
+                           if (event.detail.value.text === t.endDuty) {
+                             void this.duty.end();
+                           }
+                         }}></vaadin-menu-bar>`
       : html`<vaadin-button theme="primary" @click=${() => this.duty.start()}>${t.startDuty}</vaadin-button>`;
+  }
+
+  private dutyMenuItems: { language: string; items: MenuBarItem[] } | null = null;
+
+  /** The duty menu's items, made once per language, as the menu bar renders itself again whenever they change. */
+  private dutyMenu(t: Texts): MenuBarItem[] {
+    if (this.dutyMenuItems?.language !== t.endDuty) {
+      const icon = document.createElement('vaadin-icon') as Icon;
+      icon.svg = MORE_ICON;
+      // The button's name for screen readers, which an icon gives only with a role
+      icon.setAttribute('role', 'img');
+      icon.setAttribute('aria-label', t.menu);
+      this.dutyMenuItems = { language: t.endDuty, items: [{ component: icon, children: [{ text: t.endDuty }] }] };
+    }
+    return this.dutyMenuItems.items;
   }
 
   private renderDutyNote(t: Texts) {

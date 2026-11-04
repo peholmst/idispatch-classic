@@ -14,6 +14,8 @@
     "@vaadin/aura": "25.3.5",
     "@vaadin/button": "25.3.5",
     "@vaadin/dialog": "25.3.5",
+    "@vaadin/icon": "25.3.5",
+    "@vaadin/menu-bar": "25.3.5",
     "lit": "3.3.3",
     "workbox-window": "7.4.1"
   },

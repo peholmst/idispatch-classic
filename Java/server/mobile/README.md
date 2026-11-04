@@ -18,12 +18,13 @@ server's `styles/dispatch-view-styles.css`.
 
 ## Using the app
 
-The unit's status is always in the bottom right corner; tapping it opens the buttons for the states the unit may set
-next. A new alert takes over the screen until someone taps "Kuittaa" / "Kvittera".
+The unit's call sign and the on-call duty stay at the top, and the alerts below them scroll. The unit's status is
+always in the bottom right corner; tapping it opens the buttons for the states the unit may set next. A new alert
+takes over the screen until someone taps "Kuittaa" / "Kvittera".
 
 "Aloita päivystys" / "Starta beredskap" starts the on-call duty, the vehicle mode for a device mounted in the vehicle:
 while it is on, a new alert sounds an alarm until it is acknowledged (for a minute at most), and the screen is kept on
-where the browser can. Browsers play sound only after a tap, which starting the duty is. The device's own volume still
+where the browser can. It is ended from the menu (⋮) beside "Päivystys käynnissä" / "Beredskap pågår". Browsers play sound only after a tap, which starting the duty is. The device's own volume still
 applies. If the app is reloaded during the duty, it asks for a tap to resume it, so that the alarm doesn't stay silent
 without anyone noticing, and a new version of the app waits until the duty ends.
 

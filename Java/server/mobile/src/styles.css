@@ -4,21 +4,30 @@ html {
     --aura-base-size: 18;
 }
 
+/* The app fills the screen and the page itself doesn't scroll: only the alert list does (see .message-list) */
 body {
     margin: 0;
-    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
     background: var(--vaadin-background-color);
     color: var(--vaadin-text-color);
     font-family: var(--aura-font-family);
 }
 
 idispatch-mobile-app {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    height: 100dvh;
     /* A phone's width, centered on a tablet */
     max-width: 36rem;
     margin-inline: auto;
-    /* Room at the bottom for the status in the corner, so that it never covers the last alert */
-    padding: max(1rem, env(safe-area-inset-top)) 1rem 7rem;
+    padding: max(1rem, env(safe-area-inset-top)) 1rem 0;
+}
+
+/* The call sign, the duty and any notes stay at the top; the alerts below them fill the rest and scroll */
+idispatch-mobile-app > * {
+    flex: none;
 }
 
 /* The unit's status, always in the bottom right corner, in the dispatcher's colors; it opens the status buttons */
@@ -176,7 +185,20 @@ idispatch-mobile-app {
 }
 
 .messages {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.message-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Room at the bottom for the status in the corner, so that it never covers the last alert */
+    padding-bottom: 7rem;
 }
 
 .messages h2 {
@@ -271,4 +293,9 @@ idispatch-mobile-app {
     justify-content: flex-end;
     gap: 0.5rem;
     width: 100%;
+}
+
+/* The duty menu's three dots already say it is a menu; the menu bar would add a chevron after them */
+.duty-menu vaadin-menu-bar-button::part(suffix) {
+    display: none;
 }
