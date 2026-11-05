@@ -38,7 +38,7 @@ class AnnouncementTest {
                 "address", "Köpmansgatan 1",
                 "resources", List.of("RVS911")));
 
-        assertEquals(List.of("Larmmeddelande: R V S 9 1 1.", "Uppdrag: 1 0 3 Berta.", "Köpmansgatan 1, Pargas."),
+        assertEquals(List.of("Larmmeddelande: R V S 9 1 1.", "Uppdrag: 1 0 3 Bertil.", "Köpmansgatan 1, Pargas."),
                 Announcement.phrases(notification, notification.getLanguage(), 10));
     }
 
@@ -68,14 +68,14 @@ class AnnouncementTest {
 
     @Test
     void swedishUnits_upToTheMaximum_areListed() {
-        assertEquals(List.of("Larmmeddelande: R V S 1 1.", "R V S 1 2.", "R V S 1 3.", "Uppdrag: 1 0 3 Berta.",
+        assertEquals(List.of("Larmmeddelande: R V S 1 1.", "R V S 1 2.", "R V S 1 3.", "Uppdrag: 1 0 3 Bertil.",
                         "Kauppiaskatu 1, Parainen."),
                 Announcement.phrases(notificationWithUnits("sv", 3), "sv", 3));
     }
 
     @Test
     void swedishUnits_overTheMaximum_areReadAsTheirNumber() {
-        assertEquals(List.of("Larmmeddelande: 12 enheter.", "Uppdrag: 1 0 3 Berta.", "Kauppiaskatu 1, Parainen."),
+        assertEquals(List.of("Larmmeddelande: 12 enheter.", "Uppdrag: 1 0 3 Bertil.", "Kauppiaskatu 1, Parainen."),
                 Announcement.phrases(notificationWithUnits("sv", 12), "sv", 10));
     }
 
@@ -108,7 +108,10 @@ class AnnouncementTest {
         assertEquals("Tehtävä: 1 Celsius.", urgencyText("fi", "C"));
         assertEquals("Tehtävä: 1 David.", urgencyText("fi", "D"));
         assertEquals("Tehtävä: 1 Nilo.", urgencyText("fi", "N"));
-        assertEquals("Uppdrag: 1 Arne.", urgencyText("sv", "A"));
+        assertEquals("Uppdrag: 1 Adam.", urgencyText("sv", "A"));
+        assertEquals("Uppdrag: 1 Bertil.", urgencyText("sv", "B"));
+        assertEquals("Uppdrag: 1 Cesar.", urgencyText("sv", "C"));
+        assertEquals("Uppdrag: 1 David.", urgencyText("sv", "D"));
         assertEquals("Uppdrag: 1 Niklas.", urgencyText("sv", "N"));
         assertEquals("1 B.", urgencyText("", "B"));
         assertEquals("Tehtävä: 1 X.", urgencyText("fi", "X"));
