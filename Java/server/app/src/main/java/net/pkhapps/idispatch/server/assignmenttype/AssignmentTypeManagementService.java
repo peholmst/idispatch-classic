@@ -1,6 +1,9 @@
 package net.pkhapps.idispatch.server.assignmenttype;
 
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditEventKind;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +27,10 @@ class AssignmentTypeManagementService {
     private static final Logger log = LoggerFactory.getLogger(AssignmentTypeManagementService.class);
 
     private final AssignmentTypeRepository repository;
+    private final AuditLog auditLog;
 
-    AssignmentTypeManagementService(AssignmentTypeRepository repository) {
+    AssignmentTypeManagementService(AssignmentTypeRepository repository, AuditLog auditLog) {
+        this.auditLog = auditLog;
         this.repository = repository;
     }
 
@@ -46,29 +51,47 @@ class AssignmentTypeManagementService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AssignmentType create(AssignmentTypeDetails details) {
         log.debug("Creating assignment type {}", details.code());
-        return repository.insert(details);
+        var created = repository.insert(details);
+        auditLog.record(audited(created.id()), AuditEventKind.CREATED);
+        return created;
     }
 
     /**
-     * Saves the changed details of the type.
+     * Saves the changed details of the type. If nothing has changed, saves nothing and returns the
+     * type as stored, with the same version.
      *
      * @return the type as saved, with its new version
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AssignmentType update(AssignmentType type) {
         log.debug("Updating assignment type {} version {}", type.id().value(), type.version());
-        return repository.update(type);
+        var stored = repository.findById(type.id());
+        if (stored.filter(type::equals).isPresent()) {
+            log.debug("Nothing to save in type {}", type.id().value());
+            return stored.get();
+        }
+        var updated = repository.update(type);
+        auditLog.record(audited(type.id()), AuditEventKind.EDITED);
+        return updated;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void delete(AssignmentTypeId id) {
         log.debug("Softly deleting assignment type {}", id.value());
-        repository.setActive(id, false);
+        if (repository.setActive(id, false)) {
+            auditLog.record(audited(id), AuditEventKind.DELETED);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void restore(AssignmentTypeId id) {
         log.debug("Restoring assignment type {}", id.value());
-        repository.setActive(id, true);
+        if (repository.setActive(id, true)) {
+            auditLog.record(audited(id), AuditEventKind.RESTORED);
+        }
+    }
+
+    private static AuditedEntity audited(AssignmentTypeId id) {
+        return new AuditedEntity(AuditedEntity.Type.ASSIGNMENT_TYPE, id.value());
     }
 }

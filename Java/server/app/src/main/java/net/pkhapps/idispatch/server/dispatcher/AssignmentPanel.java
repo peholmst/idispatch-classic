@@ -35,6 +35,9 @@ import net.pkhapps.idispatch.server.resource.ResourceFormatters;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceState;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
+import net.pkhapps.idispatch.server.ui.audit.AuditTrail;
 
 import java.util.Set;
 
@@ -42,7 +45,7 @@ import static net.pkhapps.idispatch.server.ui.SignalBindings.bindItems;
 
 /**
  * The selected assignment in a form that saves every change right away, with the resources on it and the actions for
- * dispatching them. The form binds to an {@link AssignmentViewModel}.
+ * dispatching them, and who last changed it. The form binds to an {@link AssignmentViewModel}.
  */
 class AssignmentPanel extends VerticalLayout {
 
@@ -51,7 +54,7 @@ class AssignmentPanel extends VerticalLayout {
     /**
      * @param changeResourceState changes the state of a resource, as chosen in its state dialog
      */
-    AssignmentPanel(AssignmentViewModel viewModel,
+    AssignmentPanel(AssignmentViewModel viewModel, AuditLog auditLog,
                     SerializableBiConsumer<ResourceId, ResourceState> changeResourceState) {
         this.changeResourceState = changeResourceState;
         addClassName("assignment-panel");
@@ -74,6 +77,15 @@ class AssignmentPanel extends VerticalLayout {
         assignmentLayout.setMargin(false);
         assignmentLayout.setSpacing(true);
         assignmentLayout.setPadding(true);
+
+        // Read again whenever the assignment is saved or replaced by another dispatcher's newer version
+        var auditTrail = new AuditTrail(auditLog);
+        Signal.effect(auditTrail, () -> {
+            var assignment = viewModel.current().get();
+            auditTrail.show(assignment == null ? null
+                    : new AuditedEntity(AuditedEntity.Type.ASSIGNMENT, assignment.id().value()));
+        });
+        assignmentLayout.add(auditTrail);
 
         // Setting a combo box's items clears its value. The ViewModel empties the form before it changes the choices,
         // so the clearing is not saved.

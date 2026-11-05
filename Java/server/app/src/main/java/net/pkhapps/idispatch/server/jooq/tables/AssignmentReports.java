@@ -4,7 +4,6 @@
 package net.pkhapps.idispatch.server.jooq.tables;
 
 
-import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -102,46 +101,9 @@ public class AssignmentReports extends TableImpl<AssignmentReportsRecord> {
     public final TableField<AssignmentReportsRecord, Integer> DECEASED = createField(DSL.name("deceased"), SQLDataType.INTEGER, this, "");
 
     /**
-     * The column <code>public.assignment_reports.last_edited_by_subject</code>.
+     * The column <code>public.assignment_reports.closed</code>.
      */
-    public final TableField<AssignmentReportsRecord, String> LAST_EDITED_BY_SUBJECT = createField(DSL.name("last_edited_by_subject"), SQLDataType.VARCHAR(255), this, "");
-
-    /**
-     * The column
-     * <code>public.assignment_reports.last_edited_by_first_name</code>.
-     */
-    public final TableField<AssignmentReportsRecord, String> LAST_EDITED_BY_FIRST_NAME = createField(DSL.name("last_edited_by_first_name"), SQLDataType.VARCHAR(255), this, "");
-
-    /**
-     * The column
-     * <code>public.assignment_reports.last_edited_by_last_name</code>.
-     */
-    public final TableField<AssignmentReportsRecord, String> LAST_EDITED_BY_LAST_NAME = createField(DSL.name("last_edited_by_last_name"), SQLDataType.VARCHAR(255), this, "");
-
-    /**
-     * The column <code>public.assignment_reports.last_edited_at</code>.
-     */
-    public final TableField<AssignmentReportsRecord, OffsetDateTime> LAST_EDITED_AT = createField(DSL.name("last_edited_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
-
-    /**
-     * The column <code>public.assignment_reports.closed_by_subject</code>.
-     */
-    public final TableField<AssignmentReportsRecord, String> CLOSED_BY_SUBJECT = createField(DSL.name("closed_by_subject"), SQLDataType.VARCHAR(255), this, "");
-
-    /**
-     * The column <code>public.assignment_reports.closed_by_first_name</code>.
-     */
-    public final TableField<AssignmentReportsRecord, String> CLOSED_BY_FIRST_NAME = createField(DSL.name("closed_by_first_name"), SQLDataType.VARCHAR(255), this, "");
-
-    /**
-     * The column <code>public.assignment_reports.closed_by_last_name</code>.
-     */
-    public final TableField<AssignmentReportsRecord, String> CLOSED_BY_LAST_NAME = createField(DSL.name("closed_by_last_name"), SQLDataType.VARCHAR(255), this, "");
-
-    /**
-     * The column <code>public.assignment_reports.closed_at</code>.
-     */
-    public final TableField<AssignmentReportsRecord, OffsetDateTime> CLOSED_AT = createField(DSL.name("closed_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+    public final TableField<AssignmentReportsRecord, Boolean> CLOSED = createField(DSL.name("closed"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "");
 
     private AssignmentReports(Name alias, Table<AssignmentReportsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

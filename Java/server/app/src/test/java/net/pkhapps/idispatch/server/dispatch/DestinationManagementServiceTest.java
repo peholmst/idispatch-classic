@@ -13,11 +13,23 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import net.pkhapps.idispatch.server.security.WithKeycloakUser;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditTrailAssert;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.Set;
 
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
+import static net.pkhapps.idispatch.server.shared.audit.AuditEventKind.CREATED;
+import static net.pkhapps.idispatch.server.shared.audit.AuditEventKind.DELETED;
+import static net.pkhapps.idispatch.server.shared.audit.AuditEventKind.EDITED;
+import static net.pkhapps.idispatch.server.shared.audit.AuditEventKind.MOBILE_KEY_REPLACED;
+import static net.pkhapps.idispatch.server.shared.audit.AuditEventKind.RESTORED;
+import static net.pkhapps.idispatch.server.shared.audit.AuditTrailAssert.ANNA;
+import static net.pkhapps.idispatch.server.shared.audit.AuditTrailAssert.assertEvents;
+import static net.pkhapps.idispatch.server.shared.audit.AuditTrailAssert.kindsOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -37,6 +49,8 @@ class DestinationManagementServiceTest {
     TestData testData;
     @Autowired
     MobilePushSubscriptions pushSubscriptions;
+    @Autowired
+    AuditLog auditLog;
 
     private TestData.GivenResource givenResource;
     private ResourceId resource;
@@ -158,6 +172,37 @@ class DestinationManagementServiceTest {
         assertThat(changed.description()).isEqualTo(new DestinationDescription("Engine 4"));
         assertThat(testData.mobileKeyHashesFor(givenResource))
                 .containsExactly(created.key().hash().value());
+    }
+
+    @Test
+    @WithKeycloakUser(username = "anna", firstName = "Anna", lastName = "Admin", roles = "ADMIN")
+    void everyChangeIsRecordedWithWhoMadeItAndWhen() {
+        var since = AuditTrailAssert.now();
+        var created = service.createMobile(mobile("Audited")).destination();
+        service.update(created.withDetails(mobile("Edited")));
+        service.replaceMobileKey(created.id());
+        service.delete(created.id());
+        service.restore(created.id());
+
+        assertEvents(auditLog, audited(created.id()), ANNA, since,
+                RESTORED, DELETED, MOBILE_KEY_REPLACED, EDITED, CREATED);
+    }
+
+    @Test
+    void savesThatChangeNothingAndRefusedChangesAreNotRecorded() {
+        var created = (RunboardDestination) service.create(runboard(unique("key-"), "Quiet"));
+        var unchanged = service.update(created.withDetails(created.details()));
+        service.update(created.withDetails(runboard(created.runboardKey().value(), "Edited")));
+        assertThatThrownBy(() -> service.update(created.withDetails(runboard(created.runboardKey().value(), "Stale"))))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+        service.restore(created.id());
+
+        assertThat(unchanged.version()).as("Nothing was saved").isEqualTo(created.version());
+        assertThat(kindsOf(auditLog, audited(created.id()))).containsExactly(EDITED, CREATED);
+    }
+
+    private static AuditedEntity audited(DestinationId id) {
+        return new AuditedEntity(AuditedEntity.Type.DESTINATION, id.value());
     }
 
     private MobileDestinationDetails mobile(String description) {

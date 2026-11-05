@@ -4,58 +4,62 @@ import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * The rules of a report that the writing and reviewing stories rely on: which parts an edit is recorded on, and what
- * the counts may be.
+ * The rules of a report that the writing and reviewing stories rely on: which parts an edit changes, which is what the
+ * audit log records, and what the counts may be.
  */
 class AssignmentReportTest {
 
     private static final ResourceId FIRST = new ResourceId(1);
     private static final ResourceId SECOND = new ResourceId(2);
-    private static final UserStamp ERIK = new UserStamp("subject-erik", "Erik", "Explorer", Instant.parse("2026-10-31T10:00:00Z"));
-    private static final UserStamp ELLA = new UserStamp("subject-ella", "Ella", null, Instant.parse("2026-10-31T11:00:00Z"));
 
     @Test
-    void editIsRecordedOnlyOnTheChangedParts() {
+    void onlyThePartsWhoseContentDiffersAreChanged() {
         var report = AssignmentReport.empty(new AssignmentId(1)).withDraft(new ReportDraft(scene("Fire"),
-                Map.of(FIRST, answers("Smoke"), SECOND, UnitAnswers.EMPTY)), ERIK);
+                Map.of(FIRST, answers("Smoke"), SECOND, UnitAnswers.EMPTY)));
 
         var edited = report.withDraft(new ReportDraft(scene("Fire"),
-                Map.of(FIRST, answers("Smoke"), SECOND, answers("Flames"))), ELLA);
+                Map.of(FIRST, answers("Smoke"), SECOND, answers("Flames"))));
 
-        assertThat(report.lastEdit()).isEqualTo(ERIK);
-        assertThat(report.unit(SECOND).lastEdit()).as("Shown but left empty").isNull();
-        assertThat(edited.lastEdit()).as("The scene was not touched").isEqualTo(ERIK);
-        assertThat(edited.unit(FIRST).lastEdit()).isEqualTo(ERIK);
-        assertThat(edited.unit(SECOND).lastEdit()).isEqualTo(ELLA);
+        assertThat(report.partsChangedFrom(AssignmentReport.empty(new AssignmentId(1))))
+                .as("The second unit was shown but left empty")
+                .containsExactly(ReportPart.SCENE, ReportPart.unit(FIRST));
+        assertThat(edited.partsChangedFrom(report)).containsExactly(ReportPart.unit(SECOND));
+        assertThat(edited.partsChangedFrom(edited)).isEmpty();
     }
 
     @Test
     void unitsNotInTheDraftAreKept() {
         var report = AssignmentReport.empty(new AssignmentId(1))
-                .withDraft(new ReportDraft(SceneDetails.EMPTY, Map.of(FIRST, answers("Smoke"))), ERIK);
+                .withDraft(new ReportDraft(SceneDetails.EMPTY, Map.of(FIRST, answers("Smoke"))));
 
-        var edited = report.withDraft(new ReportDraft(scene("Fire"), Map.of()), ELLA);
+        var edited = report.withDraft(new ReportDraft(scene("Fire"), Map.of()));
 
-        assertThat(edited.unit(FIRST).answers()).isEqualTo(answers("Smoke"));
+        assertThat(edited.unit(FIRST)).isEqualTo(answers("Smoke"));
+        assertThat(edited.partsChangedFrom(report)).containsExactly(ReportPart.SCENE);
     }
 
     @Test
-    void closingAndReopeningKeepTheEdits() {
+    void closingAndReopeningKeepTheContent() {
         var report = AssignmentReport.empty(new AssignmentId(1))
-                .withDraft(new ReportDraft(scene("Fire"), Map.of()), ERIK);
+                .withDraft(new ReportDraft(scene("Fire"), Map.of()));
 
-        var closed = report.closedBy(ELLA);
+        var closed = report.closedByReviewer();
 
         assertThat(closed.isClosed()).isTrue();
-        assertThat(closed.lastEdit()).isEqualTo(ERIK);
+        assertThat(closed.partsChangedFrom(report)).isEmpty();
         assertThat(closed.reopened().isClosed()).isFalse();
+    }
+
+    @Test
+    void unitPartsNameTheirUnit() {
+        assertThat(ReportPart.unitOf(ReportPart.unit(SECOND))).isEqualTo(SECOND);
+        assertThat(ReportPart.unitOf(ReportPart.SCENE)).isNull();
     }
 
     @Test
@@ -66,12 +70,6 @@ class AssignmentReportTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(SceneDetails.casualtiesWithinPeopleInvolved(null, 5, 5, 5)).as("Not counted yet").isTrue();
         assertThat(SceneDetails.casualtiesWithinPeopleInvolved(3, 1, null, 2)).isTrue();
-    }
-
-    @Test
-    void displayNameFallsBackOnTheSubject() {
-        assertThat(ELLA.displayName()).isEqualTo("Ella");
-        assertThat(new UserStamp("subject-x", " ", null, Instant.EPOCH).displayName()).isEqualTo("subject-x");
     }
 
     private static SceneDetails scene(String situationDevelopment) {

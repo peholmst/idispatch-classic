@@ -104,14 +104,18 @@ class MunicipalityRepository {
     }
 
     /**
-     * Deletes the municipality softly, or restores it. Does nothing if there is no such municipality.
+     * Deletes the municipality softly, or restores it. Does nothing if there is no such municipality, or if it already
+     * is deleted or active.
+     *
+     * @return whether the municipality was changed
      */
-    void setActive(MunicipalityId id, boolean active) {
-        dsl.update(MUNICIPALITIES)
+    boolean setActive(MunicipalityId id, boolean active) {
+        return dsl.update(MUNICIPALITIES)
                 .set(MUNICIPALITIES.ACTIVE, active)
                 .set(MUNICIPALITIES.VERSION, MUNICIPALITIES.VERSION.plus(1))
                 .where(MUNICIPALITIES.ID.eq(id.value()))
-                .execute();
+                .and(MUNICIPALITIES.ACTIVE.ne(active))
+                .execute() > 0;
     }
 
     private SelectJoinStep<Record4<Long, String, String, Boolean>> selectListItems() {

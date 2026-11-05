@@ -1,8 +1,7 @@
-package net.pkhapps.idispatch.server.report;
+package net.pkhapps.idispatch.server.shared.audit;
 
 import org.jspecify.annotations.Nullable;
 
-import java.time.Instant;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -10,15 +9,14 @@ import java.util.stream.Stream;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Who did something to an {@link AssignmentReport}, such as editing or closing it, and when. The subject is the user's
- * ID in Keycloak, which stays the same even if the user changes their name. The names are copied from the ID token at
- * the time, and are {@code null} if the token had none.
+ * The user behind an {@link AuditEvent}. The subject is the user's ID in Keycloak, which stays the same even if the user
+ * changes their name. The names are copied from the ID token when the event happens, and are {@code null} if the token
+ * had none; later changes in Keycloak don't change them.
  */
-record UserStamp(String subject, @Nullable String firstName, @Nullable String lastName, Instant timestamp) {
+public record AuditUser(String subject, @Nullable String firstName, @Nullable String lastName) {
 
-    public UserStamp {
+    public AuditUser {
         requireNonNull(subject);
-        requireNonNull(timestamp);
     }
 
     /**

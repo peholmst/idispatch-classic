@@ -8,6 +8,7 @@ import net.pkhapps.idispatch.server.jooq.tables.AssignmentReportUnits;
 import net.pkhapps.idispatch.server.jooq.tables.AssignmentReports;
 import net.pkhapps.idispatch.server.jooq.tables.AssignmentTypes;
 import net.pkhapps.idispatch.server.jooq.tables.Assignments;
+import net.pkhapps.idispatch.server.jooq.tables.AuditEvents;
 import net.pkhapps.idispatch.server.jooq.tables.DestinationResources;
 import net.pkhapps.idispatch.server.jooq.tables.Destinations;
 import net.pkhapps.idispatch.server.jooq.tables.DispatchNotificationAssignedResources;
@@ -50,6 +51,11 @@ public class Tables {
      * The table <code>public.assignments</code>.
      */
     public static final Assignments ASSIGNMENTS = Assignments.ASSIGNMENTS;
+
+    /**
+     * The table <code>public.audit_events</code>.
+     */
+    public static final AuditEvents AUDIT_EVENTS = AuditEvents.AUDIT_EVENTS;
 
     /**
      * The table <code>public.destination_resources</code>.

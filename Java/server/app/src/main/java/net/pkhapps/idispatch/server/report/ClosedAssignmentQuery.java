@@ -33,7 +33,7 @@ class ClosedAssignmentQuery {
     private static final Field<Boolean> REPORT_CLOSED = DSL.field(DSL.exists(DSL.selectOne()
             .from(ASSIGNMENT_REPORTS)
             .where(ASSIGNMENT_REPORTS.ASSIGNMENT_ID.eq(ASSIGNMENTS.ID))
-            .and(ASSIGNMENT_REPORTS.CLOSED_BY_SUBJECT.isNotNull())));
+            .and(ASSIGNMENT_REPORTS.CLOSED.isTrue())));
 
     private static final Map<String, Field<?>> SORT_FIELDS = Map.of(
             SORT_NUMBER, ASSIGNMENTS.ID,

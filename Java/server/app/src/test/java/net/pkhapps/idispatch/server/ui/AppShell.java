@@ -2,6 +2,9 @@ package net.pkhapps.idispatch.server.ui;
 
 import com.vaadin.browserless.BrowserlessUIContext;
 import com.vaadin.browserless.ComponentTester;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasStyle;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.sidenav.SideNavItem;
@@ -9,11 +12,13 @@ import com.vaadin.flow.server.ErrorEvent;
 import com.vaadin.flow.server.VaadinSession;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
  * Where things are in the part of the application that every view shares: the drawer with the navigation and the
- * user, the title at the top of the view, notifications and confirmation questions.
+ * user, the title at the top of the view, notifications and confirmation questions, and who last changed what is
+ * shown, with its history.
  */
 public class AppShell {
 
@@ -113,6 +118,42 @@ public class AppShell {
 
     private SideNavItem navigationItem(String label) {
         return window.find(SideNavItem.class).withCondition(item -> label.equals(item.getLabel())).single();
+    }
+
+    // --- Who changed what ---
+
+    /**
+     * Who last changed what is shown and when, such as "Last edited by Erik Explorer on …", or that nothing has been
+     * recorded.
+     */
+    public String lastChange() {
+        return window.findSpan().withCondition(AppShell::isInAuditTrail).component().getText();
+    }
+
+    public void openHistory() {
+        window.findButton().withAriaLabel("Show history").click();
+    }
+
+    /**
+     * The events in the open history, newest first, as the texts of their Time, User and Event columns.
+     */
+    public List<Map<String, String>> history() {
+        var dialog = window.find(Dialog.class).single();
+        return GridRows.of(window, window.findGrid(Object.class).inside(dialog).component()).all();
+    }
+
+    public void closeHistory() {
+        var dialog = window.find(Dialog.class).single();
+        window.findButton().inside(dialog).withText("Close").click();
+    }
+
+    /**
+     * Whether the component is part of the line telling who last changed what is shown.
+     */
+    protected static boolean isInAuditTrail(Component component) {
+        return component.getParent()
+                .filter(parent -> parent instanceof HasStyle style && style.hasClassName("audit-trail"))
+                .isPresent();
     }
 
     public boolean showsText(String text) {

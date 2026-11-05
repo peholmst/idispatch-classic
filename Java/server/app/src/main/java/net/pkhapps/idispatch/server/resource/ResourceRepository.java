@@ -101,14 +101,18 @@ class ResourceRepository {
     }
 
     /**
-     * Deletes the resource softly, or restores it. Does nothing if there is no such resource.
+     * Deletes the resource softly, or restores it. Does nothing if there is no such resource, or if it already is deleted
+     * or active.
+     *
+     * @return whether the resource was changed
      */
-    void setActive(ResourceId id, boolean active) {
-        dsl.update(RESOURCES)
+    boolean setActive(ResourceId id, boolean active) {
+        return dsl.update(RESOURCES)
                 .set(RESOURCES.ACTIVE, active)
                 .set(RESOURCES.VERSION, RESOURCES.VERSION.plus(1))
                 .where(RESOURCES.ID.eq(id.value()))
-                .execute();
+                .and(RESOURCES.ACTIVE.ne(active))
+                .execute() > 0;
     }
 
     private SelectOnConditionStep<Record5<Long, String, String, String, Boolean>> selectListItems() {

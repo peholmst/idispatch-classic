@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENT_REPORTS;
 import static net.pkhapps.idispatch.server.jooq.Tables.ASSIGNMENT_REPORT_UNITS;
+import static net.pkhapps.idispatch.server.jooq.Tables.AUDIT_EVENTS;
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
 
 /**
@@ -62,17 +63,14 @@ public class HandledAssignments {
     }
 
     /**
-     * A report as it is stored, read straight from the database. A report that nobody has saved has no content.
+     * A report as it is stored, read straight from the database with who changed it from the audit log. A report that
+     * nobody has saved has no content.
      *
      * @param lastEditedBy the subject of whoever last changed the situation or the counts, or {@code null}
      * @param closedBy     the subject of the reviewer who closed it, or {@code null} while it is open
      */
     public record StoredReport(boolean saved, String situationDevelopment, @Nullable String lastEditedBy,
-                               @Nullable String closedBy, List<StoredUnitReport> units) {
-
-        public boolean closed() {
-            return closedBy != null;
-        }
+                               boolean closed, @Nullable String closedBy, List<StoredUnitReport> units) {
     }
 
     /**
@@ -157,15 +155,31 @@ public class HandledAssignments {
                 .where(ASSIGNMENT_REPORTS.ASSIGNMENT_ID.eq(handled.assignment().id().value()))
                 .fetchOne();
         if (report == null) {
-            return new StoredReport(false, "", null, null, List.of());
+            return new StoredReport(false, "", null, false, null, List.of());
         }
+        var assignmentId = handled.assignment().id().value();
         var units = dsl.selectFrom(ASSIGNMENT_REPORT_UNITS)
                 .where(ASSIGNMENT_REPORT_UNITS.REPORT_ID.eq(report.getId()))
                 .orderBy(ASSIGNMENT_REPORT_UNITS.RESOURCE_ID)
                 .fetch(unit -> new StoredUnitReport(unit.getSituationOnArrival(), unit.getActionsTaken(),
-                        unit.getLastEditedBySubject()));
-        return new StoredReport(true, report.getSituationDevelopment(), report.getLastEditedBySubject(),
-                report.getClosedBySubject(), units);
+                        latestSubject(assignmentId, "EDITED", "UNIT:" + unit.getResourceId())));
+        return new StoredReport(true, report.getSituationDevelopment(), latestSubject(assignmentId, "EDITED", "SCENE"),
+                report.getClosed(), report.getClosed() ? latestSubject(assignmentId, "CLOSED", null) : null, units);
+    }
+
+    /**
+     * The subject of whoever last did the given kind of thing to the part of the report, by the audit log.
+     */
+    private @Nullable String latestSubject(long assignmentId, String kind, @Nullable String part) {
+        return dsl.select(AUDIT_EVENTS.USER_SUBJECT)
+                .from(AUDIT_EVENTS)
+                .where(AUDIT_EVENTS.ENTITY_TYPE.eq("ASSIGNMENT_REPORT"))
+                .and(AUDIT_EVENTS.ENTITY_ID.eq(assignmentId))
+                .and(AUDIT_EVENTS.KIND.eq(kind))
+                .and(part == null ? AUDIT_EVENTS.PART.isNull() : AUDIT_EVENTS.PART.eq(part))
+                .orderBy(AUDIT_EVENTS.OCCURRED_AT.desc(), AUDIT_EVENTS.ID.desc())
+                .limit(1)
+                .fetchOne(AUDIT_EVENTS.USER_SUBJECT);
     }
 
     /**

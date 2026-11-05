@@ -5,6 +5,8 @@ import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.management.RecordForm;
@@ -20,10 +22,10 @@ public class ResourceManagementView extends RecordManagementView<ResourceListIte
 
     private final ResourceManagementService service;
 
-    public ResourceManagementView(ResourceManagementService service) {
+    public ResourceManagementView(ResourceManagementService service, AuditLog auditLog) {
         // Set before the base class constructor, which lists the resources
         this.service = service;
-        super("management.resources");
+        super("management.resources", auditLog);
     }
 
     @Override
@@ -57,6 +59,11 @@ public class ResourceManagementView extends RecordManagementView<ResourceListIte
     @Override
     protected boolean isRecordActive(Resource record) {
         return record.active();
+    }
+
+    @Override
+    protected AuditedEntity auditedEntity(Resource record) {
+        return new AuditedEntity(AuditedEntity.Type.RESOURCE, record.id().value());
     }
 
     @Override

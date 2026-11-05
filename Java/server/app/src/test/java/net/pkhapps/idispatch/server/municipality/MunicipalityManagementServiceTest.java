@@ -9,9 +9,20 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import net.pkhapps.idispatch.server.security.WithKeycloakUser;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditTrailAssert;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import static net.pkhapps.idispatch.server.ui.TestData.unique;
+import static net.pkhapps.idispatch.server.shared.audit.AuditEventKind.CREATED;
+import static net.pkhapps.idispatch.server.shared.audit.AuditEventKind.DELETED;
+import static net.pkhapps.idispatch.server.shared.audit.AuditEventKind.EDITED;
+import static net.pkhapps.idispatch.server.shared.audit.AuditEventKind.RESTORED;
+import static net.pkhapps.idispatch.server.shared.audit.AuditTrailAssert.ANNA;
+import static net.pkhapps.idispatch.server.shared.audit.AuditTrailAssert.assertEvents;
+import static net.pkhapps.idispatch.server.shared.audit.AuditTrailAssert.kindsOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,6 +38,8 @@ class MunicipalityManagementServiceTest {
 
     @Autowired
     MunicipalityManagementService service;
+    @Autowired
+    AuditLog auditLog;
 
     @Test
     void changeBasedOnAnOutdatedVersionIsRefused() {
@@ -58,7 +71,40 @@ class MunicipalityManagementServiceTest {
         assertThatCode(() -> service.create(details(unique("Also only Finnish "), ""))).doesNotThrowAnyException();
     }
 
+    @Test
+    @WithKeycloakUser(username = "anna", firstName = "Anna", lastName = "Admin", roles = "ADMIN")
+    void everyChangeIsRecordedWithWhoMadeItAndWhen() {
+        var since = AuditTrailAssert.now();
+        var created = service.create(details(unique("Audited "), ""));
+        service.update(created.withDetails(details(unique("Edited "), "")));
+        service.delete(created.id());
+        service.restore(created.id());
+
+        assertEvents(auditLog, audited(created.id().value()), ANNA, since, RESTORED, DELETED, EDITED, CREATED);
+    }
+
+    @Test
+    void savesThatChangeNothingAndRefusedChangesAreNotRecorded() {
+        var created = service.create(details(unique("Quiet "), ""));
+        var unchanged = service.update(created.withDetails(created.details()));
+        var edited = service.update(created.withDetails(details(unique("Edited "), "")));
+        assertThatThrownBy(() -> service.update(created.withDetails(details(unique("Stale "), ""))))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+        service.restore(created.id());
+        service.delete(created.id());
+        service.delete(created.id());
+
+        assertThat(unchanged.version()).as("Nothing was saved").isEqualTo(created.version());
+        assertThat(edited.version()).isEqualTo(created.version() + 1);
+        assertThat(kindsOf(auditLog, audited(created.id().value())))
+                .as("Not restored when active, nor deleted twice").containsExactly(DELETED, EDITED, CREATED);
+    }
+
     private static MunicipalityDetails details(String finnish, String swedish) {
         return new MunicipalityDetails(new BilingualText(finnish, swedish));
+    }
+
+    private static AuditedEntity audited(long id) {
+        return new AuditedEntity(AuditedEntity.Type.MUNICIPALITY, id);
     }
 }

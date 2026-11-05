@@ -11,6 +11,7 @@ import net.pkhapps.idispatch.server.jooq.tables.AssignmentReportUnits;
 import net.pkhapps.idispatch.server.jooq.tables.AssignmentReports;
 import net.pkhapps.idispatch.server.jooq.tables.AssignmentTypes;
 import net.pkhapps.idispatch.server.jooq.tables.Assignments;
+import net.pkhapps.idispatch.server.jooq.tables.AuditEvents;
 import net.pkhapps.idispatch.server.jooq.tables.DestinationResources;
 import net.pkhapps.idispatch.server.jooq.tables.Destinations;
 import net.pkhapps.idispatch.server.jooq.tables.DispatchNotificationAssignedResources;
@@ -66,6 +67,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.assignments</code>.
      */
     public final Assignments ASSIGNMENTS = Assignments.ASSIGNMENTS;
+
+    /**
+     * The table <code>public.audit_events</code>.
+     */
+    public final AuditEvents AUDIT_EVENTS = AuditEvents.AUDIT_EVENTS;
 
     /**
      * The table <code>public.destination_resources</code>.
@@ -161,6 +167,7 @@ public class Public extends SchemaImpl {
             Sequences.ASSIGNMENT_REPORTS_SEQ,
             Sequences.ASSIGNMENT_TYPES_SEQ,
             Sequences.ASSIGNMENTS_SEQ,
+            Sequences.AUDIT_EVENTS_SEQ,
             Sequences.DESTINATIONS_SEQ,
             Sequences.DISPATCH_NOTIFICATIONS_SEQ,
             Sequences.MUNICIPALITIES_SEQ,
@@ -179,6 +186,7 @@ public class Public extends SchemaImpl {
             AssignmentReports.ASSIGNMENT_REPORTS,
             AssignmentTypes.ASSIGNMENT_TYPES,
             Assignments.ASSIGNMENTS,
+            AuditEvents.AUDIT_EVENTS,
             DestinationResources.DESTINATION_RESOURCES,
             Destinations.DESTINATIONS,
             DispatchNotificationAssignedResources.DISPATCH_NOTIFICATION_ASSIGNED_RESOURCES,

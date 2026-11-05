@@ -29,6 +29,7 @@ import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeListItem;
 import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
 import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import net.pkhapps.idispatch.server.ui.RootLayout;
@@ -70,7 +71,7 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
     // What to do once the user agrees to throw away their unsaved changes; the question is open while there is one
     private final ValueSignal<@Nullable SerializableRunnable> actionAfterDiscard = new ValueSignal<>(null);
 
-    public ReportsView(ReportService reportService) {
+    public ReportsView(ReportService reportService, AuditLog auditLog) {
         this.reportService = reportService;
 
         filter = Signal.computed(() -> {
@@ -87,7 +88,7 @@ public class ReportsView extends MasterDetailLayout implements HasDynamicTitle, 
         var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
-        reportPanel = new AssignmentReportPanel(reportService, shownReport,
+        reportPanel = new AssignmentReportPanel(reportService, auditLog, shownReport,
                 authorities.contains(Roles.ROLE_REPORT_WRITER), authorities.contains(Roles.ROLE_REPORT_REVIEWER));
         reportPanel.setSizeFull();
 

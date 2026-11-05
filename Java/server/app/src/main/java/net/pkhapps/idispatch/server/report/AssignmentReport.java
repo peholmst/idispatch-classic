@@ -6,25 +6,25 @@ import net.pkhapps.idispatch.server.resource.ResourceId;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.SequencedSet;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * What happened on scene of a closed {@link Assignment}, as told by the people who were there. The report as a whole
- * and each {@link UnitReport} remember who last changed them; the report's last edit covers the scene only.
+ * What happened on scene of a closed {@link Assignment}, as told by the people who were there: the scene as a whole,
+ * and the answers of each responding unit. Who changed which part, and when, is kept in the audit log, by the
+ * {@link ReportPart}s.
  * <p>
  * Once a reviewer has checked the report, they close it, and nobody can change it until it is re-opened.
  *
- * @param version  incremented on every change, so that a change based on an older version can be refused; {@code null}
- *                 until the report is first saved
- * @param lastEdit who last changed the scene, or {@code null} if nobody has
- * @param closed   who closed the report, or {@code null} while it is open
- * @param units    the units that have reported, or have been shown a form to report in
+ * @param version incremented on every change, so that a change based on an older version can be refused; {@code null}
+ *                until the report is first saved
+ * @param units   the answers of the units that have reported, or have been shown a form to report in
  */
-record AssignmentReport(AssignmentId assignmentId, @Nullable Long version, SceneDetails scene,
-                               @Nullable UserStamp lastEdit, @Nullable UserStamp closed,
-                               Map<ResourceId, UnitReport> units) {
+record AssignmentReport(AssignmentId assignmentId, @Nullable Long version, SceneDetails scene, boolean closed,
+                        Map<ResourceId, UnitAnswers> units) {
 
     public AssignmentReport {
         requireNonNull(assignmentId);
@@ -36,7 +36,7 @@ record AssignmentReport(AssignmentId assignmentId, @Nullable Long version, Scene
      * Returns the report of an assignment that nobody has written anything in yet.
      */
     public static AssignmentReport empty(AssignmentId assignment) {
-        return new AssignmentReport(assignment, null, SceneDetails.EMPTY, null, null, Map.of());
+        return new AssignmentReport(assignment, null, SceneDetails.EMPTY, false, Map.of());
     }
 
     public boolean isNew() {
@@ -44,40 +44,51 @@ record AssignmentReport(AssignmentId assignmentId, @Nullable Long version, Scene
     }
 
     public boolean isClosed() {
-        return closed != null;
+        return closed;
     }
 
     /**
-     * Returns the report of the given responding unit, which is empty if the unit has not reported yet.
+     * Returns the answers of the given responding unit, which are empty if the unit has not reported yet.
      */
-    public UnitReport unit(ResourceId resource) {
-        return units.getOrDefault(resource, UnitReport.EMPTY);
+    public UnitAnswers unit(ResourceId resource) {
+        return units.getOrDefault(resource, UnitAnswers.EMPTY);
     }
 
     /**
-     * Returns this report with what the writer filled in. The edit is recorded on the scene and on each unit whose
-     * content differs from this report's, so that saving doesn't claim the parts the writer didn't touch. A part that
-     * has not been saved before counts as changed if it has any content.
+     * Returns this report with what the writer filled in.
      */
-    public AssignmentReport withDraft(ReportDraft draft, UserStamp edit) {
+    public AssignmentReport withDraft(ReportDraft draft) {
         var units = new HashMap<>(this.units);
-        draft.units().forEach((resource, answers) -> {
-            var before = unit(resource);
-            units.put(resource, before.answers().equals(answers) ? before : new UnitReport(answers, edit));
-        });
-        var sceneChanged = !scene.equals(draft.scene());
-        return new AssignmentReport(assignmentId, version, draft.scene(), sceneChanged ? edit : lastEdit, closed,
-                units);
+        units.putAll(draft.units());
+        return new AssignmentReport(assignmentId, version, draft.scene(), closed, units);
     }
 
     /**
-     * Returns this report closed by the reviewer.
+     * Returns the parts whose content differs between the given report and this one: the scene first, then the units.
+     * A unit that is in only one of them counts as empty in the other, so a unit shown but left empty is no change.
      */
-    public AssignmentReport closedBy(UserStamp reviewer) {
-        return new AssignmentReport(assignmentId, version, scene, lastEdit, requireNonNull(reviewer), units);
+    public SequencedSet<String> partsChangedFrom(AssignmentReport before) {
+        var parts = new LinkedHashSet<String>();
+        if (!scene.equals(before.scene())) {
+            parts.add(ReportPart.SCENE);
+        }
+        var resources = new LinkedHashSet<>(before.units().keySet());
+        resources.addAll(units.keySet());
+        resources.stream()
+                .filter(resource -> !unit(resource).equals(before.unit(resource)))
+                .sorted((a, b) -> Long.compare(a.value(), b.value()))
+                .forEach(resource -> parts.add(ReportPart.unit(resource)));
+        return parts;
+    }
+
+    /**
+     * Returns this report closed by a reviewer.
+     */
+    public AssignmentReport closedByReviewer() {
+        return new AssignmentReport(assignmentId, version, scene, true, units);
     }
 
     public AssignmentReport reopened() {
-        return new AssignmentReport(assignmentId, version, scene, lastEdit, null, units);
+        return new AssignmentReport(assignmentId, version, scene, false, units);
     }
 }

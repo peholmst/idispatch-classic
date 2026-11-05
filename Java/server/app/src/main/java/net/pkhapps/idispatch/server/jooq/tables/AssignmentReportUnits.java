@@ -4,7 +4,6 @@
 package net.pkhapps.idispatch.server.jooq.tables;
 
 
-import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -79,29 +78,6 @@ public class AssignmentReportUnits extends TableImpl<AssignmentReportUnitsRecord
      * The column <code>public.assignment_report_units.actions_taken</code>.
      */
     public final TableField<AssignmentReportUnitsRecord, String> ACTIONS_TAKEN = createField(DSL.name("actions_taken"), SQLDataType.VARCHAR(4000).nullable(false), this, "");
-
-    /**
-     * The column
-     * <code>public.assignment_report_units.last_edited_by_subject</code>.
-     */
-    public final TableField<AssignmentReportUnitsRecord, String> LAST_EDITED_BY_SUBJECT = createField(DSL.name("last_edited_by_subject"), SQLDataType.VARCHAR(255), this, "");
-
-    /**
-     * The column
-     * <code>public.assignment_report_units.last_edited_by_first_name</code>.
-     */
-    public final TableField<AssignmentReportUnitsRecord, String> LAST_EDITED_BY_FIRST_NAME = createField(DSL.name("last_edited_by_first_name"), SQLDataType.VARCHAR(255), this, "");
-
-    /**
-     * The column
-     * <code>public.assignment_report_units.last_edited_by_last_name</code>.
-     */
-    public final TableField<AssignmentReportUnitsRecord, String> LAST_EDITED_BY_LAST_NAME = createField(DSL.name("last_edited_by_last_name"), SQLDataType.VARCHAR(255), this, "");
-
-    /**
-     * The column <code>public.assignment_report_units.last_edited_at</code>.
-     */
-    public final TableField<AssignmentReportUnitsRecord, OffsetDateTime> LAST_EDITED_AT = createField(DSL.name("last_edited_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
     private AssignmentReportUnits(Name alias, Table<AssignmentReportUnitsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

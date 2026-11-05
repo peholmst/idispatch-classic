@@ -32,6 +32,11 @@ public class Sequences {
     public static final Sequence<Long> ASSIGNMENTS_SEQ = Internal.createSequence("assignments_seq", Public.PUBLIC, DSL.comment(""), SQLDataType.BIGINT.nullable(false), null, 50, null, null, false, null);
 
     /**
+     * The sequence <code>public.audit_events_seq</code>
+     */
+    public static final Sequence<Long> AUDIT_EVENTS_SEQ = Internal.createSequence("audit_events_seq", Public.PUBLIC, DSL.comment(""), SQLDataType.BIGINT.nullable(false), null, 50, null, null, false, null);
+
+    /**
      * The sequence <code>public.destinations_seq</code>
      */
     public static final Sequence<Long> DESTINATIONS_SEQ = Internal.createSequence("destinations_seq", Public.PUBLIC, DSL.comment(""), SQLDataType.BIGINT.nullable(false), null, 50, null, null, false, null);

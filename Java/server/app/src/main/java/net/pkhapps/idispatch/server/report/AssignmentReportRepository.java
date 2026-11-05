@@ -4,13 +4,9 @@ import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.jooq.tables.records.AssignmentReportsRecord;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import org.jooq.DSLContext;
-import org.jspecify.annotations.Nullable;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -87,59 +83,28 @@ class AssignmentReportRepository {
         row.setLightlyInjured(scene.lightlyInjured());
         row.setSeriouslyInjured(scene.seriouslyInjured());
         row.setDeceased(scene.deceased());
-        var lastEdit = report.lastEdit();
-        row.setLastEditedBySubject(lastEdit == null ? null : lastEdit.subject());
-        row.setLastEditedByFirstName(lastEdit == null ? null : lastEdit.firstName());
-        row.setLastEditedByLastName(lastEdit == null ? null : lastEdit.lastName());
-        row.setLastEditedAt(lastEdit == null ? null : toDatabase(lastEdit.timestamp()));
-        var closed = report.closed();
-        row.setClosedBySubject(closed == null ? null : closed.subject());
-        row.setClosedByFirstName(closed == null ? null : closed.firstName());
-        row.setClosedByLastName(closed == null ? null : closed.lastName());
-        row.setClosedAt(closed == null ? null : toDatabase(closed.timestamp()));
+        row.setClosed(report.closed());
     }
 
     private void insertUnits(long reportId, AssignmentReport report) {
-        report.units().forEach((resource, unit) -> {
-            var lastEdit = unit.lastEdit();
-            dsl.insertInto(ASSIGNMENT_REPORT_UNITS)
-                    .set(ASSIGNMENT_REPORT_UNITS.REPORT_ID, reportId)
-                    .set(ASSIGNMENT_REPORT_UNITS.RESOURCE_ID, resource.value())
-                    .set(ASSIGNMENT_REPORT_UNITS.SITUATION_ON_ARRIVAL, unit.answers().situationOnArrival().value())
-                    .set(ASSIGNMENT_REPORT_UNITS.ACTIONS_TAKEN, unit.answers().actionsTaken().value())
-                    .set(ASSIGNMENT_REPORT_UNITS.LAST_EDITED_BY_SUBJECT, lastEdit == null ? null : lastEdit.subject())
-                    .set(ASSIGNMENT_REPORT_UNITS.LAST_EDITED_BY_FIRST_NAME, lastEdit == null ? null : lastEdit.firstName())
-                    .set(ASSIGNMENT_REPORT_UNITS.LAST_EDITED_BY_LAST_NAME, lastEdit == null ? null : lastEdit.lastName())
-                    .set(ASSIGNMENT_REPORT_UNITS.LAST_EDITED_AT, lastEdit == null ? null : toDatabase(lastEdit.timestamp()))
-                    .execute();
-        });
+        report.units().forEach((resource, answers) -> dsl.insertInto(ASSIGNMENT_REPORT_UNITS)
+                .set(ASSIGNMENT_REPORT_UNITS.REPORT_ID, reportId)
+                .set(ASSIGNMENT_REPORT_UNITS.RESOURCE_ID, resource.value())
+                .set(ASSIGNMENT_REPORT_UNITS.SITUATION_ON_ARRIVAL, answers.situationOnArrival().value())
+                .set(ASSIGNMENT_REPORT_UNITS.ACTIONS_TAKEN, answers.actionsTaken().value())
+                .execute());
     }
 
     private AssignmentReport toReport(AssignmentReportsRecord row) {
-        var units = new HashMap<ResourceId, UnitReport>();
+        var units = new HashMap<ResourceId, UnitAnswers>();
         dsl.selectFrom(ASSIGNMENT_REPORT_UNITS)
                 .where(ASSIGNMENT_REPORT_UNITS.REPORT_ID.eq(row.getId()))
-                .forEach(unit -> units.put(new ResourceId(unit.getResourceId()), new UnitReport(
-                        new UnitAnswers(new ReportText(unit.getSituationOnArrival()), new ReportText(unit.getActionsTaken())),
-                        stamp(unit.getLastEditedBySubject(), unit.getLastEditedByFirstName(),
-                                unit.getLastEditedByLastName(), unit.getLastEditedAt()))));
+                .forEach(unit -> units.put(new ResourceId(unit.getResourceId()),
+                        new UnitAnswers(new ReportText(unit.getSituationOnArrival()),
+                                new ReportText(unit.getActionsTaken()))));
         var scene = new SceneDetails(new ReportText(row.getSituationDevelopment()), row.getPeopleInvolved(),
                 row.getLightlyInjured(), row.getSeriouslyInjured(), row.getDeceased());
         return new AssignmentReport(new AssignmentId(row.getAssignmentId()),
-                row.getVersion(), scene,
-                stamp(row.getLastEditedBySubject(), row.getLastEditedByFirstName(), row.getLastEditedByLastName(),
-                        row.getLastEditedAt()),
-                stamp(row.getClosedBySubject(), row.getClosedByFirstName(), row.getClosedByLastName(),
-                        row.getClosedAt()),
-                units);
-    }
-
-    private static @Nullable UserStamp stamp(@Nullable String subject, @Nullable String firstName,
-                                             @Nullable String lastName, @Nullable OffsetDateTime at) {
-        return subject == null || at == null ? null : new UserStamp(subject, firstName, lastName, at.toInstant());
-    }
-
-    private static OffsetDateTime toDatabase(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
+                row.getVersion(), scene, row.getClosed(), units);
     }
 }

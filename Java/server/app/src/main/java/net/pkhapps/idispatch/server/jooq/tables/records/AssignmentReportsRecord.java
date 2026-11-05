@@ -4,8 +4,6 @@
 package net.pkhapps.idispatch.server.jooq.tables.records;
 
 
-import java.time.OffsetDateTime;
-
 import net.pkhapps.idispatch.server.jooq.tables.AssignmentReports;
 
 import org.jooq.Record1;
@@ -133,119 +131,17 @@ public class AssignmentReportsRecord extends UpdatableRecordImpl<AssignmentRepor
     }
 
     /**
-     * Setter for <code>public.assignment_reports.last_edited_by_subject</code>.
+     * Setter for <code>public.assignment_reports.closed</code>.
      */
-    public void setLastEditedBySubject(String value) {
+    public void setClosed(Boolean value) {
         set(8, value);
     }
 
     /**
-     * Getter for <code>public.assignment_reports.last_edited_by_subject</code>.
+     * Getter for <code>public.assignment_reports.closed</code>.
      */
-    public String getLastEditedBySubject() {
-        return (String) get(8);
-    }
-
-    /**
-     * Setter for
-     * <code>public.assignment_reports.last_edited_by_first_name</code>.
-     */
-    public void setLastEditedByFirstName(String value) {
-        set(9, value);
-    }
-
-    /**
-     * Getter for
-     * <code>public.assignment_reports.last_edited_by_first_name</code>.
-     */
-    public String getLastEditedByFirstName() {
-        return (String) get(9);
-    }
-
-    /**
-     * Setter for
-     * <code>public.assignment_reports.last_edited_by_last_name</code>.
-     */
-    public void setLastEditedByLastName(String value) {
-        set(10, value);
-    }
-
-    /**
-     * Getter for
-     * <code>public.assignment_reports.last_edited_by_last_name</code>.
-     */
-    public String getLastEditedByLastName() {
-        return (String) get(10);
-    }
-
-    /**
-     * Setter for <code>public.assignment_reports.last_edited_at</code>.
-     */
-    public void setLastEditedAt(OffsetDateTime value) {
-        set(11, value);
-    }
-
-    /**
-     * Getter for <code>public.assignment_reports.last_edited_at</code>.
-     */
-    public OffsetDateTime getLastEditedAt() {
-        return (OffsetDateTime) get(11);
-    }
-
-    /**
-     * Setter for <code>public.assignment_reports.closed_by_subject</code>.
-     */
-    public void setClosedBySubject(String value) {
-        set(12, value);
-    }
-
-    /**
-     * Getter for <code>public.assignment_reports.closed_by_subject</code>.
-     */
-    public String getClosedBySubject() {
-        return (String) get(12);
-    }
-
-    /**
-     * Setter for <code>public.assignment_reports.closed_by_first_name</code>.
-     */
-    public void setClosedByFirstName(String value) {
-        set(13, value);
-    }
-
-    /**
-     * Getter for <code>public.assignment_reports.closed_by_first_name</code>.
-     */
-    public String getClosedByFirstName() {
-        return (String) get(13);
-    }
-
-    /**
-     * Setter for <code>public.assignment_reports.closed_by_last_name</code>.
-     */
-    public void setClosedByLastName(String value) {
-        set(14, value);
-    }
-
-    /**
-     * Getter for <code>public.assignment_reports.closed_by_last_name</code>.
-     */
-    public String getClosedByLastName() {
-        return (String) get(14);
-    }
-
-    /**
-     * Setter for <code>public.assignment_reports.closed_at</code>.
-     */
-    public void setClosedAt(OffsetDateTime value) {
-        set(15, value);
-    }
-
-    /**
-     * Getter for <code>public.assignment_reports.closed_at</code>.
-     */
-    public OffsetDateTime getClosedAt() {
-        return (OffsetDateTime) get(15);
+    public Boolean getClosed() {
+        return (Boolean) get(8);
     }
 
     // -------------------------------------------------------------------------
@@ -271,7 +167,7 @@ public class AssignmentReportsRecord extends UpdatableRecordImpl<AssignmentRepor
     /**
      * Create a detached, initialised AssignmentReportsRecord
      */
-    public AssignmentReportsRecord(Long id, Long version, Long assignmentId, String situationDevelopment, Integer peopleInvolved, Integer lightlyInjured, Integer seriouslyInjured, Integer deceased, String lastEditedBySubject, String lastEditedByFirstName, String lastEditedByLastName, OffsetDateTime lastEditedAt, String closedBySubject, String closedByFirstName, String closedByLastName, OffsetDateTime closedAt) {
+    public AssignmentReportsRecord(Long id, Long version, Long assignmentId, String situationDevelopment, Integer peopleInvolved, Integer lightlyInjured, Integer seriouslyInjured, Integer deceased, Boolean closed) {
         super(AssignmentReports.ASSIGNMENT_REPORTS);
 
         setId(id);
@@ -282,14 +178,7 @@ public class AssignmentReportsRecord extends UpdatableRecordImpl<AssignmentRepor
         setLightlyInjured(lightlyInjured);
         setSeriouslyInjured(seriouslyInjured);
         setDeceased(deceased);
-        setLastEditedBySubject(lastEditedBySubject);
-        setLastEditedByFirstName(lastEditedByFirstName);
-        setLastEditedByLastName(lastEditedByLastName);
-        setLastEditedAt(lastEditedAt);
-        setClosedBySubject(closedBySubject);
-        setClosedByFirstName(closedByFirstName);
-        setClosedByLastName(closedByLastName);
-        setClosedAt(closedAt);
+        setClosed(closed);
         resetTouchedOnNotNull();
     }
 }

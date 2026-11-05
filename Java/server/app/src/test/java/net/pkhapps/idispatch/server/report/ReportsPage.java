@@ -216,6 +216,7 @@ public class ReportsPage extends AppShell {
         return window.findSpan()
                 .withCondition(span -> isLastEditText(span.getText()))
                 .withCondition(span -> !isInsideAnyUnit(span))
+                .withCondition(span -> !isInAuditTrail(span))
                 .component().getText();
     }
 

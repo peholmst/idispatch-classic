@@ -39,6 +39,28 @@ public class Dispatcher {
         return page.viewTitle().orElse("");
     }
 
+    /**
+     * Who last changed the open assignment and when, such as "Last edited by Dora Dispatcher on …".
+     */
+    public String seesWhoLastChangedIt() {
+        return page.lastChange();
+    }
+
+    public void opensTheHistory() {
+        page.openHistory();
+    }
+
+    /**
+     * The events in the open history, newest first, by the Time, User and Event columns.
+     */
+    public java.util.List<java.util.Map<String, String>> history() {
+        return page.history();
+    }
+
+    public void closesTheHistory() {
+        page.closeHistory();
+    }
+
     public boolean seesButton(String text) {
         return page.showsButton(text);
     }

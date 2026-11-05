@@ -280,7 +280,10 @@ abstract sealed class DestinationForm extends RecordForm<DestinationDetails> {
                             new Paragraph(getTranslation("management.destination.pairing.scan-now")), linkField);
                 }
                 var newKeyButton = new Button(getTranslation("management.destination.pairing.new-key"),
-                        event -> confirmNewKey(() -> key.set(service.replaceMobileKey(id))));
+                        event -> confirmNewKey(() -> {
+                            key.set(service.replaceMobileKey(id));
+                            historyChanged();
+                        }));
                 newKeyButton.bindVisible(editable);
                 pairing.add(newKeyButton);
             });

@@ -1,6 +1,9 @@
 package net.pkhapps.idispatch.server.resource;
 
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditEventKind;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +27,10 @@ class ResourceTypeManagementService {
     private static final Logger log = LoggerFactory.getLogger(ResourceTypeManagementService.class);
 
     private final ResourceTypeRepository repository;
+    private final AuditLog auditLog;
 
-    ResourceTypeManagementService(ResourceTypeRepository repository) {
+    ResourceTypeManagementService(ResourceTypeRepository repository, AuditLog auditLog) {
+        this.auditLog = auditLog;
         this.repository = repository;
     }
 
@@ -46,29 +51,47 @@ class ResourceTypeManagementService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public ResourceType create(ResourceTypeDetails details) {
         log.debug("Creating resource type {}", details.code());
-        return repository.insert(details);
+        var created = repository.insert(details);
+        auditLog.record(audited(created.id()), AuditEventKind.CREATED);
+        return created;
     }
 
     /**
-     * Saves the changed details of the type.
+     * Saves the changed details of the type. If nothing has changed, saves nothing and returns the
+     * type as stored, with the same version.
      *
      * @return the type as saved, with its new version
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public ResourceType update(ResourceType type) {
         log.debug("Updating resource type {} version {}", type.id().value(), type.version());
-        return repository.update(type);
+        var stored = repository.findById(type.id());
+        if (stored.filter(type::equals).isPresent()) {
+            log.debug("Nothing to save in type {}", type.id().value());
+            return stored.get();
+        }
+        var updated = repository.update(type);
+        auditLog.record(audited(type.id()), AuditEventKind.EDITED);
+        return updated;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void delete(ResourceTypeId id) {
         log.debug("Softly deleting resource type {}", id.value());
-        repository.setActive(id, false);
+        if (repository.setActive(id, false)) {
+            auditLog.record(audited(id), AuditEventKind.DELETED);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void restore(ResourceTypeId id) {
         log.debug("Restoring resource type {}", id.value());
-        repository.setActive(id, true);
+        if (repository.setActive(id, true)) {
+            auditLog.record(audited(id), AuditEventKind.RESTORED);
+        }
+    }
+
+    private static AuditedEntity audited(ResourceTypeId id) {
+        return new AuditedEntity(AuditedEntity.Type.RESOURCE_TYPE, id.value());
     }
 }

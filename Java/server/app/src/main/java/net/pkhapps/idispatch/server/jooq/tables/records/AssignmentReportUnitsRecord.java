@@ -4,8 +4,6 @@
 package net.pkhapps.idispatch.server.jooq.tables.records;
 
 
-import java.time.OffsetDateTime;
-
 import net.pkhapps.idispatch.server.jooq.tables.AssignmentReportUnits;
 
 import org.jooq.Record2;
@@ -78,68 +76,6 @@ public class AssignmentReportUnitsRecord extends UpdatableRecordImpl<AssignmentR
         return (String) get(3);
     }
 
-    /**
-     * Setter for
-     * <code>public.assignment_report_units.last_edited_by_subject</code>.
-     */
-    public void setLastEditedBySubject(String value) {
-        set(4, value);
-    }
-
-    /**
-     * Getter for
-     * <code>public.assignment_report_units.last_edited_by_subject</code>.
-     */
-    public String getLastEditedBySubject() {
-        return (String) get(4);
-    }
-
-    /**
-     * Setter for
-     * <code>public.assignment_report_units.last_edited_by_first_name</code>.
-     */
-    public void setLastEditedByFirstName(String value) {
-        set(5, value);
-    }
-
-    /**
-     * Getter for
-     * <code>public.assignment_report_units.last_edited_by_first_name</code>.
-     */
-    public String getLastEditedByFirstName() {
-        return (String) get(5);
-    }
-
-    /**
-     * Setter for
-     * <code>public.assignment_report_units.last_edited_by_last_name</code>.
-     */
-    public void setLastEditedByLastName(String value) {
-        set(6, value);
-    }
-
-    /**
-     * Getter for
-     * <code>public.assignment_report_units.last_edited_by_last_name</code>.
-     */
-    public String getLastEditedByLastName() {
-        return (String) get(6);
-    }
-
-    /**
-     * Setter for <code>public.assignment_report_units.last_edited_at</code>.
-     */
-    public void setLastEditedAt(OffsetDateTime value) {
-        set(7, value);
-    }
-
-    /**
-     * Getter for <code>public.assignment_report_units.last_edited_at</code>.
-     */
-    public OffsetDateTime getLastEditedAt() {
-        return (OffsetDateTime) get(7);
-    }
-
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -163,17 +99,13 @@ public class AssignmentReportUnitsRecord extends UpdatableRecordImpl<AssignmentR
     /**
      * Create a detached, initialised AssignmentReportUnitsRecord
      */
-    public AssignmentReportUnitsRecord(Long reportId, Long resourceId, String situationOnArrival, String actionsTaken, String lastEditedBySubject, String lastEditedByFirstName, String lastEditedByLastName, OffsetDateTime lastEditedAt) {
+    public AssignmentReportUnitsRecord(Long reportId, Long resourceId, String situationOnArrival, String actionsTaken) {
         super(AssignmentReportUnits.ASSIGNMENT_REPORT_UNITS);
 
         setReportId(reportId);
         setResourceId(resourceId);
         setSituationOnArrival(situationOnArrival);
         setActionsTaken(actionsTaken);
-        setLastEditedBySubject(lastEditedBySubject);
-        setLastEditedByFirstName(lastEditedByFirstName);
-        setLastEditedByLastName(lastEditedByLastName);
-        setLastEditedAt(lastEditedAt);
         resetTouchedOnNotNull();
     }
 }

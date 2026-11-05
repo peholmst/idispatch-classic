@@ -99,14 +99,18 @@ class ResourceTypeRepository {
     }
 
     /**
-     * Deletes the type softly, or restores it. Does nothing if there is no such type.
+     * Deletes the type softly, or restores it. Does nothing if there is no such type, or if it already is deleted
+     * or active.
+     *
+     * @return whether the type was changed
      */
-    void setActive(ResourceTypeId id, boolean active) {
-        dsl.update(RESOURCE_TYPES)
+    boolean setActive(ResourceTypeId id, boolean active) {
+        return dsl.update(RESOURCE_TYPES)
                 .set(RESOURCE_TYPES.ACTIVE, active)
                 .set(RESOURCE_TYPES.VERSION, RESOURCE_TYPES.VERSION.plus(1))
                 .where(RESOURCE_TYPES.ID.eq(id.value()))
-                .execute();
+                .and(RESOURCE_TYPES.ACTIVE.ne(active))
+                .execute() > 0;
     }
 
     private org.jooq.SelectJoinStep<Record5<Long, String, String, String, Boolean>> selectListItems() {

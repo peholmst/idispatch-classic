@@ -220,6 +220,13 @@ public class ReportUser {
         return page.showsTextStartingWith(start);
     }
 
+    /**
+     * Who last changed the report as a whole and when, beside its status.
+     */
+    public String seesWhoLastChangedTheReport() {
+        return page.lastChange();
+    }
+
     public String whoLastEditedTheScene() {
         return page.sceneLastEdit();
     }

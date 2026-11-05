@@ -9,36 +9,50 @@ import net.pkhapps.idispatch.server.municipality.MunicipalityQueries;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractService;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
+import net.pkhapps.idispatch.server.shared.audit.AuditEventKind;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Lets dispatchers open, fill in and close assignments.
+ * Lets dispatchers open, fill in and close assignments. Each of these is recorded in the {@link AuditLog}. The form
+ * saves every field as soon as it changes, so a dispatcher's edits made within {@link #EDIT_MERGE_WINDOW} of each other
+ * are recorded as one.
  */
 @Service
 @PreAuthorize(Roles.HAS_DISPATCHER)
 public class AssignmentService extends AbstractService {
 
+    /**
+     * How long after a dispatcher's edit their next edit of the same assignment counts as the same edit.
+     */
+    static final Duration EDIT_MERGE_WINDOW = Duration.ofMinutes(5);
+
     private final AssignmentRepository assignmentRepository;
     private final ResourcesOnAssignment resourcesOnAssignment;
     private final MunicipalityQueries municipalityQueries;
     private final AssignmentTypeQueries assignmentTypeQueries;
+    private final AuditLog auditLog;
 
     AssignmentService(ApplicationContext applicationContext, PlatformTransactionManager txManager,
                       AssignmentRepository assignmentRepository, ResourcesOnAssignment resourcesOnAssignment,
-                      MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries) {
+                      MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries,
+                      AuditLog auditLog) {
         super(applicationContext, txManager);
         this.assignmentRepository = assignmentRepository;
         this.resourcesOnAssignment = resourcesOnAssignment;
         this.municipalityQueries = municipalityQueries;
         this.assignmentTypeQueries = assignmentTypeQueries;
+        this.auditLog = auditLog;
     }
 
     public Optional<Assignment> findAssignment(AssignmentId id) {
@@ -50,7 +64,11 @@ public class AssignmentService extends AbstractService {
      */
     public AssignmentId openAssignment() {
         logger.debug("Opening new assignment");
-        var opened = getTxTemplate().execute(status -> assignmentRepository.insertNew());
+        var opened = getTxTemplate().execute(status -> {
+            var inserted = assignmentRepository.insertNew();
+            auditLog.record(audited(inserted.id()), AuditEventKind.CREATED);
+            return inserted;
+        });
         getApplicationContext().publishEvent(new AssignmentOpened(this, opened));
         logger.debug("Opened assignment with ID {}", opened.id().value());
         return opened.id();
@@ -59,7 +77,8 @@ public class AssignmentService extends AbstractService {
     /**
      * Saves what a dispatcher has filled in, publishes an {@link AssignmentUpdated} event and returns:
      * <ul>
-     * <li>{@link UpdateResult.Success} with the assignment as saved, with its new version.</li>
+     * <li>{@link UpdateResult.Success} with the assignment as saved, with its new version, or as stored if nothing
+     * has changed, in which case nothing is saved or published.</li>
      * <li>{@link UpdateResult.Conflict} with the assignment as it now is, if it had been changed by another user.</li>
      * <li>{@link UpdateResult.NoChange} if the assignment is closed.</li>
      * </ul>
@@ -71,7 +90,16 @@ public class AssignmentService extends AbstractService {
             return new UpdateResult.NoChange<>(assignment);
         }
         try {
-            var updated = getTxTemplate().execute(status -> assignmentRepository.update(assignment));
+            var stored = assignmentRepository.findById(assignment.id());
+            if (stored.filter(assignment::equals).isPresent()) {
+                logger.debug("Nothing to save in assignment {}", assignment.id().value());
+                return new UpdateResult.Success<>(stored.get());
+            }
+            var updated = getTxTemplate().execute(status -> {
+                var saved = assignmentRepository.update(assignment);
+                auditLog.recordMergedEdit(audited(assignment.id()), EDIT_MERGE_WINDOW);
+                return saved;
+            });
             getApplicationContext().publishEvent(new AssignmentUpdated(this, updated));
             return new UpdateResult.Success<>(updated);
         } catch (OptimisticLockingFailureException ex) {
@@ -95,7 +123,11 @@ public class AssignmentService extends AbstractService {
             logger.debug("Resources are still assigned to assignment {}, ignoring", id.value());
             return false;
         }
-        var closed = getTxTemplate().execute(status -> assignmentRepository.close(id)).orElse(null);
+        var closed = getTxTemplate().execute(status -> {
+            var result = assignmentRepository.close(id);
+            result.ifPresent(closedAssignment -> auditLog.record(audited(id), AuditEventKind.CLOSED));
+            return result;
+        }).orElse(null);
         if (closed == null) {
             return false;
         }
@@ -149,5 +181,9 @@ public class AssignmentService extends AbstractService {
 
     public List<AssignmentUrgency> findApplicableUrgencies() {
         return List.of(AssignmentUrgency.values());
+    }
+
+    private static AuditedEntity audited(AssignmentId id) {
+        return new AuditedEntity(AuditedEntity.Type.ASSIGNMENT, id.value());
     }
 }

@@ -5,6 +5,8 @@ import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.Bilingual;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import net.pkhapps.idispatch.server.ui.RootLayout;
@@ -22,10 +24,10 @@ public class MunicipalityManagementView
 
     private final MunicipalityManagementService service;
 
-    public MunicipalityManagementView(MunicipalityManagementService service) {
+    public MunicipalityManagementView(MunicipalityManagementService service, AuditLog auditLog) {
         // Set before the base class constructor, which lists the municipalities
         this.service = service;
-        super("management.municipalities");
+        super("management.municipalities", auditLog);
     }
 
     @Override
@@ -60,6 +62,11 @@ public class MunicipalityManagementView
     @Override
     protected boolean isRecordActive(Municipality record) {
         return record.active();
+    }
+
+    @Override
+    protected AuditedEntity auditedEntity(Municipality record) {
+        return new AuditedEntity(AuditedEntity.Type.MUNICIPALITY, record.id().value());
     }
 
     @Override

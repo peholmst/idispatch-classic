@@ -8,6 +8,7 @@ import net.pkhapps.idispatch.server.jooq.tables.AssignmentReportUnits;
 import net.pkhapps.idispatch.server.jooq.tables.AssignmentReports;
 import net.pkhapps.idispatch.server.jooq.tables.AssignmentTypes;
 import net.pkhapps.idispatch.server.jooq.tables.Assignments;
+import net.pkhapps.idispatch.server.jooq.tables.AuditEvents;
 import net.pkhapps.idispatch.server.jooq.tables.DestinationResources;
 import net.pkhapps.idispatch.server.jooq.tables.Destinations;
 import net.pkhapps.idispatch.server.jooq.tables.DispatchNotificationAssignedResources;
@@ -27,6 +28,7 @@ import net.pkhapps.idispatch.server.jooq.tables.records.AssignmentReportUnitsRec
 import net.pkhapps.idispatch.server.jooq.tables.records.AssignmentReportsRecord;
 import net.pkhapps.idispatch.server.jooq.tables.records.AssignmentTypesRecord;
 import net.pkhapps.idispatch.server.jooq.tables.records.AssignmentsRecord;
+import net.pkhapps.idispatch.server.jooq.tables.records.AuditEventsRecord;
 import net.pkhapps.idispatch.server.jooq.tables.records.DestinationResourcesRecord;
 import net.pkhapps.idispatch.server.jooq.tables.records.DestinationsRecord;
 import net.pkhapps.idispatch.server.jooq.tables.records.DispatchNotificationAssignedResourcesRecord;
@@ -68,6 +70,7 @@ public class Keys {
     public static final UniqueKey<AssignmentTypesRecord> ASSIGNMENT_TYPES_CODE_UK = Internal.createUniqueKey(AssignmentTypes.ASSIGNMENT_TYPES, DSL.name("assignment_types_code_uk"), new TableField[] { AssignmentTypes.ASSIGNMENT_TYPES.CODE }, true);
     public static final UniqueKey<AssignmentTypesRecord> ASSIGNMENT_TYPES_PK = Internal.createUniqueKey(AssignmentTypes.ASSIGNMENT_TYPES, DSL.name("assignment_types_pk"), new TableField[] { AssignmentTypes.ASSIGNMENT_TYPES.ID }, true);
     public static final UniqueKey<AssignmentsRecord> ASSIGNMENTS_PK = Internal.createUniqueKey(Assignments.ASSIGNMENTS, DSL.name("assignments_pk"), new TableField[] { Assignments.ASSIGNMENTS.ID }, true);
+    public static final UniqueKey<AuditEventsRecord> AUDIT_EVENTS_PK = Internal.createUniqueKey(AuditEvents.AUDIT_EVENTS, DSL.name("audit_events_pk"), new TableField[] { AuditEvents.AUDIT_EVENTS.ID }, true);
     public static final UniqueKey<DestinationResourcesRecord> DESTINATION_RESOURCES_PK = Internal.createUniqueKey(DestinationResources.DESTINATION_RESOURCES, DSL.name("destination_resources_pk"), new TableField[] { DestinationResources.DESTINATION_RESOURCES.DESTINATION_ID, DestinationResources.DESTINATION_RESOURCES.RESOURCE_ID }, true);
     public static final UniqueKey<DestinationsRecord> DESTINATIONS_PK = Internal.createUniqueKey(Destinations.DESTINATIONS, DSL.name("destinations_pk"), new TableField[] { Destinations.DESTINATIONS.ID }, true);
     public static final UniqueKey<DispatchNotificationAssignedResourcesRecord> DISPATCH_NOTIFICATION_ASSIGNED_RESOURCES_PK = Internal.createUniqueKey(DispatchNotificationAssignedResources.DISPATCH_NOTIFICATION_ASSIGNED_RESOURCES, DSL.name("dispatch_notification_assigned_resources_pk"), new TableField[] { DispatchNotificationAssignedResources.DISPATCH_NOTIFICATION_ASSIGNED_RESOURCES.DISPATCH_NOTIFICATION_ID, DispatchNotificationAssignedResources.DISPATCH_NOTIFICATION_ASSIGNED_RESOURCES.RESOURCE_ID }, true);
