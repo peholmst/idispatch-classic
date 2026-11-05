@@ -30,17 +30,20 @@ class Alarm implements Observer {
     private final Speech speech;
     private final Outputs outputs;
     private final AlertTimings timings;
+    private final int maxUnits;
     private Clip alarmClip;
     private Clip beepClip;
     private Set<Notification> seenNotifications = new HashSet<>();
 
     /**
      * @param alarmVolume the gain of the alarm and the beep in decibels, at most 0
+     * @param maxUnits    the most units that are read out one by one, after which only their number is read
      */
-    Alarm(Speech speech, Outputs outputs, AlertTimings timings, double alarmVolume) {
+    Alarm(Speech speech, Outputs outputs, AlertTimings timings, double alarmVolume, int maxUnits) {
         this.speech = speech;
         this.outputs = outputs;
         this.timings = timings;
+        this.maxUnits = maxUnits;
         try {
             alarmClip = openClip("/sounds/alarm.wav", alarmVolume);
             beepClip = openClip("/sounds/beep.wav", alarmVolume);
@@ -121,7 +124,7 @@ class Alarm implements Observer {
                         logger.info("Notification {} came in language '{}' from the server, reading it in '{}'",
                                 n.getId(), n.getLanguage().isEmpty() ? "none" : n.getLanguage(),
                                 language.isEmpty() ? "none" : language);
-                        return speech.read(language, Announcement.phrases(n, language));
+                        return speech.read(language, Announcement.phrases(n, language, maxUnits));
                     })
                     .toList();
             // Keep the notifications on the screen, and the light on, until they have been read out loud.

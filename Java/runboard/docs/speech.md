@@ -14,7 +14,10 @@ Two threads share the work: the *speech thread* runs the engine, and the *audio 
    the assignment and the address. Each phrase is synthesized on its own, a part at a time (with Piper, a sentence at
    a time), and each part is handed to the audio thread as soon as it is ready. Between the phrases, the runboard adds
    `idispatch.speech.phrasePause` milliseconds of silence (default 500), so the units are not read in one breath,
-   whatever the engine.
+   whatever the engine. When more than `idispatch.speech.maxUnits` units are dispatched (default 10), they are not
+   listed: a single phrase reads only their number ("Hälytysilmoitus: 12 yksikköä" / "Larmmeddelande: 12 enheter"),
+   so that a big alert doesn't take minutes to read. The screen still lists every unit. A language without words of
+   its own has no word for units, so it lists them all.
 2. The audio thread asks the engine whether it supports the language of any of the new notifications
    (`SpeechEngine.supportsLanguage`).
 3. The alarm starts. It plays `idispatch.alarm.playsBeforeSpeech` times (default 3) if speech is expected, otherwise
@@ -60,6 +63,8 @@ idispatch.alarm.playsBeforeSpeech=3
 idispatch.speech.repeats=2
 idispatch.speech.pause=1000
 idispatch.speech.phrasePause=500
+# The most units read out one by one; more are read as their number.
+idispatch.speech.maxUnits=10
 ```
 
 ### Volume

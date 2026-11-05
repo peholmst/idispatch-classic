@@ -4,6 +4,7 @@ import net.pkhapps.idispatch.runboard.client.Notification;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,17 +20,18 @@ final class Announcement {
 
     /**
      * @param alert     the label of the units dispatched, which opens the announcement
+     * @param units     the word for units, read after their number when there are too many to list
      * @param urgencies the words that urgency letters are read as, the way they are said over the radio
      */
-    private record Phrases(String alert, String assignment, Map<String, String> urgencies) {
+    private record Phrases(String alert, String units, String assignment, Map<String, String> urgencies) {
     }
 
     private static final Map<String, Phrases> PHRASES = Map.of(
-            "fi", new Phrases("Hälytysilmoitus", "Tehtävä",
+            "fi", new Phrases("Hälytysilmoitus", "yksikköä", "Tehtävä",
                     Map.of("A", "Aarne", "B", "Bertta", "C", "Celsius", "D", "David", "N", "Nilo")),
-            "sv", new Phrases("Larmmeddelande", "Uppdrag",
+            "sv", new Phrases("Larmmeddelande", "enheter", "Uppdrag",
                     Map.of("A", "Arne", "B", "Berta", "C", "Celsius", "D", "David", "N", "Niklas")));
-    private static final Phrases NO_PHRASES = new Phrases("", "", Map.of());
+    private static final Phrases NO_PHRASES = new Phrases("", "", "", Map.of());
     private static final Pattern CALL_SIGN = Pattern.compile("(\\p{Lu}+)(\\d*)");
     private static final Pattern DIGIT_BOUNDARY = Pattern.compile("(?<=\\d)(?=\\S)|(?<=\\S)(?=\\d)");
 
@@ -46,18 +48,27 @@ final class Announcement {
     /**
      * Returns the phrases to read for the notification in the given language, which decides the words added around the
      * notification's own text. Each unit dispatched is a phrase of its own, the first one after the alert label, so
-     * that the runboard can pause between them; the assignment and the address follow, a phrase each. Every phrase
+     * that the runboard can pause between them. When more than {@code maxUnits} units are dispatched, only their
+     * number is read instead, as a single phrase after the alert label; in a language without words of its own, there
+     * is no word for units, so every unit is listed. The assignment and the address follow, a phrase each. Every phrase
      * ends with a full stop.
+     *
+     * @param maxUnits the most units that are read out one by one, at least 1
      */
-    static List<String> phrases(Notification notification, String language) {
+    static List<String> phrases(Notification notification, String language, int maxUnits) {
         final Phrases phrases = PHRASES.getOrDefault(language, NO_PHRASES);
         final List<String> result = new ArrayList<>();
-        final List<String> units = notification.getResources().stream()
-                .sorted()
-                .map(Announcement::spellCallSign)
-                .toList();
-        for (int i = 0; i < units.size(); i++) {
-            result.add(i == 0 ? labelled(phrases.alert(), units.get(i)) : units.get(i));
+        final Collection<String> resources = notification.getResources();
+        if (resources.size() > maxUnits && !phrases.units().isEmpty()) {
+            result.add(labelled(phrases.alert(), resources.size() + " " + phrases.units()));
+        } else {
+            final List<String> units = resources.stream()
+                    .sorted()
+                    .map(Announcement::spellCallSign)
+                    .toList();
+            for (int i = 0; i < units.size(); i++) {
+                result.add(i == 0 ? labelled(phrases.alert(), units.get(i)) : units.get(i));
+            }
         }
         final String urgency = notification.getUrgency();
         result.add(labelled(phrases.assignment(), join(" ", spellDigits(notification.getAssignmentTypeCode()),
