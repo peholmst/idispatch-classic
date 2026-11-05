@@ -25,5 +25,9 @@ public enum AuditEventKind {
     /**
      * Given a new key; only mobile destinations are.
      */
-    MOBILE_KEY_REPLACED
+    MOBILE_KEY_REPLACED,
+    /**
+     * Moved to another unit by a dispatcher; only mobile destinations are.
+     */
+    MOBILE_UNIT_CHANGED
 }

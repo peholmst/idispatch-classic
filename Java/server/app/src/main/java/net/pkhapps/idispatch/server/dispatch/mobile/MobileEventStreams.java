@@ -5,6 +5,7 @@ import net.pkhapps.idispatch.server.dispatch.DestinationId;
 import net.pkhapps.idispatch.server.dispatch.DestinationQueries;
 import net.pkhapps.idispatch.server.dispatch.MobileDestination;
 import net.pkhapps.idispatch.server.dispatch.MobileKeyHash;
+import net.pkhapps.idispatch.server.dispatch.MobileUnitChanged;
 import net.pkhapps.idispatch.server.resource.ResourceStatusChanged;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +120,21 @@ class MobileEventStreams implements SmartLifecycle {
         streams.stream()
                 .filter(stream -> stream.destination.resource().equals(status.resourceId()))
                 .forEach(stream -> sendUnit(stream, unitResponses.of(stream.destination, status)));
+    }
+
+    /**
+     * Sends the new unit to every open stream of a destination that a dispatcher moved to another unit, so the app
+     * shows it at once rather than at the next heartbeat.
+     */
+    @EventListener
+    void onMobileUnitChanged(MobileUnitChanged event) {
+        var destination = event.getDestination();
+        streams.stream()
+                .filter(stream -> stream.destination.id().equals(destination.id()))
+                .forEach(stream -> {
+                    stream.destination = destination;
+                    sendUnit(stream, unitResponses.of(destination));
+                });
     }
 
     @Scheduled(fixedDelayString = "${idispatch.mobile.heartbeat-interval:20s}")

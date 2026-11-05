@@ -354,12 +354,21 @@ public class TestData {
      * An active mobile destination for the given resource in the given language, with a new key.
      */
     public GivenMobile mobile(GivenResource resource, Locale locale) {
+        return mobile(resource, locale, null);
+    }
+
+    /**
+     * An active mobile destination for the given resource in the given language, with the description that tells the
+     * phone apart, and a new key.
+     */
+    public GivenMobile mobile(GivenResource resource, Locale locale, @Nullable String description) {
         var id = dsl.nextval(DESTINATIONS_SEQ);
         var key = newMobileKey();
         dsl.insertInto(DESTINATIONS)
                 .set(DESTINATIONS.ID, id)
                 .set(DESTINATIONS.VERSION, 0L)
                 .set(DESTINATIONS.ACTIVE, true)
+                .set(DESTINATIONS.DESCRIPTION, description)
                 .set(DESTINATIONS.LOCALE, locale.toString())
                 .execute();
         dsl.insertInto(MOBILE_DESTINATIONS)
