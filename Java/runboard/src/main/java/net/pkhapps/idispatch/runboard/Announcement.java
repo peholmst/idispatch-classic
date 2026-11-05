@@ -30,7 +30,7 @@ final class Announcement {
             "fi", new Phrases("Hälytysilmoitus", "yksikköä", "Tehtävä",
                     Map.of("A", "Aarne", "B", "Bertta", "C", "Celsius", "D", "David", "N", "Nilo")),
             "sv", new Phrases("Larmmeddelande", "enheter", "Uppdrag",
-                    Map.of("A", "Arne", "B", "Berta", "C", "Celsius", "D", "David", "N", "Niklas")));
+                    Map.of("A", "Adam", "B", "Bertil", "C", "Cesar", "D", "David", "N", "Niklas")));
     private static final Phrases NO_PHRASES = new Phrases("", "", "", Map.of());
     private static final Pattern CALL_SIGN = Pattern.compile("(\\p{Lu}+)(\\d*)");
     private static final Pattern DIGIT_BOUNDARY = Pattern.compile("(?<=\\d)(?=\\S)|(?<=\\S)(?=\\d)");
