@@ -367,6 +367,24 @@ class DispatchingTest extends UseCaseTest {
     }
 
     @Test
+    void dispatchButtonsAreEnabledOnlyWithSomethingToDispatch() {
+        var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
+        var dispatcher = dispatcherAtWork();
+        dispatcher.opensANewAssignment();
+        dispatcher.fillsIn(fire, town, "Fire Street 1");
+        assertThat(dispatcher.canDispatchAll()).as("No resources on the assignment").isFalse();
+        assertThat(dispatcher.canDispatchReserved()).as("No resources on the assignment").isFalse();
+
+        dispatcher.addsResource(resource.callSign());
+        assertThat(dispatcher.canDispatchAll()).isTrue();
+        assertThat(dispatcher.canDispatchReserved()).isTrue();
+
+        dispatcher.dispatchesAll();
+        assertThat(dispatcher.canDispatchAll()).as("Dispatching again is still possible").isTrue();
+        assertThat(dispatcher.canDispatchReserved()).as("No resource is reserved any more").isFalse();
+    }
+
+    @Test
     void dispatcherChangesTheStateOfAResourceByHand() {
         var resource = given.resource(unique("CS"), ResourceState.OUT_OF_SERVICE);
         var dispatcher = dispatcherAtWork();
@@ -386,16 +404,17 @@ class DispatchingTest extends UseCaseTest {
     }
 
     @Test
-    void assignmentWithResourcesOnItCannotBeClosed() {
+    void assignmentCanBeClosedOnlyOnceNoResourcesAreOnIt() {
         var resource = given.resource(unique("CS"), ResourceState.AVAILABLE);
         var dispatcher = dispatcherAtWork();
-        var number = dispatcher.opensANewAssignment();
+        dispatcher.opensANewAssignment();
+        assertThat(dispatcher.canCloseTheAssignment()).isTrue();
+
         dispatcher.addsResource(resource.callSign());
+        assertThat(dispatcher.canCloseTheAssignment()).as("A resource is on the assignment").isFalse();
 
-        dispatcher.closesTheAssignment();
-
-        assertThat(dispatcher.seesAssignment(number)).isTrue();
-        assertThat(dispatcher.seesAnAssignmentToEdit()).isTrue();
+        dispatcher.removesResource(resource.callSign());
+        assertThat(dispatcher.canCloseTheAssignment()).isTrue();
     }
 
     @Test
