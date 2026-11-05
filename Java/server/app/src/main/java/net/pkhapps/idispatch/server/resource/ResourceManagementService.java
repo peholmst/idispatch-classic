@@ -1,6 +1,9 @@
 package net.pkhapps.idispatch.server.resource;
 
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditEventKind;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,11 +28,13 @@ class ResourceManagementService {
     private static final Logger log = LoggerFactory.getLogger(ResourceManagementService.class);
 
     private final ResourceRepository repository;
+    private final AuditLog auditLog;
     private final ResourceStatusRepository resourceStatusRepository;
     private final ResourceTypeRepository resourceTypeRepository;
 
     ResourceManagementService(ResourceRepository repository, ResourceStatusRepository resourceStatusRepository,
-                              ResourceTypeRepository resourceTypeRepository) {
+                              ResourceTypeRepository resourceTypeRepository, AuditLog auditLog) {
+        this.auditLog = auditLog;
         this.repository = repository;
         this.resourceStatusRepository = resourceStatusRepository;
         this.resourceTypeRepository = resourceTypeRepository;
@@ -58,30 +63,43 @@ class ResourceManagementService {
         var resource = repository.insert(details);
         resourceStatusRepository.insert(
                 new ResourceStatus(resource.id(), 0L, ResourceState.OUT_OF_SERVICE, null, Instant.now()));
+        auditLog.record(audited(resource.id()), AuditEventKind.CREATED);
         return resource;
     }
 
     /**
-     * Saves the changed details of the resource.
+     * Saves the changed details of the resource. If nothing has changed, saves nothing and returns the
+     * resource as stored, with the same version.
      *
      * @return the resource as saved, with its new version
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Resource update(Resource resource) {
         log.debug("Updating resource {} version {}", resource.id().value(), resource.version());
-        return repository.update(resource);
+        var stored = repository.findById(resource.id());
+        if (stored.filter(resource::equals).isPresent()) {
+            log.debug("Nothing to save in resource {}", resource.id().value());
+            return stored.get();
+        }
+        var updated = repository.update(resource);
+        auditLog.record(audited(resource.id()), AuditEventKind.EDITED);
+        return updated;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void delete(ResourceId id) {
         log.debug("Softly deleting resource {}", id.value());
-        repository.setActive(id, false);
+        if (repository.setActive(id, false)) {
+            auditLog.record(audited(id), AuditEventKind.DELETED);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void restore(ResourceId id) {
         log.debug("Restoring resource {}", id.value());
-        repository.setActive(id, true);
+        if (repository.setActive(id, true)) {
+            auditLog.record(audited(id), AuditEventKind.RESTORED);
+        }
     }
 
     /**
@@ -98,5 +116,9 @@ class ResourceManagementService {
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Optional<ResourceTypeListItem> findType(ResourceTypeId id) {
         return resourceTypeRepository.findListItem(id);
+    }
+
+    private static AuditedEntity audited(ResourceId id) {
+        return new AuditedEntity(AuditedEntity.Type.RESOURCE, id.value());
     }
 }

@@ -5,6 +5,7 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasValidation;
 import com.vaadin.flow.component.HasValueAndElement;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.function.SerializableRunnable;
 import com.vaadin.flow.signals.Signal;
 import com.vaadin.flow.signals.local.ValueSignal;
 import org.jspecify.annotations.Nullable;
@@ -36,6 +37,8 @@ public abstract class RecordForm<D> extends Composite<FormLayout> {
     private final ValueSignal<Boolean> readOnly = new ValueSignal<>(false);
     private final ValueSignal<Boolean> saveAttempted = new ValueSignal<>(false);
     private final List<Signal<Boolean>> fieldChanges = new ArrayList<>();
+    private SerializableRunnable historyChangedListener = () -> {
+    };
 
     protected RecordForm() {
         var formLayout = getContent();
@@ -106,6 +109,22 @@ public abstract class RecordForm<D> extends Composite<FormLayout> {
      */
     public Signal<Boolean> changed() {
         return Signal.computed(() -> fieldChanges.stream().anyMatch(Signal::get));
+    }
+
+    /**
+     * Sets what to do when the form has changed the record's history on its own, without saving the form, such as by
+     * replacing a key.
+     */
+    public void setHistoryChangedListener(SerializableRunnable historyChangedListener) {
+        this.historyChangedListener = Objects.requireNonNull(historyChangedListener);
+    }
+
+    /**
+     * Tells that the form has changed the record's history on its own; see
+     * {@link #setHistoryChangedListener(SerializableRunnable)}.
+     */
+    protected void historyChanged() {
+        historyChangedListener.run();
     }
 
     public void setReadOnly(boolean readOnly) {

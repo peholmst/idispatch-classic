@@ -16,13 +16,15 @@ import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.security.Roles;
 import net.pkhapps.idispatch.server.shared.AbstractService;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
+import net.pkhapps.idispatch.server.shared.audit.AuditEventKind;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -30,11 +32,13 @@ import java.time.Instant;
 import java.util.*;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
 /**
  * Lets report users find closed assignments and read their reports, writers fill in what happened on scene, and
- * reviewers close and re-open the reports.
+ * reviewers close and re-open the reports. Every change is recorded in the {@link AuditLog}, with a report's edits by
+ * the {@link ReportPart} they changed.
  */
 @Service
 @PreAuthorize(Roles.HAS_ANY_REPORT_ROLE)
@@ -52,8 +56,9 @@ public class ReportService extends AbstractService {
 
     private final ResourceQueries resourceQueries;
 
+    private final AuditLog auditLog;
 
-    ReportService(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentQueries assignmentQueries, AssignmentReportRepository assignmentReportRepository, ClosedAssignmentQuery closedAssignmentQuery, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, ResourceQueries resourceQueries) {
+    ReportService(ApplicationContext applicationContext, PlatformTransactionManager txManager, AssignmentQueries assignmentQueries, AssignmentReportRepository assignmentReportRepository, ClosedAssignmentQuery closedAssignmentQuery, MunicipalityQueries municipalityQueries, AssignmentTypeQueries assignmentTypeQueries, ResourceQueries resourceQueries, AuditLog auditLog) {
         super(applicationContext, txManager);
         this.assignmentQueries = assignmentQueries;
         this.assignmentReportRepository = assignmentReportRepository;
@@ -61,6 +66,7 @@ public class ReportService extends AbstractService {
         this.municipalityQueries = municipalityQueries;
         this.assignmentTypeQueries = assignmentTypeQueries;
         this.resourceQueries = resourceQueries;
+        this.auditLog = auditLog;
     }
 
     /**
@@ -117,9 +123,10 @@ public class ReportService extends AbstractService {
     }
 
     /**
-     * Saves what a writer filled in, recording the edit on the parts they changed, and returns:
+     * Saves what a writer filled in, recording an edit of each part they changed, and returns:
      * <ul>
-     * <li>{@link UpdateResult.Success} with the saved report if the operation was successful.</li>
+     * <li>{@link UpdateResult.Success} with the saved report if the operation was successful, or with the stored one
+     * if the writer changed nothing, in which case nothing is saved or recorded.</li>
      * <li>{@link UpdateResult.Conflict} with the other user's report if another user saved the report after the writer
      * read it.</li>
      * <li>{@link UpdateResult.NoChange} with the closed report if a reviewer has closed it; closed reports can't be
@@ -131,23 +138,25 @@ public class ReportService extends AbstractService {
     @PreAuthorize(Roles.HAS_REPORT_WRITER)
     public UpdateResult<AssignmentReport> saveReport(AssignmentReport seen, ReportDraft draft) {
         logger.debug("Saving the report of assignment {} version {}", seen.assignmentId().value(), seen.version());
-        final UserStamp edit = stampForCurrentUser();
-        return changeReport(seen, true, current -> current.withDraft(draft, edit));
+        return changeReport(seen, true, current -> current.withDraft(draft),
+                (before, after) -> after.partsChangedFrom(before).stream()
+                        .map(part -> new ReportEvent(AuditEventKind.EDITED, part)).toList());
     }
 
     /**
      * Closes the report after a reviewer has checked it, so that nobody can change it. The report must be the version
      * the reviewer saw, so that nobody closes changes they haven't checked. Returns:
      * <ul>
-     * <li>{@link UpdateResult.Success} with the closed report if the operation was successful.</li>
+     * <li>{@link UpdateResult.Success} with the closed report if the operation was successful, or if it already was
+     * closed.</li>
      * <li>{@link UpdateResult.Conflict} with the current report if it has changed since the reviewer read it.</li>
      * </ul>
      */
     @PreAuthorize(Roles.HAS_REPORT_REVIEWER)
     public UpdateResult<AssignmentReport> closeReport(AssignmentReport seen) {
         logger.debug("Closing the report of assignment {}", seen.assignmentId().value());
-        final UserStamp closed = stampForCurrentUser();
-        return changeReport(seen, false, current -> current.closedBy(closed));
+        return changeReport(seen, false, AssignmentReport::closedByReviewer,
+                (before, after) -> before.isClosed() ? List.of() : List.of(new ReportEvent(AuditEventKind.CLOSED, null)));
     }
 
     /**
@@ -157,7 +166,8 @@ public class ReportService extends AbstractService {
     @PreAuthorize(Roles.HAS_REPORT_REVIEWER)
     public UpdateResult<AssignmentReport> reopenReport(AssignmentReport seen) {
         logger.debug("Re-opening the report of assignment {}", seen.assignmentId().value());
-        return changeReport(seen, false, AssignmentReport::reopened);
+        return changeReport(seen, false, AssignmentReport::reopened,
+                (before, after) -> before.isClosed() ? List.of(new ReportEvent(AuditEventKind.REOPENED, null)) : List.of());
     }
 
     /**
@@ -166,9 +176,12 @@ public class ReportService extends AbstractService {
      *
      * @param refuseClosed whether a closed report is left as it is, which is {@link UpdateResult.NoChange} with the
      *                     stored report whichever version the user saw
+     * @param events       the events to record for the change, from the report before and after it; none means that
+     *                     nothing changed, and the report is left as it is
      */
-    private UpdateResult<AssignmentReport> changeReport(AssignmentReport seen, boolean refuseClosed,
-                                                        UnaryOperator<AssignmentReport> change) {
+    private UpdateResult<AssignmentReport> changeReport(
+            AssignmentReport seen, boolean refuseClosed, UnaryOperator<AssignmentReport> change,
+            BiFunction<AssignmentReport, AssignmentReport, List<ReportEvent>> events) {
         try {
             return getTxTemplate().execute(status -> {
                 var stored = assignmentReportRepository.findByAssignment(seen.assignmentId());
@@ -187,8 +200,19 @@ public class ReportService extends AbstractService {
                 }
                 var current = stored.orElseGet(() -> AssignmentReport.empty(seen.assignmentId()));
                 var changed = change.apply(current);
-                return new UpdateResult.Success<>(current.isNew() ? assignmentReportRepository.insert(changed)
-                        : assignmentReportRepository.update(changed));
+                var happened = events.apply(current, changed);
+                if (happened.isEmpty()) {
+                    logger.debug("Nothing changed in the report of assignment {}", seen.assignmentId().value());
+                    return new UpdateResult.Success<>(current);
+                }
+                var saved = current.isNew() ? assignmentReportRepository.insert(changed)
+                        : assignmentReportRepository.update(changed);
+                var audited = new AuditedEntity(AuditedEntity.Type.ASSIGNMENT_REPORT, seen.assignmentId().value());
+                if (current.isNew()) {
+                    auditLog.record(audited, AuditEventKind.CREATED);
+                }
+                happened.forEach(event -> auditLog.record(audited, event.kind(), event.part()));
+                return new UpdateResult.Success<>(saved);
             });
         } catch (OptimisticLockingFailureException | DataIntegrityViolationException ex) {
             // Either another user saved this report after we read it, or two users wrote the first report of the
@@ -200,13 +224,12 @@ public class ReportService extends AbstractService {
         }
     }
 
-    private UserStamp stampForCurrentUser() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication.getPrincipal() instanceof OidcUser user) {
-            return new UserStamp(user.getSubject(), user.getGivenName(), user.getFamilyName(), Instant.now());
-        }
-        // Only when not logged in through Keycloak, such as in tests
-        return new UserStamp(authentication.getName(), null, null, Instant.now());
+    /**
+     * An event to record in the audit log for a change of a report.
+     *
+     * @param part the {@link ReportPart} changed, or {@code null} for the whole report
+     */
+    private record ReportEvent(AuditEventKind kind, @Nullable String part) {
     }
 
     @FunctionalInterface

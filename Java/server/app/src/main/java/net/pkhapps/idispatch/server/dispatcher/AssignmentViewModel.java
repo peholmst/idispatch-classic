@@ -101,6 +101,13 @@ class AssignmentViewModel {
     // --- State ---
 
     /**
+     * The assignment open in the form, as last saved or loaded, or {@code null} while none is.
+     */
+    Signal<@Nullable Assignment> current() {
+        return assignment.asReadonly();
+    }
+
+    /**
      * Whether an assignment is open in the form.
      */
     Signal<Boolean> showing() {

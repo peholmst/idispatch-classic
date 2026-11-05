@@ -8,6 +8,8 @@ import com.vaadin.flow.component.menubar.MenuBarVariant;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.management.RecordForm;
@@ -28,10 +30,10 @@ public class DestinationManagementView
     // The mobile destination just created and its key, which its form shows once
     private DestinationManagementService.@Nullable KeyedMobileDestination justCreated;
 
-    public DestinationManagementView(DestinationManagementService service) {
+    public DestinationManagementView(DestinationManagementService service, AuditLog auditLog) {
         // Set before the base class constructor, which lists the destinations
         this.service = service;
-        super("management.destinations");
+        super("management.destinations", auditLog);
     }
 
     @Override
@@ -89,6 +91,11 @@ public class DestinationManagementView
     @Override
     protected boolean isRecordActive(Destination record) {
         return record.active();
+    }
+
+    @Override
+    protected AuditedEntity auditedEntity(Destination record) {
+        return new AuditedEntity(AuditedEntity.Type.DESTINATION, record.id().value());
     }
 
     @Override

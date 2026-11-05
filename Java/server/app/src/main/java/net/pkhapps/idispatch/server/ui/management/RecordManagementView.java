@@ -25,8 +25,11 @@ import com.vaadin.flow.router.BeforeLeaveObserver;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.signals.Signal;
 import com.vaadin.flow.signals.local.ValueSignal;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import net.pkhapps.idispatch.server.ui.ViewTitle;
+import net.pkhapps.idispatch.server.ui.audit.AuditTrail;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -38,7 +41,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * Base class for the management views of master data stored as immutable records: a master-detail view with the list
  * items in a grid and a {@link RecordForm} for the selected or new record in the detail area. Deleted records are shown
- * read-only, with a button for restoring them.
+ * read-only, with a button for restoring them. The editor of an existing record tells who last changed it, with its
+ * history a click away ({@link AuditTrail}).
  *
  * @param <I> the list item shown in the grid, flattened to what the grid shows
  * @param <R> the record that the form edits
@@ -64,6 +68,7 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
     }
 
     private final String titleKey;
+    private final AuditLog auditLog;
     private final Grid<I> grid;
     private final MasterDetailLayout masterDetail;
     private final ValueSignal<String> searchTerm = new ValueSignal<>("");
@@ -78,9 +83,11 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
 
     /**
      * @param titleKey the translation key of the view's title
+     * @param auditLog where the editor reads who changed the record
      */
-    protected RecordManagementView(String titleKey) {
+    protected RecordManagementView(String titleKey, AuditLog auditLog) {
         this.titleKey = requireNonNull(titleKey);
+        this.auditLog = requireNonNull(auditLog);
 
         grid = new Grid<>();
         configureGrid(grid);
@@ -203,6 +210,11 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
     protected abstract boolean isRecordActive(R record);
 
     /**
+     * Returns the record as the audit log knows it.
+     */
+    protected abstract AuditedEntity auditedEntity(R record);
+
+    /**
      * Creates the form, showing the given record or empty for a new one.
      */
     protected abstract RecordForm<D> createForm(@Nullable R record);
@@ -283,7 +295,14 @@ public abstract class RecordManagementView<I, R, D> extends VerticalLayout
         }
         form = editor;
 
-        var layout = new VerticalLayout(new H3(record == null ? getTitleToAdd(kind) : getTitle(record)), editor);
+        var layout = new VerticalLayout(new H3(record == null ? getTitleToAdd(kind) : getTitle(record)));
+        if (record != null) {
+            var trail = new AuditTrail(auditLog);
+            trail.show(auditedEntity(record));
+            editor.setHistoryChangedListener(() -> trail.show(auditedEntity(record)));
+            layout.add(trail);
+        }
+        layout.add(editor);
         layout.addClassName("management-editor");
 
         var buttons = new HorizontalLayout();

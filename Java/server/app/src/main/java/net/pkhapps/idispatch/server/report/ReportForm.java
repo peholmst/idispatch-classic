@@ -18,6 +18,7 @@ import com.vaadin.flow.signals.Signal;
 import com.vaadin.flow.signals.local.ValueSignal;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceListItem;
+import net.pkhapps.idispatch.server.shared.audit.AuditEvent;
 import net.pkhapps.idispatch.server.ui.Formatters;
 import net.pkhapps.idispatch.server.ui.management.RecordForm;
 import org.jspecify.annotations.Nullable;
@@ -45,10 +46,11 @@ class ReportForm extends RecordForm<ReportDraft> {
     private final Signal<Optional<ReportDraft>> draft;
 
     /**
+     * @param lastEdits   the newest event of each {@link ReportPart} in the audit log, by part
      * @param openedUnits the units to show opened; every other unit starts closed
      */
     ReportForm(AssignmentReport report, List<ResourceListItem> respondingResources,
-               Set<ResourceId> openedUnits) {
+               Map<String, AuditEvent> lastEdits, Set<ResourceId> openedUnits) {
         getContent().setMaxColumns(1);
 
         var sceneForm = new FormLayout();
@@ -87,7 +89,7 @@ class ReportForm extends RecordForm<ReportDraft> {
         showError(deceasedField, deceasedError, countsTouched);
 
         var sceneLastEdit = createLastEditSpan();
-        sceneLastEdit.setText(formatLastEdit(report.lastEdit()));
+        sceneLastEdit.setText(formatLastEdit(lastEdits.get(ReportPart.SCENE)));
 
         var units = new VerticalLayout();
         units.setPadding(false);
@@ -96,14 +98,14 @@ class ReportForm extends RecordForm<ReportDraft> {
             units.add(new Span(getTranslation("report.no-responding-units")));
         }
         for (var resource : respondingResources) {
-            var unit = report.unit(resource.id());
+            var answers = report.unit(resource.id());
             var situationOnArrival = createTextArea(getTranslation("report.unit.situation-on-arrival"));
             var actionsTaken = createTextArea(getTranslation("report.unit.actions-taken"));
             var situationOnArrivalTouched = touchedSignal();
             var actionsTakenTouched = touchedSignal();
-            var situationOnArrivalValue = bind(situationOnArrival, unit.answers().situationOnArrival().value(),
+            var situationOnArrivalValue = bind(situationOnArrival, answers.situationOnArrival().value(),
                     situationOnArrivalTouched);
-            var actionsTakenValue = bind(actionsTaken, unit.answers().actionsTaken().value(), actionsTakenTouched);
+            var actionsTakenValue = bind(actionsTaken, answers.actionsTaken().value(), actionsTakenTouched);
             var situationOnArrivalError = situationOnArrivalValue.map(value -> ReportText.isValid(value)
                     ? null : getTranslation("report.unit.situation-on-arrival-too-long"));
             var actionsTakenError = actionsTakenValue.map(value -> ReportText.isValid(value)
@@ -122,7 +124,8 @@ class ReportForm extends RecordForm<ReportDraft> {
             var unitForm = new VerticalLayout(situationOnArrival, actionsTaken);
             unitForm.setPadding(false);
             unitForm.setSpacing(false);
-            var details = new Details(createUnitSummary(resource, unit, status), unitForm);
+            var details = new Details(createUnitSummary(resource, lastEdits.get(ReportPart.unit(resource.id())),
+                    status), unitForm);
             details.setWidthFull();
             // A writer usually works on their own unit only, so every unit starts closed and stays out of the way
             details.setOpened(openedUnits.contains(resource.id()));
@@ -219,19 +222,19 @@ class ReportForm extends RecordForm<ReportDraft> {
         return field;
     }
 
-    static Span createLastEditSpan() {
+    private static Span createLastEditSpan() {
         var span = new Span();
-        span.getStyle().set("color", "var(--vaadin-text-color-secondary)").set("font-size", "var(--aura-font-size-s)");
+        span.addClassName("last-edit");
         return span;
     }
 
-    static String formatLastEdit(@Nullable UserStamp lastEdit) {
+    private static String formatLastEdit(@Nullable AuditEvent lastEdit) {
         return lastEdit == null ? I18NProvider.translate("report.not-filled-in-yet")
-                : I18NProvider.translate("report.last-edited", lastEdit.displayName(),
+                : I18NProvider.translate("report.last-edited", lastEdit.user().displayName(),
                 Formatters.formatDateTime(lastEdit.timestamp()));
     }
 
-    private static Component createUnitSummary(ResourceListItem resource, UnitReport unitReport,
+    private static Component createUnitSummary(ResourceListItem resource, @Nullable AuditEvent lastEditEvent,
                                                Signal<UnitReportStatus> status) {
         var callSign = new Span(resource.callSign());
         callSign.getStyle().set("font-weight", "600");
@@ -241,7 +244,7 @@ class ReportForm extends RecordForm<ReportDraft> {
         badge.bindThemeName(BadgeVariant.SUCCESS.getVariantName(), status.map(UnitReportStatus.FILLED_IN::equals));
         badge.bindThemeName(BadgeVariant.WARNING.getVariantName(), status.map(UnitReportStatus.PARTLY_FILLED_IN::equals));
         var lastEdit = createLastEditSpan();
-        lastEdit.setText(formatLastEdit(unitReport.lastEdit()));
+        lastEdit.setText(formatLastEdit(lastEditEvent));
         var summary = new HorizontalLayout(callSign, badge, lastEdit);
         summary.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
         return summary;

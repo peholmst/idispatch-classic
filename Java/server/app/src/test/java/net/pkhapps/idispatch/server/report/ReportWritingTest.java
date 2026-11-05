@@ -281,6 +281,7 @@ class ReportWritingTest extends UseCaseTest {
 
         assertThat(erik.whoLastEditedTheScene()).startsWith("Last edited by Erik Explorer on ");
         assertThat(erik.whoLastEditedTheUnit(callSign)).as("The unit was not touched").isEqualTo("Not filled in yet");
+        assertThat(erik.seesWhoLastChangedTheReport()).startsWith("Last edited by Erik Explorer on ");
 
         var ella = ella();
         ella.opensTheReportOf(closed);

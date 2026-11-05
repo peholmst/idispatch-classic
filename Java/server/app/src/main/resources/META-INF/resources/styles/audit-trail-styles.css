@@ -1,0 +1,6 @@
+/* Who last changed an entity, under its title or beside its status: secondary text, with the history button beside it */
+.audit-trail,
+.last-edit {
+    color: var(--vaadin-text-color-secondary);
+    font-size: var(--aura-font-size-s);
+}

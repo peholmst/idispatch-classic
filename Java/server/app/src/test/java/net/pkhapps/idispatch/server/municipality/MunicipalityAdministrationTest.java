@@ -219,6 +219,36 @@ class MunicipalityAdministrationTest extends UseCaseTest {
     }
 
     @Test
+    void administratorSeesWhoChangedAMunicipalityAndItsHistory() {
+        var admin = new Administrator(keycloakUser("anna", "Anna", "Admin", "ADMIN"), MunicipalityManagementView.class,
+                FINNISH_NAME);
+        admin.startsAdding();
+        admin.fillsIn(FINNISH_NAME, unique("Audited "));
+        admin.saves();
+        assertThat(admin.seesWhoLastChangedIt()).startsWith("Created by Anna Admin on ");
+
+        admin.fillsIn(FINNISH_NAME, unique("Renamed "));
+        admin.saves();
+        assertThat(admin.seesWhoLastChangedIt()).startsWith("Last edited by Anna Admin on ");
+
+        admin.opensTheHistory();
+        assertThat(admin.history()).extracting(event -> event.get("Event")).containsExactly("Edited", "Created");
+        assertThat(admin.history()).extracting(event -> event.get("User")).containsOnly("Anna Admin");
+        admin.closesTheHistory();
+        assertThat(admin.isEditing()).isTrue();
+    }
+
+    @Test
+    void municipalityFromBeforeTheAuditLogHasNoHistory() {
+        var name = given.municipality(unique("Old ")).nameFi();
+        var admin = administratorAtWork();
+
+        admin.opens(name);
+
+        assertThat(admin.seesWhoLastChangedIt()).isEqualTo("No history recorded");
+    }
+
+    @Test
     void administratorDeletesAMunicipalityAndRestoresIt() {
         var name = given.municipality(unique("Lifecycle ")).nameFi();
         var admin = administratorAtWork();

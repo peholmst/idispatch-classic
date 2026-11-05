@@ -19,6 +19,7 @@ import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.resource.ResourceStatusChanged;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.ViewTitle;
 import org.springframework.context.ApplicationListener;
@@ -42,6 +43,7 @@ public class DispatchView extends VerticalLayout implements HasDynamicTitle {
                         ResourceStatusService resourceStatusService,
                         ResourceQueries resourceQueries,
                         DispatchService dispatchService,
+                        AuditLog auditLog,
                         ApplicationEventMulticaster eventMulticaster) {
         this.eventMulticaster = eventMulticaster;
         viewModel = new DispatchViewModel(assignmentService, resourceStatusService, resourceQueries, dispatchService);
@@ -70,7 +72,7 @@ public class DispatchView extends VerticalLayout implements HasDynamicTitle {
         primarySplit.setSplitterPosition(33);
         add(primarySplit);
 
-        primarySplit.addToPrimary(new AssignmentPanel(viewModel.assignment(), viewModel::changeResourceState));
+        primarySplit.addToPrimary(new AssignmentPanel(viewModel.assignment(), auditLog, viewModel::changeResourceState));
         var secondarySplit = new SplitLayout(SplitLayout.Orientation.VERTICAL);
         secondarySplit.setSizeFull();
         secondarySplit.addThemeVariants(SplitLayoutVariant.SMALL);

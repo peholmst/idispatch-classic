@@ -54,6 +54,21 @@ class DispatchingTest extends UseCaseTest {
     }
 
     @Test
+    void dispatcherSeesWhoLastChangedTheAssignment() {
+        var dispatcher = new Dispatcher(keycloakUser("dora", "Dora", "Dispatcher", "DISPATCHER"));
+        dispatcher.opensANewAssignment();
+        assertThat(dispatcher.seesWhoLastChangedIt()).startsWith("Created by Dora Dispatcher on ");
+
+        dispatcher.entersAddress("Storgatan 1");
+        dispatcher.writesDescription("Smoke from the roof");
+
+        assertThat(dispatcher.seesWhoLastChangedIt()).startsWith("Last edited by Dora Dispatcher on ");
+        dispatcher.opensTheHistory();
+        assertThat(dispatcher.history()).extracting(event -> event.get("Event"))
+                .as("Edits close together are one").containsExactly("Edited", "Created");
+    }
+
+    @Test
     void dispatcherFillsInTheAssignmentAndItIsSavedRightAway() {
         var dispatcher = dispatcherAtWork();
         var number = dispatcher.opensANewAssignment();

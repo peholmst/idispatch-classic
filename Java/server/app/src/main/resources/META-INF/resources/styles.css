@@ -4,6 +4,7 @@
 @import "styles/management-editor-styles.css";
 @import "styles/dashboard-view-styles.css";
 @import "styles/resource-status-view-styles.css";
+@import "styles/audit-trail-styles.css";
 
 /* Dense layout for the dispatch, reports and management screens (replaces Lumo's compact preset) */
 html {

@@ -26,8 +26,12 @@ import com.vaadin.flow.signals.local.ValueSignal;
 import net.pkhapps.idispatch.server.assignmenttype.AssignmentTypeFormatters;
 import net.pkhapps.idispatch.server.municipality.MunicipalityFormatters;
 import net.pkhapps.idispatch.server.resource.ResourceId;
+import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.ui.Formatters;
+import net.pkhapps.idispatch.server.ui.audit.AuditTrail;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -40,7 +44,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * Shows the report of a closed assignment: what the assignment was and when each resource got where, read-only, and a
  * {@link ReportForm} for what happened on scene, which writers fill in while the report is open. Reviewers close and
- * re-open it.
+ * re-open it. Who last changed the report is shown beside its status, and who last changed each part in the form, all
+ * from the {@link AuditLog}.
  * <p>
  * The report shown is a signal that the view owns: the view sets it when the user opens an assignment, and the panel
  * replaces it with the saved version whenever the user saves, closes or re-opens the report.
@@ -48,6 +53,7 @@ import static java.util.Objects.requireNonNull;
 class AssignmentReportPanel extends VerticalLayout {
 
     private final ReportService reportService;
+    private final AuditLog auditLog;
     private final boolean canWrite;
     private final boolean canReview;
     private final ValueSignal<@Nullable ReportDTO> shown;
@@ -64,9 +70,10 @@ class AssignmentReportPanel extends VerticalLayout {
      * @param canWrite  whether the user may fill in what happened on scene while the report is open
      * @param canReview whether the user may close and re-open the report
      */
-    AssignmentReportPanel(ReportService reportService, ValueSignal<@Nullable ReportDTO> shown, boolean canWrite,
-                          boolean canReview) {
+    AssignmentReportPanel(ReportService reportService, AuditLog auditLog, ValueSignal<@Nullable ReportDTO> shown,
+                          boolean canWrite, boolean canReview) {
         this.reportService = reportService;
+        this.auditLog = auditLog;
         this.shown = shown;
         this.canWrite = canWrite;
         this.canReview = canReview;
@@ -113,13 +120,16 @@ class AssignmentReportPanel extends VerticalLayout {
 
         var reportStatus = new Badge();
         ReportStatus.bind(reportStatus, reportClosed.map(ReportStatus::of));
-        var closedBy = ReportForm.createLastEditSpan();
-        closedBy.bindText(shown.map(bean -> {
-            var closed = bean == null ? null : bean.getReport().closed();
-            return closed == null ? "" : getTranslation("report.closed-by", closed.displayName(),
-                    Formatters.formatDateTime(closed.timestamp()));
-        }));
-        var statusRow = new HorizontalLayout(reportStatus, closedBy);
+        // Read again whenever the report is saved, closed or re-opened, which replaces the report shown
+        var auditTrail = new AuditTrail(auditLog);
+        Signal.effect(auditTrail, () -> {
+            var bean = shown.get();
+            if (bean != null) {
+                auditTrail.setPartLabels(part -> partLabel(bean, part));
+            }
+            auditTrail.show(bean == null ? null : audited(bean));
+        });
+        var statusRow = new HorizontalLayout(reportStatus, auditTrail);
         statusRow.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
 
         var save = new Button(getTranslation("report.save"), event -> save());
@@ -173,14 +183,34 @@ class AssignmentReportPanel extends VerticalLayout {
             return;
         }
         // The form reads its own signals while it is built, which must not make this effect depend on them
+        var lastEdits = auditLog.findLatestByPart(audited(bean));
         var shownForm = Signal.untracked(() -> new ReportForm(bean.getReport(), bean.getRespondingResources(),
-                openedUnits));
+                lastEdits, openedUnits));
         shownForm.setReadOnly(!editable.get());
         formHolder.add(shownForm);
         form = shownForm;
         formNumber = bean.getNumber();
         var changed = shownForm.changed();
         Signal.effect(shownForm, () -> warnBeforeUnload(changed.get()));
+    }
+
+    private static AuditedEntity audited(ReportDTO bean) {
+        return new AuditedEntity(AuditedEntity.Type.ASSIGNMENT_REPORT, bean.getNumber());
+    }
+
+    /**
+     * Names the part of the report for its history: the scene, or the call sign of the unit.
+     */
+    private @Nullable String partLabel(ReportDTO bean, String part) {
+        if (ReportPart.SCENE.equals(part)) {
+            return getTranslation("report.on-scene");
+        }
+        var unit = ReportPart.unitOf(part);
+        return unit == null ? null : bean.getRespondingResources().stream()
+                .filter(resource -> resource.id().equals(unit))
+                .map(ResourceListItem::callSign)
+                .findFirst()
+                .orElse(null);
     }
 
     /**

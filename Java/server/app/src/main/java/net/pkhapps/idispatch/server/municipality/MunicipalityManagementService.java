@@ -1,6 +1,9 @@
 package net.pkhapps.idispatch.server.municipality;
 
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditEventKind;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +27,10 @@ public class MunicipalityManagementService {
     private static final Logger log = LoggerFactory.getLogger(MunicipalityManagementService.class);
 
     private final MunicipalityRepository repository;
+    private final AuditLog auditLog;
 
-    MunicipalityManagementService(MunicipalityRepository repository) {
+    MunicipalityManagementService(MunicipalityRepository repository, AuditLog auditLog) {
+        this.auditLog = auditLog;
         this.repository = repository;
     }
 
@@ -43,29 +48,47 @@ public class MunicipalityManagementService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Municipality create(MunicipalityDetails details) {
         log.debug("Creating municipality {}", details.name());
-        return repository.insert(details);
+        var created = repository.insert(details);
+        auditLog.record(audited(created.id()), AuditEventKind.CREATED);
+        return created;
     }
 
     /**
-     * Saves the changed details of the municipality.
+     * Saves the changed details of the municipality. If nothing has changed, saves nothing and returns the
+     * municipality as stored, with the same version.
      *
      * @return the municipality as saved, with its new version
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Municipality update(Municipality municipality) {
         log.debug("Updating municipality {} version {}", municipality.id().value(), municipality.version());
-        return repository.update(municipality);
+        var stored = repository.findById(municipality.id());
+        if (stored.filter(municipality::equals).isPresent()) {
+            log.debug("Nothing to save in municipality {}", municipality.id().value());
+            return stored.get();
+        }
+        var updated = repository.update(municipality);
+        auditLog.record(audited(municipality.id()), AuditEventKind.EDITED);
+        return updated;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void delete(MunicipalityId id) {
         log.debug("Softly deleting municipality {}", id.value());
-        repository.setActive(id, false);
+        if (repository.setActive(id, false)) {
+            auditLog.record(audited(id), AuditEventKind.DELETED);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void restore(MunicipalityId id) {
         log.debug("Restoring municipality {}", id.value());
-        repository.setActive(id, true);
+        if (repository.setActive(id, true)) {
+            auditLog.record(audited(id), AuditEventKind.RESTORED);
+        }
+    }
+
+    private static AuditedEntity audited(MunicipalityId id) {
+        return new AuditedEntity(AuditedEntity.Type.MUNICIPALITY, id.value());
     }
 }

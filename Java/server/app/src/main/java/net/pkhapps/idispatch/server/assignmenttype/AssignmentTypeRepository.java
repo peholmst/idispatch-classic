@@ -108,14 +108,18 @@ class AssignmentTypeRepository {
     }
 
     /**
-     * Deletes the type softly, or restores it. Does nothing if there is no such type.
+     * Deletes the type softly, or restores it. Does nothing if there is no such type, or if it already is deleted
+     * or active.
+     *
+     * @return whether the type was changed
      */
-    void setActive(AssignmentTypeId id, boolean active) {
-        dsl.update(ASSIGNMENT_TYPES)
+    boolean setActive(AssignmentTypeId id, boolean active) {
+        return dsl.update(ASSIGNMENT_TYPES)
                 .set(ASSIGNMENT_TYPES.ACTIVE, active)
                 .set(ASSIGNMENT_TYPES.VERSION, ASSIGNMENT_TYPES.VERSION.plus(1))
                 .where(ASSIGNMENT_TYPES.ID.eq(id.value()))
-                .execute();
+                .and(ASSIGNMENT_TYPES.ACTIVE.ne(active))
+                .execute() > 0;
     }
 
     private org.jooq.SelectJoinStep<Record5<Long, String, String, String, Boolean>> selectListItems() {

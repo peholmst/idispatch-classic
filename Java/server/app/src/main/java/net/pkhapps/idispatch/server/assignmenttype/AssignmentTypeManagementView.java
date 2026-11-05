@@ -5,6 +5,8 @@ import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.management.RecordForm;
@@ -21,10 +23,10 @@ public class AssignmentTypeManagementView
 
     private final AssignmentTypeManagementService service;
 
-    public AssignmentTypeManagementView(AssignmentTypeManagementService service) {
+    public AssignmentTypeManagementView(AssignmentTypeManagementService service, AuditLog auditLog) {
         // Set before the base class constructor, which lists the types
         this.service = service;
-        super("management.assignment-types");
+        super("management.assignment-types", auditLog);
     }
 
     @Override
@@ -59,6 +61,11 @@ public class AssignmentTypeManagementView
     @Override
     protected boolean isRecordActive(AssignmentType record) {
         return record.active();
+    }
+
+    @Override
+    protected AuditedEntity auditedEntity(AssignmentType record) {
+        return new AuditedEntity(AuditedEntity.Type.ASSIGNMENT_TYPE, record.id().value());
     }
 
     @Override

@@ -5,6 +5,8 @@ import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import net.pkhapps.idispatch.server.ui.RootLayout;
 import net.pkhapps.idispatch.server.ui.management.RecordForm;
@@ -21,10 +23,10 @@ public class ResourceTypeManagementView
 
     private final ResourceTypeManagementService service;
 
-    public ResourceTypeManagementView(ResourceTypeManagementService service) {
+    public ResourceTypeManagementView(ResourceTypeManagementService service, AuditLog auditLog) {
         // Set before the base class constructor, which lists the types
         this.service = service;
-        super("management.resource-types");
+        super("management.resource-types", auditLog);
     }
 
     @Override
@@ -59,6 +61,11 @@ public class ResourceTypeManagementView
     @Override
     protected boolean isRecordActive(ResourceType record) {
         return record.active();
+    }
+
+    @Override
+    protected AuditedEntity auditedEntity(ResourceType record) {
+        return new AuditedEntity(AuditedEntity.Type.RESOURCE_TYPE, record.id().value());
     }
 
     @Override

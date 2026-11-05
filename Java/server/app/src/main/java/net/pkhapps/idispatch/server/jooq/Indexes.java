@@ -4,6 +4,7 @@
 package net.pkhapps.idispatch.server.jooq;
 
 
+import net.pkhapps.idispatch.server.jooq.tables.AuditEvents;
 import net.pkhapps.idispatch.server.jooq.tables.Municipalities;
 import net.pkhapps.idispatch.server.jooq.tables.ResourceStatus;
 import net.pkhapps.idispatch.server.jooq.tables.ResourceStatusArchive;
@@ -24,6 +25,7 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index AUDIT_EVENTS_ENTITY_IX = Internal.createIndex(DSL.name("audit_events_entity_ix"), AuditEvents.AUDIT_EVENTS, new OrderField[] { AuditEvents.AUDIT_EVENTS.ENTITY_TYPE, AuditEvents.AUDIT_EVENTS.ENTITY_ID, AuditEvents.AUDIT_EVENTS.OCCURRED_AT }, false);
     public static final Index MUNICIPALITIES_NAME_FI_UK = Internal.createIndex(DSL.name("municipalities_name_fi_uk"), Municipalities.MUNICIPALITIES, new OrderField[] { Municipalities.MUNICIPALITIES.NAME_FI }, true);
     public static final Index MUNICIPALITIES_NAME_SV_UK = Internal.createIndex(DSL.name("municipalities_name_sv_uk"), Municipalities.MUNICIPALITIES, new OrderField[] { Municipalities.MUNICIPALITIES.NAME_SV }, true);
     public static final Index RESOURCE_STATUS_ARCHIVE_TS_IDX = Internal.createIndex(DSL.name("resource_status_archive_ts_idx"), ResourceStatusArchive.RESOURCE_STATUS_ARCHIVE, new OrderField[] { ResourceStatusArchive.RESOURCE_STATUS_ARCHIVE.TS }, false);

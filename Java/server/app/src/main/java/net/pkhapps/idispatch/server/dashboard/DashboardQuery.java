@@ -42,7 +42,7 @@ class DashboardQuery {
         return dsl.fetchCount(ASSIGNMENTS, ASSIGNMENTS.CLOSED.isNotNull().andNotExists(DSL.selectOne()
                 .from(ASSIGNMENT_REPORTS)
                 .where(ASSIGNMENT_REPORTS.ASSIGNMENT_ID.eq(ASSIGNMENTS.ID))
-                .and(ASSIGNMENT_REPORTS.CLOSED_BY_SUBJECT.isNotNull())));
+                .and(ASSIGNMENT_REPORTS.CLOSED.isTrue())));
     }
 
     /**

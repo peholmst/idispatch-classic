@@ -4,6 +4,9 @@ import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceQueries;
 import net.pkhapps.idispatch.server.security.Roles;
+import net.pkhapps.idispatch.server.shared.audit.AuditEventKind;
+import net.pkhapps.idispatch.server.shared.audit.AuditLog;
+import net.pkhapps.idispatch.server.shared.audit.AuditedEntity;
 import net.pkhapps.idispatch.server.shared.management.DefaultFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +40,11 @@ class DestinationManagementService {
     private static final Logger log = LoggerFactory.getLogger(DestinationManagementService.class);
 
     private final DestinationRepository repository;
+    private final AuditLog auditLog;
     private final ResourceQueries resourceQueries;
 
-    DestinationManagementService(DestinationRepository repository, ResourceQueries resourceQueries) {
+    DestinationManagementService(DestinationRepository repository, ResourceQueries resourceQueries, AuditLog auditLog) {
+        this.auditLog = auditLog;
         this.repository = repository;
         this.resourceQueries = resourceQueries;
     }
@@ -77,7 +82,9 @@ class DestinationManagementService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Destination create(DestinationDetails details) {
         log.debug("Creating destination for resources {}", details.resources());
-        return repository.insert(details);
+        var created = repository.insert(details);
+        auditLog.record(audited(created.id()), AuditEventKind.CREATED);
+        return created;
     }
 
     /**
@@ -87,7 +94,9 @@ class DestinationManagementService {
     public KeyedMobileDestination createMobile(MobileDestinationDetails details) {
         log.debug("Creating mobile destination for resource {}", details.resource());
         var key = MobileKey.random();
-        return new KeyedMobileDestination(repository.insertMobile(details, key.hash()), key);
+        var created = repository.insertMobile(details, key.hash());
+        auditLog.record(audited(created.id()), AuditEventKind.CREATED);
+        return new KeyedMobileDestination(created, key);
     }
 
     /**
@@ -103,30 +112,43 @@ class DestinationManagementService {
         if (!repository.replaceMobileKeyHash(id, key.hash())) {
             throw new IllegalArgumentException("No mobile destination " + id.value());
         }
+        auditLog.record(audited(id), AuditEventKind.MOBILE_KEY_REPLACED);
         return key;
     }
 
     /**
-     * Saves the changed details of the destination.
+     * Saves the changed details of the destination. If nothing has changed, saves nothing and returns the
+     * destination as stored, with the same version.
      *
      * @return the destination as saved, with its new version
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Destination update(Destination destination) {
         log.debug("Updating destination {} version {}", destination.id().value(), destination.version());
-        return repository.update(destination);
+        var stored = repository.findById(destination.id());
+        if (stored.filter(destination::equals).isPresent()) {
+            log.debug("Nothing to save in destination {}", destination.id().value());
+            return stored.get();
+        }
+        var updated = repository.update(destination);
+        auditLog.record(audited(destination.id()), AuditEventKind.EDITED);
+        return updated;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void delete(DestinationId id) {
         log.debug("Softly deleting destination {}", id.value());
-        repository.setActive(id, false);
+        if (repository.setActive(id, false)) {
+            auditLog.record(audited(id), AuditEventKind.DELETED);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void restore(DestinationId id) {
         log.debug("Restoring destination {}", id.value());
-        repository.setActive(id, true);
+        if (repository.setActive(id, true)) {
+            auditLog.record(audited(id), AuditEventKind.RESTORED);
+        }
     }
 
     /**
@@ -143,5 +165,9 @@ class DestinationManagementService {
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public List<ResourceListItem> findResources(Collection<ResourceId> ids) {
         return resourceQueries.findByIds(ids);
+    }
+
+    private static AuditedEntity audited(DestinationId id) {
+        return new AuditedEntity(AuditedEntity.Type.DESTINATION, id.value());
     }
 }

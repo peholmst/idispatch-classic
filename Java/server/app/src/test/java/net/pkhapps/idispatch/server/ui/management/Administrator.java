@@ -116,6 +116,28 @@ public class Administrator {
     // --- What the administrator sees ---
 
     /**
+     * Who last changed what is open and when, such as "Last edited by Anna Admin on …".
+     */
+    public String seesWhoLastChangedIt() {
+        return page.lastChange();
+    }
+
+    public void opensTheHistory() {
+        page.openHistory();
+    }
+
+    /**
+     * The events in the open history, newest first, by the Time, User and Event columns.
+     */
+    public java.util.List<java.util.Map<String, String>> history() {
+        return page.history();
+    }
+
+    public void closesTheHistory() {
+        page.closeHistory();
+    }
+
+    /**
      * The keys of the items in the list, from top to bottom.
      */
     public List<String> listed() {

@@ -264,14 +264,18 @@ class DestinationRepository {
     }
 
     /**
-     * Deletes the destination softly, or restores it. Does nothing if there is no such destination.
+     * Deletes the destination softly, or restores it. Does nothing if there is no such destination, or if it already is deleted
+     * or active.
+     *
+     * @return whether the destination was changed
      */
-    void setActive(DestinationId id, boolean active) {
-        dsl.update(DESTINATIONS)
+    boolean setActive(DestinationId id, boolean active) {
+        return dsl.update(DESTINATIONS)
                 .set(DESTINATIONS.ACTIVE, active)
                 .set(DESTINATIONS.VERSION, DESTINATIONS.VERSION.plus(1))
                 .where(DESTINATIONS.ID.eq(id.value()))
-                .execute();
+                .and(DESTINATIONS.ACTIVE.ne(active))
+                .execute() > 0;
     }
 
     private void insertResources(DestinationId id, DestinationDetails details) {
