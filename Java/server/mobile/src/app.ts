@@ -283,6 +283,7 @@ export class MobileApp extends LitElement {
             : this.messages.map(message => this.renderMessage(message, t, unit.locale))}
         </div>
       </section>
+      <footer class="app-version">v${__APP_VERSION__}</footer>
       <vaadin-button class="status-corner ${stateClass(unit.status?.state)}" data-state=${unit.status?.state ?? ''}
                      aria-label=${`${t.changeStatus}: ${unit.status?.label ?? t.noStatus}`}
                      @click=${() => (this.statusOpen = true)}>

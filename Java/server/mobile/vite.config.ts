@@ -9,6 +9,10 @@ const BACKGROUND = '#1a1d23';
 // keep the app working under any context path.
 export default defineConfig({
   base: './',
+  define: {
+    // The server's version, which Maven passes in (pom.xml); the app shows it at the bottom of the screen
+    __APP_VERSION__: JSON.stringify(process.env.IDISPATCH_VERSION ?? 'dev'),
+  },
   build: {
     outDir: 'target/classes/META-INF/resources/mobile',
     emptyOutDir: true,

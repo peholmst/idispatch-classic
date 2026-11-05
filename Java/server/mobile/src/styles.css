@@ -214,6 +214,13 @@ idispatch-mobile-app > * {
     margin: 0 0 0.75rem;
 }
 
+/* The version, small in the bottom left corner beside the status, for telling which version a phone runs */
+.app-version {
+    padding: 0.25rem 0 max(0.25rem, env(safe-area-inset-bottom));
+    font-size: 0.75rem;
+    color: var(--vaadin-text-color-secondary);
+}
+
 .no-messages {
     color: var(--vaadin-text-color-secondary);
 }

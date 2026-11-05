@@ -11,7 +11,8 @@ The repository holds two products that are released separately, each with its ow
 `pom.xml` in this directory only groups the two for the IDE and CI; it is not a parent, and has no version of its own.
 
 Versions are `MAJOR.MINOR.PATCH`. Between releases a product carries the next minor version as a snapshot, such as
-`3.1-SNAPSHOT`. The server shows its version in the drawer; the runboard's zip has it in its name and in `README.txt`.
+`3.1-SNAPSHOT`. The server shows its version in the drawer, and the mobile app, which shares it, at the bottom of its
+screen. The runboard shows its version next to its IP address, and its zip has it in its name and in `README.txt`.
 
 The server and the runboard talk over the `/ws/runboard` WebSocket. A release that changes that protocol says in its
 notes which versions of the other product it works with.
