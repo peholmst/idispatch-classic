@@ -59,6 +59,27 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <resources>
+            <!-- Writes the version into version.properties, with Spring Boot's @...@ delimiters; nothing else is
+                 filtered, as the sounds are binary -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>net/pkhapps/idispatch/runboard/version.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>net/pkhapps/idispatch/runboard/version.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
+    </build>
+
     <profiles>
         <profile>
             <id>assemble</id>

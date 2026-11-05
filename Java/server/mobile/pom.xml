@@ -61,6 +61,10 @@
                         </goals>
                         <configuration>
                             <arguments>run build</arguments>
+                            <!-- The app shows the version it was built as (vite.config.ts) -->
+                            <environmentVariables>
+                                <IDISPATCH_VERSION>${project.version}</IDISPATCH_VERSION>
+                            </environmentVariables>
                         </configuration>
                     </execution>
                     <execution>

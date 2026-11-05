@@ -130,9 +130,13 @@ class ClockView extends JComponent {
             g2.drawLine(origo_x, origo_y, x2, y2);
         }
 
-        // Show the IP address in the bottom left corner, for whoever needs to log in over SSH for maintenance
+        // Show the IP address in the bottom left corner, for whoever needs to log in over SSH for maintenance, and the
+        // version next to it
         {
             var text = address.isEmpty() ? "No IP address" : address;
+            if (!Version.get().isEmpty()) {
+                text += "    v" + Version.get();
+            }
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             g2.setFont(getFont().deriveFont(Font.PLAIN, 14f));
             g2.setColor(Color.GRAY);
