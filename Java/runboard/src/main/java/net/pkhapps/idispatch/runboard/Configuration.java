@@ -87,6 +87,14 @@ class Configuration extends net.pkhapps.idispatch.runboard.client.Configuration 
     }
 
     /**
+     * Returns the most units that are read out one by one. When a notification dispatches more, only their number is
+     * read. Default: 10.
+     */
+    public int getSpeechMaxUnits() {
+        return getInt("idispatch.speech.maxUnits", 10, 1);
+    }
+
+    /**
      * Returns the gain of the alarm and the error beep in decibels, at most 0. The sound files are close to full scale,
      * far louder than speech even after it has been normalized, so they are attenuated to suit the speech. Default:
      * -12 dB, which puts the alarm just above the speech.

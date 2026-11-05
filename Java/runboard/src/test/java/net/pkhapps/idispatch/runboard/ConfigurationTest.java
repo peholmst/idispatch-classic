@@ -17,7 +17,7 @@ class ConfigurationTest {
 
     private static final List<String> TIMING_PROPERTIES = List.of("idispatch.alarm.plays",
             "idispatch.alarm.playsBeforeSpeech", "idispatch.speech.repeats", "idispatch.speech.pause",
-            "idispatch.speech.phrasePause",
+            "idispatch.speech.phrasePause", "idispatch.speech.maxUnits",
             "idispatch.notification.shownFor", "idispatch.alarm.volume", "idispatch.hideCursor");
 
     @AfterEach
@@ -59,6 +59,27 @@ class ConfigurationTest {
 
         System.setProperty("idispatch.speech.phrasePause", "-1");
         assertEquals(Duration.ofMillis(500), new Configuration().getSpeechPhrasePause());
+    }
+
+    @Test
+    void speechMaxUnits_defaultsToTen() {
+        assertEquals(10, new Configuration().getSpeechMaxUnits());
+    }
+
+    @Test
+    void speechMaxUnits_isRead() {
+        System.setProperty("idispatch.speech.maxUnits", " 5 ");
+
+        assertEquals(5, new Configuration().getSpeechMaxUnits());
+    }
+
+    @Test
+    void invalidSpeechMaxUnits_fallsBackToDefault() {
+        System.setProperty("idispatch.speech.maxUnits", "0");
+        assertEquals(10, new Configuration().getSpeechMaxUnits());
+
+        System.setProperty("idispatch.speech.maxUnits", "many");
+        assertEquals(10, new Configuration().getSpeechMaxUnits());
     }
 
     @Test

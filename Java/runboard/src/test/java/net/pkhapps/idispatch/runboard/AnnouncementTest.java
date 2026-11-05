@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -24,7 +25,7 @@ class AnnouncementTest {
 
         assertEquals(List.of("Hälytysilmoitus: P A R 1 1.", "R V S 9 1 1.", "Tehtävä: 1 0 3 Bertta.",
                         "Kauppiaskatu 1, Parainen."),
-                Announcement.phrases(notification, notification.getLanguage()));
+                Announcement.phrases(notification, notification.getLanguage(), 10));
     }
 
     @Test
@@ -38,7 +39,7 @@ class AnnouncementTest {
                 "resources", List.of("RVS911")));
 
         assertEquals(List.of("Larmmeddelande: R V S 9 1 1.", "Uppdrag: 1 0 3 Berta.", "Köpmansgatan 1, Pargas."),
-                Announcement.phrases(notification, notification.getLanguage()));
+                Announcement.phrases(notification, notification.getLanguage(), 10));
     }
 
     @Test
@@ -49,14 +50,56 @@ class AnnouncementTest {
                 "resources", List.of("RVS911")));
 
         assertEquals(List.of("R V S 9 1 1.", "1 0 3.", "Storgatan 1."),
-                Announcement.phrases(notification, notification.getLanguage()));
+                Announcement.phrases(notification, notification.getLanguage(), 10));
+    }
+
+    @Test
+    void finnishUnits_upToTheMaximum_areListed() {
+        assertEquals(List.of("Hälytysilmoitus: R V S 1 1.", "R V S 1 2.", "R V S 1 3.", "Tehtävä: 1 0 3 Bertta.",
+                        "Kauppiaskatu 1, Parainen."),
+                Announcement.phrases(notificationWithUnits("fi", 3), "fi", 3));
+    }
+
+    @Test
+    void finnishUnits_overTheMaximum_areReadAsTheirNumber() {
+        assertEquals(List.of("Hälytysilmoitus: 4 yksikköä.", "Tehtävä: 1 0 3 Bertta.", "Kauppiaskatu 1, Parainen."),
+                Announcement.phrases(notificationWithUnits("fi", 4), "fi", 3));
+    }
+
+    @Test
+    void swedishUnits_upToTheMaximum_areListed() {
+        assertEquals(List.of("Larmmeddelande: R V S 1 1.", "R V S 1 2.", "R V S 1 3.", "Uppdrag: 1 0 3 Berta.",
+                        "Kauppiaskatu 1, Parainen."),
+                Announcement.phrases(notificationWithUnits("sv", 3), "sv", 3));
+    }
+
+    @Test
+    void swedishUnits_overTheMaximum_areReadAsTheirNumber() {
+        assertEquals(List.of("Larmmeddelande: 12 enheter.", "Uppdrag: 1 0 3 Berta.", "Kauppiaskatu 1, Parainen."),
+                Announcement.phrases(notificationWithUnits("sv", 12), "sv", 10));
+    }
+
+    @Test
+    void unitsInUnknownLanguage_overTheMaximum_areListed() {
+        assertEquals(List.of("R V S 1 1.", "R V S 1 2.", "1 0 3 B.", "Kauppiaskatu 1, Parainen."),
+                Announcement.phrases(notificationWithUnits("", 2), "", 1));
+    }
+
+    private static Notification notificationWithUnits(String language, int count) {
+        return new Notification(Map.of(
+                "language", language,
+                "assignment_type_code", "103",
+                "urgency", "B",
+                "municipality", "Parainen",
+                "address", "Kauppiaskatu 1",
+                "resources", IntStream.rangeClosed(1, count).mapToObj(i -> "RVS" + (10 + i)).toList()));
     }
 
     @Test
     void missingParts_areLeftOut() {
         var notification = new Notification(Map.of("assignment_type_code", "103"));
 
-        assertEquals(List.of("Tehtävä: 1 0 3."), Announcement.phrases(notification, "fi"));
+        assertEquals(List.of("Tehtävä: 1 0 3."), Announcement.phrases(notification, "fi", 10));
     }
 
     @Test
@@ -73,7 +116,7 @@ class AnnouncementTest {
 
     private static String urgencyText(String language, String urgency) {
         return String.join(" ", Announcement.phrases(
-                new Notification(Map.of("assignment_type_code", "1", "urgency", urgency)), language));
+                new Notification(Map.of("assignment_type_code", "1", "urgency", urgency)), language, 10));
     }
 
     @Test
