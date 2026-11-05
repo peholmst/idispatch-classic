@@ -58,6 +58,7 @@ Fill in `.env`:
 | `IDISPATCH_CONTEXT_PATH` | The path the application is served under, `/idispatch` by default. Set it empty (`IDISPATCH_CONTEXT_PATH=`) to serve from the root of the host name. It must be the same path the browser sees: NGINX passes paths through unchanged. |
 | `TZ` | Time zone for times shown in the UI, such as `Europe/Helsinki`. |
 | `POSTGRES_PASSWORD` | A long random password, for example from `openssl rand -base64 32`. Changing it later doesn't change the password of an existing database; use `ALTER USER` in `psql` for that. |
+| `POSTGRES_VOLUME` | The Docker volume that holds the database, such as `idispatch-camp-a`. Each camp gets its own; see "Switching between camps". |
 | `KEYCLOAK_ISSUER_URI` | The Keycloak base URL followed by `/realms/` and the realm name: `https://keycloak.example.com/realms/idispatch`. |
 | `KEYCLOAK_CLIENT_ID` | `idispatch`, unless you named the client differently. |
 | `KEYCLOAK_CLIENT_SECRET` | The client secret from step 1. |
@@ -81,7 +82,38 @@ The server is healthy once it has migrated the database and read the realm's Ope
 **It doesn't start if it can't reach Keycloak**; check `docker compose logs idispatch` if it keeps restarting.
 
 To upgrade, pull the new version and run `docker compose up -d --build` again. Flyway migrates the database when
-the server starts. `docker compose down` keeps the database; `docker compose down -v` deletes it.
+the server starts. `docker compose down` keeps the database; `docker compose down -v` deletes the database of the
+current camp.
+
+### Switching between camps
+
+Each camp has its own database, in its own Docker volume. `POSTGRES_VOLUME` in `.env` chooses which one the server
+uses; everything else (Keycloak, NGINX, the server's address, the VAPID keys) stays the same. To switch:
+
+```shell
+docker compose down
+sed -i 's/^POSTGRES_VOLUME=.*/POSTGRES_VOLUME=idispatch-camp-b/' .env
+docker compose up -d
+```
+
+Use `down` without `-v`, which would delete the current camp's database. Stop both containers, not only `postgres`:
+the server keeps database connections and state in memory. `docker volume ls` lists the camps' volumes.
+
+A volume that doesn't exist yet is created empty, and the server sets up the database in it when it starts. Only
+then, when a volume is created, does PostgreSQL take the password from `POSTGRES_PASSWORD`, so keep the same password
+for every camp.
+
+What is in the database belongs to one camp: destinations, units, assignments, and the runboards and phones paired
+with destinations. A phone paired during one camp gets no alerts during another, until it is paired with a
+destination in that camp too. The users are in Keycloak and are the same for every camp.
+
+Deployments from before `POSTGRES_VOLUME` keep their database in a volume called `deploy_postgres-data` (Compose
+puts the project name, the folder name, in front). Either set `POSTGRES_VOLUME=deploy_postgres-data`, or, with the
+containers stopped, copy it to a volume named after the camp:
+
+```shell
+docker run --rm -v deploy_postgres-data:/from -v idispatch-camp-a:/to alpine cp -a /from/. /to/
+```
 
 ### Web Push for the mobile apps
 
@@ -284,8 +316,12 @@ docker compose up -d --build
 ```
 
 Compose rebuilds the server image from the checked-out sources and replaces the container; the database stays in
-its volume. The server migrates the database to the new version with Flyway when it starts, so going back to an older
+its volume. When upgrading from a release without `POSTGRES_VOLUME`, add it to `.env` first, as described in
+"Switching between camps"; `docker compose up` refuses to start without it and leaves the running containers alone. The server migrates the database to the new version with Flyway when it starts, so going back to an older
 release afterwards is not supported: back up the database first, for example with
 `docker compose exec postgres pg_dump -U idispatch idispatch > idispatch-backup.sql`.
+
+Only the current camp's database is migrated. The others are migrated the next time you switch to them, so back
+them up before that, or switch to each one in turn right after the upgrade, backing it up first.
 
 The version that runs is shown next to the name in the drawer.
