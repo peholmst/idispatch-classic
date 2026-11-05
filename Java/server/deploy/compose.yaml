@@ -67,4 +67,6 @@ networks:
     internal: true
 
 volumes:
+  # One volume per camp: change POSTGRES_VOLUME in .env to switch databases (docs/deployment.md, "Switching between camps").
   postgres-data:
+    name: ${POSTGRES_VOLUME:?Set POSTGRES_VOLUME in .env, for example idispatch-camp-a}
