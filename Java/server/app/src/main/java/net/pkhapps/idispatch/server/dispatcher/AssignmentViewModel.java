@@ -17,6 +17,7 @@ import net.pkhapps.idispatch.server.municipality.MunicipalityListItem;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceListItem;
 import net.pkhapps.idispatch.server.resource.ResourceQueries;
+import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatus;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
 import net.pkhapps.idispatch.server.shared.UpdateResult;
@@ -170,6 +171,28 @@ class AssignmentViewModel {
         return selectedResources.map(rows -> !rows.isEmpty());
     }
 
+    /**
+     * Whether any resource is on the assignment, for {@link #dispatchAll()} to dispatch.
+     */
+    Signal<Boolean> anyResourceOnAssignment() {
+        return assignedResources.map(rows -> !rows.isEmpty());
+    }
+
+    /**
+     * Whether any resource on the assignment is reserved, for {@link #dispatchReserved()} to dispatch.
+     */
+    Signal<Boolean> anyResourceReserved() {
+        return assignedResources.map(rows -> rows.stream()
+                .anyMatch(row -> row.status().state() == ResourceState.RESERVED));
+    }
+
+    /**
+     * Whether the assignment in the form can be closed: only once no resources are on it.
+     */
+    Signal<Boolean> closable() {
+        return Signal.computed(() -> assignment.get() != null && assignedResources.get().isEmpty());
+    }
+
     // --- Commands ---
 
     void setType(@Nullable AssignmentTypeListItem type) {
@@ -223,9 +246,13 @@ class AssignmentViewModel {
     /**
      * Dispatches every resource on the assignment.
      *
-     * @return what the assignment is missing for dispatching, empty when it was dispatched or none is open
+     * @return what the assignment is missing for dispatching, empty when it was dispatched, none is open or no resource
+     * is on it
      */
     Set<MissingForDispatch> dispatchAll() {
+        if (!anyResourceOnAssignment().peek()) {
+            return Set.of();
+        }
         return dispatch(current -> dispatchService.dispatchAllResources(current));
     }
 
@@ -245,9 +272,13 @@ class AssignmentViewModel {
     /**
      * Dispatches the resources that are reserved for the assignment.
      *
-     * @return what the assignment is missing for dispatching, empty when it was dispatched or none is open
+     * @return what the assignment is missing for dispatching, empty when it was dispatched, none is open or no resource
+     * on it is reserved
      */
     Set<MissingForDispatch> dispatchReserved() {
+        if (!anyResourceReserved().peek()) {
+            return Set.of();
+        }
         return dispatch(current -> dispatchService.dispatchAllReservedResources(current));
     }
 

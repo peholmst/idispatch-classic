@@ -131,6 +131,7 @@ class AssignmentPanel extends VerticalLayout {
 
         var dispatchAll = new Button(getTranslation("dispatch.dispatch-all"),
                 event -> showWhatIsMissing(viewModel.dispatchAll()));
+        dispatchAll.bindEnabled(viewModel.anyResourceOnAssignment());
         dispatchAll.addThemeVariants(ButtonVariant.ERROR);
         var dispatchSelected = new Button(getTranslation("dispatch.dispatch-selected"),
                 event -> showWhatIsMissing(viewModel.dispatchSelected()));
@@ -138,10 +139,12 @@ class AssignmentPanel extends VerticalLayout {
         dispatchSelected.addThemeVariants(ButtonVariant.ERROR);
         var dispatchReserved = new Button(getTranslation("dispatch.dispatch-reserved"),
                 event -> showWhatIsMissing(viewModel.dispatchReserved()));
+        dispatchReserved.bindEnabled(viewModel.anyResourceReserved());
         dispatchReserved.addThemeVariants(ButtonVariant.PRIMARY, ButtonVariant.ERROR);
         var closeAssignment = new Button(getTranslation("dispatch.close-assignment"),
                 event -> viewModel.closeAssignment());
         closeAssignment.addThemeVariants(ButtonVariant.TERTIARY);
+        closeAssignment.bindVisible(viewModel.closable());
 
         var dispatchActions = new HorizontalLayout(dispatchAll, dispatchSelected, dispatchReserved);
         dispatchActions.addToEnd(closeAssignment);

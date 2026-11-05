@@ -113,6 +113,7 @@ class AssignmentViewModelTest {
 
     @Test
     void dispatchingAnAssignmentThatIsNotReadyTellsWhatIsMissing() throws Exception {
+        givenOnAssignment(FIRST);
         viewModel.open(ID);
         when(dispatchService.dispatchAllResources(any())).thenThrow(new AssignmentNotReadyForDispatchException(
                 EnumSet.of(MissingForDispatch.TYPE, MissingForDispatch.MUNICIPALITY)));
@@ -176,6 +177,49 @@ class AssignmentViewModelTest {
         viewModel.open(other);
 
         assertFalse(viewModel.anyResourceSelected().peek());
+    }
+
+    @Test
+    void assignmentCanBeClosedOnlyWithoutResourcesOnIt() {
+        givenOnAssignment(FIRST);
+        viewModel.open(ID);
+        assertFalse(viewModel.closable().peek());
+
+        givenOnAssignment();
+        viewModel.resourcesChanged();
+
+        assertTrue(viewModel.closable().peek());
+    }
+
+    @Test
+    void nothingIsClosableWithoutAnAssignment() {
+        assertFalse(viewModel.closable().peek());
+    }
+
+    @Test
+    void dispatchingIsPossibleOnlyWithSomethingToDispatch() {
+        when(resourceStatusService.getStatusOfResourcesAssignedToAssignment(ID))
+                .thenReturn(List.of(status(FIRST, ResourceState.DISPATCHED)));
+        viewModel.open(ID);
+
+        assertTrue(viewModel.anyResourceOnAssignment().peek());
+        assertFalse(viewModel.anyResourceReserved().peek(), "The only resource is already dispatched");
+
+        when(resourceStatusService.getStatusOfResourcesAssignedToAssignment(ID))
+                .thenReturn(List.of(status(FIRST, ResourceState.DISPATCHED), status(SECOND, ResourceState.RESERVED)));
+        viewModel.resourcesChanged();
+
+        assertTrue(viewModel.anyResourceReserved().peek());
+    }
+
+    @Test
+    void dispatchingWithoutResourcesDoesNothing() {
+        viewModel.open(ID);
+
+        assertFalse(viewModel.anyResourceOnAssignment().peek());
+        assertEquals(Set.of(), viewModel.dispatchAll());
+        assertEquals(Set.of(), viewModel.dispatchReserved());
+        verifyNoInteractions(dispatchService);
     }
 
     private void givenOnAssignment(ResourceId... resources) {

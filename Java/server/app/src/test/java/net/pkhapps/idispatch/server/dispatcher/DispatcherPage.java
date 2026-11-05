@@ -202,6 +202,14 @@ public class DispatcherPage extends AppShell {
         window.findButton().withText("Dispatch All").click();
     }
 
+    public boolean canDispatchAll() {
+        return window.findButton().withText("Dispatch All").component().isEnabled();
+    }
+
+    public boolean canDispatchReserved() {
+        return window.findButton().withText("Dispatch Reserved").component().isEnabled();
+    }
+
     public boolean canDispatchSelected() {
         return window.findButton().withText("Dispatch Selected").component().isEnabled();
     }
@@ -212,6 +220,10 @@ public class DispatcherPage extends AppShell {
 
     public void clickDispatchReserved() {
         window.findButton().withText("Dispatch Reserved").click();
+    }
+
+    public boolean canCloseAssignment() {
+        return window.findButton().withText("Close Assignment").exists();
     }
 
     public void clickCloseAssignment() {

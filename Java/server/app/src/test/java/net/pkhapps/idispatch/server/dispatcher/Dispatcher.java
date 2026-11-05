@@ -131,6 +131,10 @@ public class Dispatcher {
         page.clickCloseAssignment();
     }
 
+    public boolean canCloseTheAssignment() {
+        return page.canCloseAssignment();
+    }
+
     /**
      * Changes the state of a resource on the selected assignment, as when the unit reports over the radio.
      */
@@ -278,6 +282,14 @@ public class Dispatcher {
 
     public boolean canDispatchSelected() {
         return page.canDispatchSelected();
+    }
+
+    public boolean canDispatchAll() {
+        return page.canDispatchAll();
+    }
+
+    public boolean canDispatchReserved() {
+        return page.canDispatchReserved();
     }
 
     public void filtersAvailableResourcesBy(String text) {
