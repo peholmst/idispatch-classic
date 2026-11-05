@@ -1,9 +1,11 @@
 # iDispatch
 
 iDispatch is a dispatching system designed for fire department explorers to use during their camps. It is not meant
-for operational use by real emergency services. A dispatcher records an assignment, picks
-the units to send, and dispatches them. iDispatch alerts the units by SMS, on runboards at the stations, and in a
-mobile app, keeps track of every unit's status, and collects a report of each assignment once it is over.
+for operational use by real emergency services.
+
+A dispatcher records an assignment, picks the units to send, and dispatches them. iDispatch alerts the units by SMS,
+on runboards at the stations, and in a mobile app, keeps track of every unit's status, and collects a report of each
+assignment once it is over.
 
 The user interface is in English, Swedish and Finnish.
 
