@@ -37,7 +37,10 @@ export async function run<T>(factory: IDBFactory, storeName: string, mode: IDBTr
       const transaction = db.transaction(storeName, mode);
       const request = action(transaction.objectStore(storeName));
       transaction.oncomplete = () => resolve(request.result);
-      transaction.onerror = () => reject(transaction.error);
+      // A failed request, such as adding a key that is already there, aborts the transaction, whose error is set only
+      // once it has
+      transaction.onerror = () => reject(request.error ?? transaction.error);
+      transaction.onabort = () => reject(request.error ?? transaction.error);
     });
   } finally {
     db.close();

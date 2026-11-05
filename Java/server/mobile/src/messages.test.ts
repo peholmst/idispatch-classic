@@ -99,3 +99,16 @@ describe('the time of an alert', () => {
     expect(formatTime(new Date(2026, 9, 31, 9, 5).toISOString(), 'fi', now)).toContain('31.10.');
   });
 });
+
+describe('an alert stored twice at once', () => {
+  it('is new only once, as when it comes over the event stream and by push together', async () => {
+    const factory = new IDBFactory();
+    const store = new MessageStore(factory);
+    const alert = notification(5, '2026-11-01T10:00:00Z');
+
+    const results = await Promise.all([store.add(alert), new MessageStore(factory).add(alert)]);
+
+    expect(results.filter(it => it)).toHaveLength(1);
+    expect(await store.list()).toHaveLength(1);
+  });
+});

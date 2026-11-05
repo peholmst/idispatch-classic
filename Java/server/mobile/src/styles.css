@@ -138,6 +138,14 @@ idispatch-mobile-app > * {
     color: var(--vaadin-text-color-secondary);
 }
 
+/* Asking for notifications: the reason, with the button beside it, or below it on a narrow screen */
+.push-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+}
+
 .call-sign {
     margin: 0;
     font-size: 2rem;

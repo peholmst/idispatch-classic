@@ -148,16 +148,66 @@ class DestinationRepository {
     }
 
     /**
-     * Replaces the hash of the mobile destination's key. This is not a change of the destination's details, so its
-     * version stays, and an administrator editing the destination at the same time can still save.
+     * Replaces the hash of the mobile destination's key, and removes the push subscription of the device paired with
+     * the old one. This is not a change of the destination's details, so its version stays, and an administrator
+     * editing the destination at the same time can still save.
      *
      * @return whether there is such a mobile destination
      */
     boolean replaceMobileKeyHash(DestinationId id, MobileKeyHash keyHash) {
         return dsl.update(MOBILE_DESTINATIONS)
                 .set(MOBILE_DESTINATIONS.KEY_HASH, keyHash.value())
+                .setNull(MOBILE_DESTINATIONS.PUSH_ENDPOINT)
+                .setNull(MOBILE_DESTINATIONS.PUSH_P256DH)
+                .setNull(MOBILE_DESTINATIONS.PUSH_AUTH)
                 .where(MOBILE_DESTINATIONS.ID.eq(id.value()))
                 .execute() > 0;
+    }
+
+    /**
+     * Replaces the push subscription of the mobile destination, not deleted, whose key has the given hash.
+     *
+     * @param subscription the new subscription, or {@code null} to remove it
+     * @return whether there is such a mobile destination
+     */
+    boolean replacePushSubscription(MobileKeyHash keyHash, @Nullable PushSubscription subscription) {
+        return dsl.update(MOBILE_DESTINATIONS)
+                .set(MOBILE_DESTINATIONS.PUSH_ENDPOINT, subscription == null ? null : subscription.endpoint().toString())
+                .set(MOBILE_DESTINATIONS.PUSH_P256DH, subscription == null ? null : subscription.p256dh())
+                .set(MOBILE_DESTINATIONS.PUSH_AUTH, subscription == null ? null : subscription.auth())
+                .where(MOBILE_DESTINATIONS.KEY_HASH.eq(keyHash.value()))
+                .and(MOBILE_DESTINATIONS.ID.in(DSL.select(DESTINATIONS.ID)
+                        .from(DESTINATIONS)
+                        .where(DESTINATIONS.ACTIVE.isTrue())))
+                .execute() > 0;
+    }
+
+    /**
+     * Removes the push subscription of the mobile destination, if it has the given endpoint.
+     */
+    void removePushSubscription(DestinationId id, java.net.URI endpoint) {
+        dsl.update(MOBILE_DESTINATIONS)
+                .setNull(MOBILE_DESTINATIONS.PUSH_ENDPOINT)
+                .setNull(MOBILE_DESTINATIONS.PUSH_P256DH)
+                .setNull(MOBILE_DESTINATIONS.PUSH_AUTH)
+                .where(MOBILE_DESTINATIONS.ID.eq(id.value()))
+                .and(MOBILE_DESTINATIONS.PUSH_ENDPOINT.eq(endpoint.toString()))
+                .execute();
+    }
+
+    /**
+     * Finds the push subscription of the mobile destination, not deleted.
+     */
+    Optional<PushSubscription> findActivePushSubscription(DestinationId id) {
+        return dsl.select(MOBILE_DESTINATIONS.PUSH_ENDPOINT, MOBILE_DESTINATIONS.PUSH_P256DH,
+                        MOBILE_DESTINATIONS.PUSH_AUTH)
+                .from(MOBILE_DESTINATIONS)
+                .join(DESTINATIONS).on(DESTINATIONS.ID.eq(MOBILE_DESTINATIONS.ID))
+                .where(MOBILE_DESTINATIONS.ID.eq(id.value()))
+                .and(DESTINATIONS.ACTIVE.isTrue())
+                .and(MOBILE_DESTINATIONS.PUSH_ENDPOINT.isNotNull())
+                .fetchOptional(row -> new PushSubscription(java.net.URI.create(row.value1()), row.value2(),
+                        row.value3()));
     }
 
     private DestinationId insertDestination(DestinationDetails details) {

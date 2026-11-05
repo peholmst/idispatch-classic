@@ -48,11 +48,17 @@ export type StatusChangeResult =
   | { kind: 'not-paired' }
   | { kind: 'no-connection' };
 
+/** What a Web Push message carries: the alert, and the language of the destination to show it in. */
+export interface PushPayload {
+  locale: string;
+  notification: Notification;
+}
+
 /**
  * The address of the API: the app is served from `<context path>/mobile/` and the API is at `<context path>/api/mobile/`.
  */
-export function apiBase(): string {
-  return new URL('../api/mobile/', document.baseURI).toString();
+export function apiBase(appBase: string = document.baseURI): string {
+  return new URL('../api/mobile/', appBase).toString();
 }
 
 export function authorization(key: string): Record<string, string> {
@@ -99,6 +105,48 @@ export async function confirmNotification(key: string, id: number, base: string 
     const response = await fetchFn(`${base}notifications/${id}/receipt`, {
       method: 'PUT',
       headers: authorization(key),
+      cache: 'no-store',
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The server's public key, which the app subscribes to Web Push with.
+ *
+ * @return the key, or `null` if the server sends no pushes
+ * @throws Error if the server can't be reached
+ */
+export async function pushKey(key: string, base: string = apiBase(),
+                              fetchFn: typeof fetch = fetch): Promise<string | null> {
+  const response = await fetchFn(base + 'push/key', {
+    headers: { ...authorization(key), Accept: 'application/json' },
+    cache: 'no-store',
+  });
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`The push key answered ${response.status}`);
+  }
+  return (await response.json() as { publicKey: string }).publicKey;
+}
+
+/**
+ * Tells the server where to push the alerts to: the subscription, as `PushSubscription.toJSON()` gives it.
+ *
+ * @return whether the server took it
+ */
+export async function registerPushSubscription(key: string, subscription: PushSubscriptionJSON,
+                                               base: string = apiBase(),
+                                               fetchFn: typeof fetch = fetch): Promise<boolean> {
+  try {
+    const response = await fetchFn(base + 'push/subscription', {
+      method: 'PUT',
+      headers: { ...authorization(key), 'Content-Type': 'application/json' },
+      body: JSON.stringify(subscription),
       cache: 'no-store',
     });
     return response.ok;
