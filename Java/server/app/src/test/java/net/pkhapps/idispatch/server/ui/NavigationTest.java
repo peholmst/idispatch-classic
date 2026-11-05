@@ -28,11 +28,13 @@ class NavigationTest extends UseCaseTest {
 
         dispatcher.openHome();
 
-        assertThat(dispatcher.navigationItems()).containsExactly("Home", "Dispatcher", "Resource Status", "Log Out");
+        assertThat(dispatcher.navigationItems()).containsExactly("Home", "Dispatcher", "Resource Status", "Mobile Phones", "Log Out");
         dispatcher.goTo("Dispatcher");
         assertThat(dispatcher.viewTitle()).contains("Dispatcher");
         dispatcher.goTo("Resource Status");
         assertThat(dispatcher.viewTitle()).contains("Resource Status");
+        dispatcher.goTo("Mobile Phones");
+        assertThat(dispatcher.viewTitle()).contains("Mobile Phones");
         assertThat(cannotOpen(dispatcher, "reports")).isTrue();
         assertThat(cannotOpen(dispatcher, "management/municipality")).isTrue();
     }
@@ -73,7 +75,7 @@ class NavigationTest extends UseCaseTest {
 
         user.openHome();
 
-        assertThat(user.navigationItems()).containsExactly("Home", "Dispatcher", "Resource Status", "Reports", "Municipalities",
+        assertThat(user.navigationItems()).containsExactly("Home", "Dispatcher", "Resource Status", "Mobile Phones", "Reports", "Municipalities",
                 "Assignment Types", "Resources", "Resource Types", "Destinations", "Log Out");
         user.goTo("Dispatcher");
         assertThat(user.viewTitle()).contains("Dispatcher");

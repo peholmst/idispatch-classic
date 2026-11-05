@@ -5,7 +5,9 @@ import net.pkhapps.idispatch.server.TestcontainersConfiguration;
 import net.pkhapps.idispatch.server.assignment.AssignmentId;
 import net.pkhapps.idispatch.server.assignment.AssignmentQueries;
 import net.pkhapps.idispatch.server.dispatch.AssignmentNotReadyForDispatchException;
+import net.pkhapps.idispatch.server.dispatch.DestinationId;
 import net.pkhapps.idispatch.server.dispatch.DispatchService;
+import net.pkhapps.idispatch.server.dispatch.MobileUnitService;
 import net.pkhapps.idispatch.server.resource.ResourceId;
 import net.pkhapps.idispatch.server.resource.ResourceState;
 import net.pkhapps.idispatch.server.resource.ResourceStatusService;
@@ -67,6 +69,8 @@ class MobileEventStreamTest {
     DispatchService dispatchService;
     @Autowired
     AssignmentQueries assignmentQueries;
+    @Autowired
+    MobileUnitService mobileUnitService;
 
     private final HttpClient client = HttpClient.newHttpClient();
     private final List<Thread> readers = new ArrayList<>();
@@ -114,6 +118,33 @@ class MobileEventStreamTest {
                 ResourceState.AVAILABLE));
 
         assertThat(nextUnit(stream).get("callSign").asString()).isEqualTo(resource.callSign());
+    }
+
+    @Test
+    void appMovedToAnotherUnitByADispatcherFollowsTheNewUnit_withoutPairingAgain() throws Exception {
+        var vehicle = given.resource(unique("CS"), ResourceState.AT_STATION);
+        var other = given.resource(unique("CS"), ResourceState.AVAILABLE);
+        var mobile = given.mobile(vehicle, Bilingual.FINNISH);
+        var stream = open(mobile.key());
+        nextUnit(stream);
+
+        RunAs.dispatcher(() -> {
+            mobileUnitService.changeUnit(new DestinationId(mobile.id()), new ResourceId(other.id()));
+            return null;
+        });
+
+        assertThat(nextUnit(stream).get("callSign").asString()).isEqualTo(other.callSign());
+        RunAs.dispatcher(() -> resourceStatusService.setResourceStateManually(new ResourceId(vehicle.id()),
+                ResourceState.OUT_OF_SERVICE));
+        var own = dispatch(other);
+        assertThat(nextNotification(stream).get("id").asLong()).isEqualTo(own.id());
+        // Every unit event until the dispatch shows up is of the new unit, not of the old one going out of service
+        JsonNode unit;
+        do {
+            unit = nextUnit(stream);
+            assertThat(unit.get("callSign").asString()).as("No status of the old unit reaches the app")
+                    .isEqualTo(other.callSign());
+        } while (!unit.get("status").get("state").asString().equals("DISPATCHED"));
     }
 
     @Test

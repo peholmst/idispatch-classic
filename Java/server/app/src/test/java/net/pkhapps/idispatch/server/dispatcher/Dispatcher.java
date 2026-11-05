@@ -14,6 +14,7 @@ public class Dispatcher {
 
     private final DispatcherPage page;
     private final ResourceStatusPage statusPage;
+    private final MobilePhonesPage phonesPage;
 
     /**
      * Logs in as the given user and opens the dispatcher view.
@@ -29,6 +30,7 @@ public class Dispatcher {
         var window = user.newWindow();
         page = new DispatcherPage(window, language);
         statusPage = new ResourceStatusPage(window);
+        phonesPage = new MobilePhonesPage(window);
         page.open();
     }
 
@@ -175,6 +177,76 @@ public class Dispatcher {
 
     public void clearsTheStateFilter() {
         statusPage.clearStateFilter();
+    }
+
+    /**
+     * Opens the view with every unit's mobile phone and the unit it is on.
+     */
+    public void opensMobilePhones() {
+        phonesPage.open();
+    }
+
+    public void filtersPhonesBy(String text) {
+        phonesPage.filterBy(text);
+    }
+
+    /**
+     * Starts moving the phone to another unit, by clicking the unit it is on now.
+     */
+    public void startsMovingPhone(String phone) {
+        phonesPage.clickUnitOf(phone);
+    }
+
+    public void choosesNewUnit(String callSign) {
+        phonesPage.chooseUnit(callSign);
+    }
+
+    public void savesTheNewUnit() {
+        phonesPage.save();
+    }
+
+    public void cancelsMovingThePhone() {
+        phonesPage.cancel();
+    }
+
+    /**
+     * Moves the phone to the unit, from the mobile phones view.
+     */
+    public void movesPhone(String phone, String callSign) {
+        startsMovingPhone(phone);
+        choosesNewUnit(callSign);
+        savesTheNewUnit();
+    }
+
+    public void receivesPhoneUpdates() {
+        phonesPage.receiveUpdates();
+    }
+
+    /**
+     * The phones listed on the mobile phones view, from top to bottom.
+     */
+    public List<String> listedPhones() {
+        return phonesPage.phones();
+    }
+
+    public String unitOfPhone(String phone) {
+        return phonesPage.unitOf(phone);
+    }
+
+    public String phonesEmptyText() {
+        return phonesPage.emptyText();
+    }
+
+    public String movingQuestion() {
+        return phonesPage.dialogTitle();
+    }
+
+    public List<String> newUnitChoices() {
+        return phonesPage.unitChoices();
+    }
+
+    public boolean isMovingAPhone() {
+        return phonesPage.showsDialog();
     }
 
     // --- What the dispatcher sees ---
